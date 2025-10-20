@@ -1,0 +1,141 @@
+# QAQC Analysis Configuration
+
+# Application Settings
+app:
+  name: "QAQC Analysis Automation"
+  version: "1.0.0"
+  author: "Your Name"
+  company: "Your Company"
+
+# Input/Output Settings
+paths:
+  input_dir: "input"
+  output_dir: "output"
+  plots_dir: "output/plots"
+  templates_dir: "templates"
+
+# Data Processing Settings
+data:
+  # Supported file formats
+  supported_formats: ["csv", "xlsx", "xls"]
+
+  # Column mapping (user will map these to actual column names)
+  required_columns:
+    sample_id: "SampleID"
+    hole_id: "HoleID"
+    from_depth: "From"
+    to_depth: "To"
+    sample_type: "Type"
+    result: "Result"
+    lab: "Lab"
+    method: "Method"
+    batch_id: "BatchID"
+
+  # Data cleaning settings
+  cleaning:
+    remove_duplicates: true
+    handle_qualifiers: true
+    qualifier_patterns:
+      below_detection: ["<DL", "<", "ND"]
+      above_detection: [">DL", ">"]
+    default_detection_limit: 0.001
+
+# QAQC Analysis Settings
+qaqc:
+  # Standards (CRMs) settings
+  standards:
+    types: ["CRM", "Standard", "STD"]
+    z_score_thresholds:
+      warning: 2.0
+      failure: 3.0
+    bias_threshold: 0.1  # 10% bias threshold
+
+  # Blanks settings
+  blanks:
+    types: ["Blank", "BLK", "Field Blank", "Lab Blank"]
+    threshold_multiplier: 3.0  # 3x detection limit
+    carry_over_check: true
+    carry_over_threshold: 5.0  # 5x detection limit
+
+  # Duplicates settings
+  duplicates:
+    types: ["Duplicate", "DUP", "Check", "CK"]
+    rpd_thresholds:
+      excellent: 5.0
+      good: 10.0
+      acceptable: 20.0
+      poor: 50.0
+    correlation_threshold: 0.8
+    nugget_ratio_threshold: 0.3
+
+# Visualization Settings
+visualization:
+  # Plot settings
+  figure_size: [12, 8]
+  dpi: 300
+  style: "seaborn-v0_8"
+
+  # Color schemes
+  colors:
+    pass: "#2E8B57"      # Sea Green
+    warning: "#FFD700"   # Gold
+    fail: "#DC143C"      # Crimson
+    primary: "#1f77b4"   # Blue
+    secondary: "#ff7f0e" # Orange
+
+  # Control chart settings
+  control_charts:
+    show_limits: true
+    warning_limits: true
+    failure_limits: true
+    trend_lines: true
+
+# Reporting Settings
+reporting:
+  # PDF settings
+  pdf:
+    page_size: "A4"
+    margins: [1, 1, 1, 1]  # inches
+    font_size: 10
+    title_font_size: 16
+    header_font_size: 12
+
+  # Excel settings
+  excel:
+    sheet_names:
+      summary: "QAQC Summary"
+      standards: "Standards Analysis"
+      blanks: "Blanks Analysis"
+      duplicates: "Duplicates Analysis"
+      raw_data: "Raw Data"
+
+  # Report content
+  include_sections:
+    executive_summary: true
+    methodology: true
+    results_summary: true
+    detailed_analysis: true
+    recommendations: true
+    appendices: true
+
+# Statistical Settings
+statistics:
+  # Confidence intervals
+  confidence_level: 0.95
+
+  # Outlier detection
+  outlier_method: "iqr"  # or "zscore", "modified_zscore"
+  outlier_threshold: 1.5
+
+  # Regression settings
+  regression:
+    method: "linear"
+    include_r_squared: true
+    include_equation: true
+
+# Logging Settings
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "qaqc_analysis.log"
+  max_size: "10MB"
+  backup_count: 5
