@@ -240,3 +240,52 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Your Name - your.email@example.com
 
 Project Link: [https://github.com/yourusername/qaqc-report-generator](https://github.com/yourusername/qaqc-report-generator)
+
+## Import Cookbook (CLI)
+
+Quick examples to import, map, normalize, and export cleaned data.
+
+- Infer mapping, normalize qualifiers/DLs, and write cleaned CSV
+```bash
+python main.py --input input/assays.csv --output output \
+  --infer-mapping --normalize-results --yes -v
+```
+
+- Use a saved mapping profile and normalize
+```bash
+python main.py --input input/assays.csv --output output \
+  --mapping mapping.yaml --normalize-results -v
+```
+
+- Save the inferred mapping for future runs
+```bash
+python main.py --input input/assays.csv --output output \
+  --infer-mapping --yes --save-mapping mapping.yaml
+```
+
+- Process a directory (all CSV/XLSX files)
+```bash
+python main.py --input input/ --output output \
+  --infer-mapping --normalize-results --yes -v
+```
+
+- Select Excel sheet; handle CSV delimiter/encoding
+```bash
+python main.py --input input/data.xlsx --sheet "Assays" --infer-mapping --yes
+python main.py --input input/data.csv --csv-delimiter ";" --encoding "utf-8-sig" \
+  --infer-mapping --normalize-results --yes
+```
+
+- Large CSV performance
+```bash
+python main.py --input input/big.csv --csv-chunksize 2000 \
+  --infer-mapping --normalize-results --yes
+```
+
+- Provenance sidecar (auto)
+  - For each output `<stem>_clean.csv`, a `<stem>_clean.provenance.json` is printed (in dry-run) or written alongside the CSV.
+
+Notes
+- Required fields after mapping: `sample_id`, `sample_type`, `result`.
+- Normalization creates `qualifier` and `detection_limit` columns and supports tokens: ND, <DL, >DL, negative values as below DL.
+- Per-row detection limits are respected when a `detection_limit` column exists; otherwise the default from `config.yaml` is used.
