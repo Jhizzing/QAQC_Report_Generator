@@ -243,16 +243,34 @@ Examples:
 def launch_gui():
     """Launch the GUI interface."""
     try:
+        from PyQt6.QtWidgets import QApplication
         from src.gui.main_window import QAQCApplication
-        app = QAQCApplication()
-        app.run()
-    except ImportError:
-        print("GUI dependencies not available. Please install PySide6 or tkinter.")
+
+        # Create application
+        app = QApplication(sys.argv)
+        app.setApplicationName("QAQC Analysis Application")
+        app.setApplicationVersion("2.0.0")
+        app.setOrganizationName("QAQC Analysis")
+
+        # Create and show main window
+        window = QAQCApplication()
+        window.show()
+
+        print("QAQC Analysis Application GUI launched!")
+        print("Ready for geological data analysis.")
+
+        # Run application
+        return app.exec()
+
+    except ImportError as e:
+        print(f"GUI dependencies not available: {e}")
+        print("Please install PyQt6: pip install PyQt6")
         print("Falling back to command line interface...")
         print("Use --help for command line options.")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"Error launching GUI: {e}")
-        sys.exit(1)
+        print("Falling back to command line interface...")
+        print("Use --help for command line options.")
 
 
 def _review_and_build_mapping(
