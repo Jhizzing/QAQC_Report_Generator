@@ -1,0 +1,5 @@
+dataset,samples,description
+realistic_assays.csv,31,Realistic gold assay data with good QAQC
+low_grade_assays.csv,16,Low-grade samples for ICP-MS testing
+problematic_assays.csv,14,Data with various QAQC issues
+combined_assays.csv,61,Combined dataset for comprehensive testing

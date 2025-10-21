@@ -3,7 +3,8 @@
 QAQC Analysis Automation Application - Main Entry Point
 
 This is the main entry point for the QAQC Analysis Automation application.
-It provides both command-line and GUI interfaces for analyzing drilling assay data.
+It provides comprehensive QAQC analysis including standards, blanks, duplicates,
+and CRM integration with professional reporting capabilities.
 """
 
 import sys
@@ -14,14 +15,16 @@ from typing import Optional, Dict, Tuple, List
 import json
 import platform
 import datetime as _dt
+import pandas as pd
 
 # Add src directory to Python path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from src.data import DataImporter, DataProcessor  # noqa: E402
-from src.analysis import QAQCAnalyzer  # noqa: E402
+from src.data.crm_manager import CRMManager  # noqa: E402
+from src.analysis import StandardsAnalyzer, BlanksAnalyzer, DuplicatesAnalyzer  # noqa: E402
 from src.visualization import PlotGenerator  # noqa: E402
-from src.reporting import ReportGenerator  # noqa: E402
+from src.reporting import ExcelReporter, PDFReporter  # noqa: E402
 
 try:
     import yaml  # type: ignore
@@ -45,17 +48,20 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Run with GUI interface
-  python main.py --gui
+  # Basic analysis with auto-mapping and CRM selection
+  python main.py --input input/assays.csv --output output --infer-mapping --normalize-results --yes --auto-crm --include-plots
 
-  # Process one file with mapping and normalization
-  python main.py --input input/assays.csv --output output --mapping mapping.yaml --normalize-results
+  # Full analysis with specific CRM
+  python main.py --input input/assays.csv --output output --crm-name "NIST SRM 2709a" --include-plots --output-format both
 
-  # Infer mapping then normalize (no mapping file yet)
-  python main.py --input input/assays.csv --output output --infer-mapping --normalize-results --yes
+  # Process directory with Excel output only
+  python main.py --input input/ --output output --infer-mapping --normalize-results --yes --output-format excel
 
-  # Process a directory of files
-  python main.py --input input/ --output output --infer-mapping --normalize-results --yes
+  # Skip specific analyses
+  python main.py --input input/assays.csv --output output --skip-standards --skip-duplicates
+
+  # Dry run to see what would be processed
+  python main.py --input input/assays.csv --output output --infer-mapping --normalize-results --yes --dry-run --verbose
         """
     )
 
@@ -142,6 +148,57 @@ Examples:
         help="Show actions without writing output files"
     )
 
+    # CRM and Analysis options
+    parser.add_argument(
+        "--crm-database",
+        type=str,
+        help="Path to CRM database YAML file (default: crm_database.yaml)"
+    )
+    parser.add_argument(
+        "--crm-name",
+        type=str,
+        help="Specific CRM to use for standards analysis (e.g., 'NIST SRM 2709a')"
+    )
+    parser.add_argument(
+        "--auto-crm",
+        action="store_true",
+        help="Automatically select appropriate CRM based on sample concentrations"
+    )
+    parser.add_argument(
+        "--skip-standards",
+        action="store_true",
+        help="Skip standards analysis"
+    )
+    parser.add_argument(
+        "--skip-blanks",
+        action="store_true",
+        help="Skip blanks analysis"
+    )
+    parser.add_argument(
+        "--skip-duplicates",
+        action="store_true",
+        help="Skip duplicates analysis"
+    )
+
+    # Output format options
+    parser.add_argument(
+        "--output-format",
+        choices=["excel", "pdf", "both"],
+        default="both",
+        help="Output format: excel, pdf, or both (default: both)"
+    )
+    parser.add_argument(
+        "--include-plots",
+        action="store_true",
+        help="Generate visualization plots"
+    )
+    parser.add_argument(
+        "--plot-format",
+        choices=["png", "pdf", "svg"],
+        default="png",
+        help="Plot file format (default: png)"
+    )
+
     parser.add_argument(
         "--gui", "-g",
         action="store_true",
@@ -157,7 +214,7 @@ Examples:
     parser.add_argument(
         "--version",
         action="version",
-        version="QAQC Analysis Automation v1.0.0"
+        version="QAQC Analysis Automation v2.0.0"
     )
 
     args = parser.parse_args()
@@ -323,12 +380,13 @@ def _write_provenance(
 
 
 def process_data(args) -> None:
-    """Process QAQC data from command line."""
+    """Process QAQC data with comprehensive analysis and reporting."""
     verbose = bool(args.verbose)
     input_path = Path(args.input)
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Load configuration
     config = load_config(args.config)
     default_dl = None
     try:
@@ -340,9 +398,25 @@ def process_data(args) -> None:
     except Exception:
         default_dl = None
 
+    # Initialize components
     importer = DataImporter()
+    crm_manager = CRMManager(args.crm_database) if args.crm_database else CRMManager()
 
-    # Collect inputs
+    # Initialize analyzers
+    standards_analyzer = StandardsAnalyzer()
+    blanks_analyzer = BlanksAnalyzer()
+    duplicates_analyzer = DuplicatesAnalyzer()
+    plot_generator = PlotGenerator()
+
+    # Initialize reporters
+    excel_reporter = ExcelReporter()
+    pdf_reporter = PDFReporter()
+
+    if verbose:
+        print("QAQC Analysis Automation v2.0.0")
+        print("=" * 50)
+
+    # Load and process data
     if input_path.is_dir():
         frames = importer.read_from_directory(
             input_path,
@@ -367,14 +441,21 @@ def process_data(args) -> None:
             })()
         ]
 
-    wrote_any = False
+    # Process each file
+    all_analysis_results = []
+    all_plots = {}
+
     for item in frames:
         df = item.dataframe
         src = Path(item.source_path)
         df_before_cols = list(df.columns)
         df_before_rows = len(df)
 
-        # Determine mapping (load or infer, with review)
+        if verbose:
+            print(f"\nProcessing: {src.name}")
+            print(f"  Rows: {df_before_rows}, Columns: {len(df_before_cols)}")
+
+        # Apply column mapping
         mapping_source = "none"
         mapping = _review_and_build_mapping(
             importer,
@@ -392,47 +473,24 @@ def process_data(args) -> None:
 
         if mapping:
             df = importer.apply_mapping(df, mapping)
-            # Save mapping if requested
             if args.save_mapping:
                 try:
                     importer.save_mapping_yaml(mapping, args.save_mapping)
                     if verbose:
-                        print(f"Saved mapping to {args.save_mapping}")
-                except Exception as e:  # noqa: BLE001
-                    print(f"Warning: failed to save mapping to {args.save_mapping}: {e}")
+                        print(f"  Saved mapping to {args.save_mapping}")
+                except Exception as e:
+                    print(f"  Warning: failed to save mapping: {e}")
 
-        # Validate required columns if mapping applied or already present
+        # Validate required columns
         required = ("sample_id", "sample_type", "result")
         missing = importer.validate_required({k: k if k in df.columns else None for k in required})
         if missing:
             print(f"Error: missing required columns after mapping: {missing}")
             print("Available columns:", ", ".join(df.columns))
-            # Show top-3 candidates for each missing field
-            suggestions = importer.suggest_mapping(list(df.columns), threshold=0.0)
-            for canonical in missing:
-                # Build scores for all headers
-                scores = []
-                for header, (hmatch, score) in suggestions.items():
-                    # suggestions is keyed by canonical; we want per-canonical header scores
-                    pass
-            # Recompute focused suggestions per missing canonical
-            for canonical in missing:
-                norm_headers = {importer.normalize_header(h): h for h in df.columns}
-                targets = {canonical} | set(SYNONYMS.get(canonical, ()))
-                targets_norm = [importer.normalize_header(t) for t in targets]
-                ranked = []
-                for nh_norm, original in norm_headers.items():
-                    import difflib as _d
-                    score = max(_d.SequenceMatcher(a=nh_norm, b=tg).ratio() for tg in targets_norm)
-                    ranked.append((score, original))
-                ranked.sort(reverse=True)
-                top = ", ".join(f"{h}({s:.2f})" for s, h in ranked[:3])
-                print(f"Suggested candidates for '{canonical}': {top}")
-            print("Provide a mapping file with --mapping or re-run with --infer-mapping and --yes after reviewing suggestions.")
             sys.exit(2)
 
-        used_per_row_dl = False
         # Normalize results if requested
+        used_per_row_dl = False
         if args.normalize_results:
             used_per_row_dl = "detection_limit" in df.columns
             df = importer.normalize_results(
@@ -443,17 +501,31 @@ def process_data(args) -> None:
                 default_dl=default_dl,
             )
 
-        # Write output CSV unless dry-run
+        # Perform QAQC analysis
+        analysis_results = perform_qaqc_analysis(
+            df, crm_manager, standards_analyzer, blanks_analyzer, duplicates_analyzer,
+            args, verbose
+        )
+
+        # Generate plots if requested
+        if args.include_plots:
+            plots = generate_plots(df, analysis_results, plot_generator, args, verbose)
+            all_plots.update(plots)
+
+        # Store results
+        all_analysis_results.append({
+            'file': src.name,
+            'results': analysis_results,
+            'data': df
+        })
+
+        # Write cleaned CSV
         out_name = f"{src.stem}_clean.csv"
         out_path = output_dir / out_name
-        if args.dry_run:
-            if verbose:
-                print(f"Dry run: would write {out_path}")
-        else:
+        if not args.dry_run:
             df.to_csv(out_path, index=False)
-            wrote_any = True
             if verbose:
-                print(f"Wrote {out_path}")
+                print(f"  Wrote cleaned data: {out_path}")
 
         # Write provenance
         _write_provenance(
@@ -474,9 +546,270 @@ def process_data(args) -> None:
             dry_run=bool(args.dry_run),
         )
 
-    if not wrote_any and not args.dry_run:
+    # Generate comprehensive reports
+    if all_analysis_results and not args.dry_run:
+        generate_reports(all_analysis_results, all_plots, excel_reporter, pdf_reporter,
+                        output_dir, args, verbose)
+
+    if verbose:
+        print(f"\nAnalysis complete! Results saved to: {output_dir}")
+
+
+def perform_qaqc_analysis(df, crm_manager, standards_analyzer, blanks_analyzer,
+                         duplicates_analyzer, args, verbose):
+    """Perform comprehensive QAQC analysis on the dataset."""
+    analysis_results = {}
+
+    if verbose:
+        print("  Performing QAQC analysis...")
+
+    # Standards analysis
+    if not args.skip_standards:
+        standards_data = prepare_standards_data(df, crm_manager, args, verbose)
+        if standards_data:
+            analysis_results['standards'] = standards_analyzer.analyze_standards(standards_data)
+            if verbose:
+                status = "PASS" if analysis_results['standards']['overall_acceptable'] else "FAIL"
+                print(f"    Standards Analysis: {status}")
+
+    # Blanks analysis
+    if not args.skip_blanks:
+        blanks_data = prepare_blanks_data(df, verbose)
+        if blanks_data:
+            analysis_results['blanks'] = blanks_analyzer.analyze_blanks(blanks_data)
+            if verbose:
+                status = "PASS" if analysis_results['blanks']['overall_acceptable'] else "FAIL"
+                print(f"    Blanks Analysis: {status}")
+
+    # Duplicates analysis
+    if not args.skip_duplicates:
+        duplicates_data = prepare_duplicates_data(df, verbose)
+        if duplicates_data:
+            analysis_results['duplicates'] = duplicates_analyzer.analyze_duplicates(duplicates_data)
+            if verbose:
+                status = "PASS" if analysis_results['duplicates']['overall_acceptable'] else "FAIL"
+                print(f"    Duplicates Analysis: {status}")
+
+    # Add summary information
+    analysis_results['total_samples'] = len(df)
+    analysis_results['analysis_date'] = _dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    return analysis_results
+
+
+def prepare_standards_data(df, crm_manager, args, verbose):
+    """Prepare data for standards analysis."""
+    # Filter standards samples
+    standards_df = df[df['sample_type'].str.upper() == 'STANDARD'].copy()
+    if len(standards_df) == 0:
         if verbose:
-            print("No files written. Check input path or filters.")
+            print("    No standards found in dataset")
+        return None
+
+    # Ensure result column is numeric
+    standards_df['result'] = pd.to_numeric(standards_df['result'], errors='coerce')
+
+    # Get CRM information
+    crm_name = None
+    if args.crm_name:
+        crm_name = args.crm_name
+    elif args.auto_crm:
+        # Auto-select CRM based on concentration
+        mean_conc = standards_df['result'].mean()
+        crm_name = select_appropriate_crm(crm_manager, mean_conc, verbose)
+
+    if not crm_name:
+        if verbose:
+            print("    No CRM specified for standards analysis")
+        return None
+
+    # Validate CRM selection
+    is_valid, message = crm_manager.validate_crm_selection(crm_name, standards_df['result'].mean())
+    if not is_valid:
+        if verbose:
+            print(f"    CRM validation failed: {message}")
+        return None
+
+    # Get CRM data
+    crm_info = crm_manager.get_crm_info(crm_name)
+    if not crm_info:
+        if verbose:
+            print(f"    CRM '{crm_name}' not found in database")
+        return None
+
+    if verbose:
+        print(f"    Using CRM: {crm_name} ({crm_info['certified_value']} ± {crm_info['uncertainty']} g/t)")
+
+    return {
+        'measured': standards_df['result'].tolist(),
+        'certified': crm_info['certified_value'],
+        'uncertainty': crm_info['uncertainty']
+    }
+
+
+def select_appropriate_crm(crm_manager, concentration, verbose):
+    """Select appropriate CRM based on concentration."""
+    # Find CRMs within 50-200% of concentration
+    min_conc = concentration * 0.5
+    max_conc = concentration * 2.0
+
+    suitable_crms = crm_manager.get_crms_by_concentration_range(min_conc, max_conc)
+    if not suitable_crms:
+        if verbose:
+            print(f"    No suitable CRMs found for concentration {concentration:.2f} g/t")
+        return None
+
+    # Select the CRM closest to the concentration
+    best_crm = min(suitable_crms, key=lambda x: abs(x['certified_value'] - concentration))
+    if verbose:
+        print(f"    Auto-selected CRM: {best_crm['name']} ({best_crm['certified_value']} g/t)")
+
+    return best_crm['name']
+
+
+def prepare_blanks_data(df, verbose):
+    """Prepare data for blanks analysis."""
+    blanks_df = df[df['sample_type'].str.upper() == 'BLANK'].copy()
+    if len(blanks_df) == 0:
+        if verbose:
+            print("    No blanks found in dataset")
+        return None
+
+    # Ensure result column is numeric
+    blanks_df['result'] = pd.to_numeric(blanks_df['result'], errors='coerce')
+
+    # Get previous samples for carry-over analysis
+    all_samples = df.sort_values('sample_id') if 'sample_id' in df.columns else df
+    previous_samples = all_samples[all_samples.index < blanks_df.index.min()]['result'].tolist()
+
+    return {
+        'blanks': blanks_df['result'].tolist(),
+        'previous_samples': previous_samples
+    }
+
+
+def prepare_duplicates_data(df, verbose):
+    """Prepare data for duplicates analysis."""
+    # Find duplicate pairs (same sample_id, different analysis)
+    if 'sample_id' not in df.columns:
+        if verbose:
+            print("    No sample_id column for duplicates analysis")
+        return None
+
+    # Ensure result column is numeric
+    df = df.copy()
+    df['result'] = pd.to_numeric(df['result'], errors='coerce')
+
+    duplicates = []
+    for sample_id in df['sample_id'].unique():
+        sample_data = df[df['sample_id'] == sample_id]
+        if len(sample_data) == 2:
+            values = sample_data['result'].tolist()
+            duplicates.append(values)
+
+    if not duplicates:
+        if verbose:
+            print("    No duplicate pairs found in dataset")
+        return None
+
+    return {'duplicates': duplicates}
+
+
+def generate_plots(df, analysis_results, plot_generator, args, verbose):
+    """Generate visualization plots."""
+    plots = {}
+
+    if verbose:
+        print("  Generating plots...")
+
+    # Ensure result column is numeric for plotting
+    df = df.copy()
+    df['result'] = pd.to_numeric(df['result'], errors='coerce')
+
+    # Standards control chart
+    if 'standards' in analysis_results:
+        standards_df = df[df['sample_type'].str.upper() == 'STANDARD']
+        if len(standards_df) > 0:
+            plot_data = plot_generator.create_control_chart(
+                standards_df['result'].tolist(),
+                title="Standards Control Chart"
+            )
+            plots['standards_control'] = plot_data
+
+    # Duplicates scatter plot
+    if 'duplicates' in analysis_results:
+        duplicates_data = prepare_duplicates_data(df, False)
+        if duplicates_data and duplicates_data['duplicates']:
+            x_data = [pair[0] for pair in duplicates_data['duplicates']]
+            y_data = [pair[1] for pair in duplicates_data['duplicates']]
+            plot_data = plot_generator.create_scatter_plot(
+                x_data, y_data, "Duplicates Scatter Plot"
+            )
+            plots['duplicates_scatter'] = plot_data
+
+    # Results histogram
+    if len(df) > 0:
+        plot_data = plot_generator.create_histogram(
+            df['result'].tolist(),
+            title="Results Distribution"
+        )
+        plots['results_histogram'] = plot_data
+
+    return plots
+
+
+def generate_reports(all_analysis_results, all_plots, excel_reporter, pdf_reporter,
+                    output_dir, args, verbose):
+    """Generate comprehensive reports."""
+    if verbose:
+        print("\nGenerating reports...")
+
+    # Combine all analysis results
+    combined_results = {
+        'standards': {},
+        'blanks': {},
+        'duplicates': {},
+        'total_samples': 0,
+        'analysis_date': _dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    }
+
+    # Aggregate results from all files
+    for file_result in all_analysis_results:
+        results = file_result['results']
+        combined_results['total_samples'] += results.get('total_samples', 0)
+
+        # Merge analysis results (take the last one for now)
+        for analysis_type in ['standards', 'blanks', 'duplicates']:
+            if analysis_type in results:
+                combined_results[analysis_type] = results[analysis_type]
+
+    # Generate Excel report
+    if args.output_format in ['excel', 'both']:
+        excel_filename = output_dir / f"qaqc_report_{_dt.datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        excel_reporter.generate_excel_report(combined_results, filename=str(excel_filename))
+        if verbose:
+            print(f"  Excel report: {excel_filename}")
+
+    # Generate PDF report
+    if args.output_format in ['pdf', 'both']:
+        pdf_filename = output_dir / f"qaqc_report_{_dt.datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        pdf_reporter.generate_pdf_report(combined_results, all_plots, filename=str(pdf_filename))
+        if verbose:
+            print(f"  PDF report: {pdf_filename}")
+
+    # Save plots
+    if all_plots and args.include_plots:
+        from src.visualization import PlotGenerator
+        plot_generator = PlotGenerator()
+
+        plots_dir = output_dir / "plots"
+        plots_dir.mkdir(exist_ok=True)
+
+        for plot_name, plot_data in all_plots.items():
+            plot_filename = plots_dir / f"{plot_name}.{args.plot_format}"
+            plot_generator.save_plot(plot_data, str(plot_filename), args.plot_format)
+            if verbose:
+                print(f"  Plot: {plot_filename}")
 
 
 if __name__ == "__main__":

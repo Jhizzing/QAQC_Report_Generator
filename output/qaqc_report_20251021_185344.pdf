@@ -1,0 +1,106 @@
+QAQC ANALYSIS REPORT
+==================================================
+Generated: 2025-10-21 18:53:44
+
+EXECUTIVE SUMMARY
+================
+
+Overall QAQC Status: FAIL
+Analysis Date: 2025-10-21 18:53:44
+Total Samples: 14
+
+STANDARDS ANALYSIS: FAIL
+- Bias Detection: YES
+- Recovery: 111.8%
+- Precision (RSD): 3.6%
+
+BLANKS ANALYSIS: FAIL
+- Contamination Rate: 0.0%
+- MDL: 0.086
+- Carry-over: DETECTED
+
+DUPLICATES ANALYSIS: FAIL
+- Mean RPD: 54.1%
+- Systematic Error: YES
+- Nugget Ratio: 0.598
+
+RECOMMENDATIONS:
+- Investigate and correct systematic bias in standards analysis
+- Review recovery procedures and calibration
+- Implement additional rinsing between samples
+- Improve duplicate precision through better homogenization
+- Investigate systematic errors in duplicate analysis
+- Consider spatial sampling strategy improvements
+
+
+STANDARDS
+=========
+
+BIAS ANALYSIS:
+- Bias Detected: YES
+- Systematic Bias: YES
+- Max Z-Score: 2.620
+- Mean Z-Score: 2.005
+
+RECOVERY ANALYSIS:
+- Recovery Acceptable: NO
+- Mean Recovery: 111.79%
+- Recovery Limits: (90, 110)
+
+PRECISION ANALYSIS:
+- Precision Acceptable: YES
+- RSD: 3.57%
+- CV: 0.036
+- Standard Deviation: 0.034
+
+
+BLANKS
+======
+
+CONTAMINATION ANALYSIS:
+- Contamination Acceptable: YES
+- Contamination Rate: 0.00%
+- MDL: 0.086
+- Threshold: 0.259
+
+CARRY-OVER ANALYSIS:
+- Carry-over Detected: YES
+- Trend: 0.025
+
+BACKGROUND ANALYSIS:
+- Background Acceptable: YES
+- Mean: 0.100
+- Standard Deviation: 0.044
+- CV: 43.97%
+
+
+DUPLICATES
+==========
+
+PRECISION ANALYSIS:
+- Precision Acceptable: NO
+- Mean RPD: 54.12%
+- Max RPD: 82.35%
+- Threshold: 20.00%
+
+SYSTEMATIC ERROR ANALYSIS:
+- Systematic Error: YES
+- Mean Bias: -0.541
+
+SPATIAL ANALYSIS:
+- Nugget Ratio: 0.598
+
+
+APPENDICES
+====================
+
+PLOTS:
+- standards_control: N/A
+- duplicates_scatter: N/A
+- results_histogram: N/A
+
+DATA SUMMARY:
+- Total Samples: 14
+- Standards: 4
+- Blanks: 4
+- Duplicates: 3

@@ -1,0 +1,47 @@
+{
+  "timestamp": "2025-10-21T10:53:38Z",
+  "appVersion": "1.0.0",
+  "python": "3.14.0",
+  "input": {
+    "path": "simple_test.csv",
+    "type": "csv",
+    "encoding": "utf-8",
+    "csvDelimiter": null,
+    "sheet": 0
+  },
+  "mapping": {
+    "source": "none",
+    "confidenceThreshold": 0.85,
+    "used": {}
+  },
+  "normalization": {
+    "enabled": false,
+    "defaultDetectionLimit": 0.001,
+    "usedPerRowDL": false,
+    "negativeValuesAsBelowDL": true,
+    "tokens": [
+      "ND",
+      "<DL",
+      ">DL"
+    ]
+  },
+  "output": {
+    "path": "output/simple_test_clean.csv",
+    "inputRows": 10,
+    "outputRows": 10,
+    "columns": [
+      "sample_id",
+      "sample_type",
+      "result",
+      "qualifier",
+      "detection_limit"
+    ],
+    "inputColumns": [
+      "sample_id",
+      "sample_type",
+      "result",
+      "qualifier",
+      "detection_limit"
+    ]
+  }
+}

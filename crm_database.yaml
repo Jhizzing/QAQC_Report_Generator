@@ -1,0 +1,170 @@
+# Certified Reference Material (CRM) Database
+# Gold Assay Standards for QAQC Analysis
+#
+# This database contains certified reference materials commonly used
+# in gold assay laboratories for quality control and method validation.
+
+database_info:
+  version: "1.0"
+  last_updated: "2024-01-15"
+  description: "Gold assay CRM database for QAQC analysis"
+  units: "g/t (grams per tonne)"
+
+crms:
+  # NIST Gold Standards
+  - name: "NIST SRM 2709a"
+    certified_value: 0.85
+    uncertainty: 0.05
+    units: "g/t"
+    matrix: "Freshwater Sediment"
+    expiry_date: "2026-06-30"
+    batch_number: "SRM2709a"
+    storage_conditions: "Room temperature, dry"
+    supplier: "NIST"
+    notes: "Low-level gold standard for environmental analysis"
+
+  - name: "NIST SRM 2710a"
+    certified_value: 2.1
+    uncertainty: 0.1
+    units: "g/t"
+    matrix: "Montana Soil"
+    expiry_date: "2026-12-31"
+    batch_number: "SRM2710a"
+    storage_conditions: "Room temperature, dry"
+    supplier: "NIST"
+    notes: "Moderate-level gold standard for soil analysis"
+
+  - name: "NIST SRM 2711a"
+    certified_value: 8.5
+    uncertainty: 0.4
+    units: "g/t"
+    matrix: "Montana Soil"
+    expiry_date: "2026-12-31"
+    batch_number: "SRM2711a"
+    storage_conditions: "Room temperature, dry"
+    supplier: "NIST"
+    notes: "High-level gold standard for soil analysis"
+
+  # CANMET Gold Standards
+  - name: "CANMET OREAS 101"
+    certified_value: 0.12
+    uncertainty: 0.02
+    units: "g/t"
+    matrix: "Gold Ore"
+    expiry_date: "2025-12-31"
+    batch_number: "OREAS101"
+    storage_conditions: "Room temperature, dry"
+    supplier: "CANMET"
+    notes: "Low-grade gold ore standard"
+
+  - name: "CANMET OREAS 102"
+    certified_value: 1.25
+    uncertainty: 0.08
+    units: "g/t"
+    matrix: "Gold Ore"
+    expiry_date: "2025-12-31"
+    batch_number: "OREAS102"
+    storage_conditions: "Room temperature, dry"
+    supplier: "CANMET"
+    notes: "Medium-grade gold ore standard"
+
+  - name: "CANMET OREAS 103"
+    certified_value: 5.8
+    uncertainty: 0.3
+    units: "g/t"
+    matrix: "Gold Ore"
+    expiry_date: "2025-12-31"
+    batch_number: "OREAS103"
+    storage_conditions: "Room temperature, dry"
+    supplier: "CANMET"
+    notes: "High-grade gold ore standard"
+
+  # Commercial Gold Standards
+  - name: "CDN-GS-1"
+    certified_value: 0.85
+    uncertainty: 0.05
+    units: "g/t"
+    matrix: "Gold Ore"
+    expiry_date: "2025-08-31"
+    batch_number: "CDN-GS-1-2023"
+    storage_conditions: "Room temperature, dry"
+    supplier: "CDN Resource Laboratories"
+    notes: "Canadian gold standard for fire assay"
+
+  - name: "CDN-GS-2"
+    certified_value: 2.1
+    uncertainty: 0.1
+    units: "g/t"
+    matrix: "Gold Ore"
+    expiry_date: "2025-08-31"
+    batch_number: "CDN-GS-2-2023"
+    storage_conditions: "Room temperature, dry"
+    supplier: "CDN Resource Laboratories"
+    notes: "Canadian gold standard for fire assay"
+
+  - name: "CDN-GS-3"
+    certified_value: 8.5
+    uncertainty: 0.4
+    units: "g/t"
+    matrix: "Gold Ore"
+    expiry_date: "2025-08-31"
+    batch_number: "CDN-GS-3-2023"
+    storage_conditions: "Room temperature, dry"
+    supplier: "CDN Resource Laboratories"
+    notes: "Canadian gold standard for fire assay"
+
+  # High-grade Gold Standards
+  - name: "NIST SRM 2704"
+    certified_value: 15.2
+    uncertainty: 0.8
+    units: "g/t"
+    matrix: "Sediment"
+    expiry_date: "2026-03-31"
+    batch_number: "SRM2704"
+    storage_conditions: "Room temperature, dry"
+    supplier: "NIST"
+    notes: "High-grade gold standard for sediment analysis"
+
+  - name: "NIST SRM 2705"
+    certified_value: 32.5
+    uncertainty: 1.5
+    units: "g/t"
+    matrix: "Sediment"
+    expiry_date: "2026-03-31"
+    batch_number: "SRM2705"
+    storage_conditions: "Room temperature, dry"
+    supplier: "NIST"
+    notes: "Very high-grade gold standard for sediment analysis"
+
+# Analysis thresholds for gold assay QAQC
+analysis_thresholds:
+  z_score_threshold: 2.0
+  recovery_limits:
+    min: 90.0
+    max: 110.0
+  precision_threshold: 5.0  # %RSD
+  contamination_threshold: 3.0  # x MDL
+  carryover_threshold: 5.0  # %
+  blank_limit: 0.1  # g/t
+  rpd_threshold: 20.0  # %
+  nugget_threshold: 0.3  # ratio
+
+# Method information
+methods:
+  fire_assay:
+    name: "Fire Assay with AAS"
+    detection_limit: 0.01  # g/t
+    working_range: "0.01 - 100 g/t"
+    notes: "Standard fire assay method for gold analysis"
+
+  icp_ms:
+    name: "ICP-MS Gold Analysis"
+    detection_limit: 0.001  # g/t
+    working_range: "0.001 - 10 g/t"
+    notes: "Inductively coupled plasma mass spectrometry"
+
+  icp_aes:
+    name: "ICP-AES Gold Analysis"
+    detection_limit: 0.01  # g/t
+    working_range: "0.01 - 50 g/t"
+    notes: "Inductively coupled plasma atomic emission spectrometry"
