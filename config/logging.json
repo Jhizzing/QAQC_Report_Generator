@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "formatters": {
+    "detailed": {
+      "format": "%(asctime)s [%(levelname)s] %(name)s:%(lineno)d: %(message)s",
+      "datefmt": "%Y-%m-%d %H:%M:%S"
+    },
+    "simple": {
+      "format": "%(levelname)s: %(message)s"
+    },
+    "json": {
+      "format": "{\"timestamp\": \"%(asctime)s\", \"level\": \"%(levelname)s\", \"logger\": \"%(name)s\", \"message\": \"%(message)s\"}",
+      "datefmt": "%Y-%m-%d %H:%M:%S"
+    }
+  },
+  "handlers": {
+    "console": {
+      "level": "INFO",
+      "formatter": "simple",
+      "class": "logging.StreamHandler",
+      "stream": "ext://sys.stdout"
+    },
+    "file": {
+      "level": "DEBUG",
+      "formatter": "detailed",
+      "class": "logging.handlers.RotatingFileHandler",
+      "filename": "logs/qaqc.log",
+      "maxBytes": 10485760,
+      "backupCount": 5
+    },
+    "error_file": {
+      "level": "ERROR",
+      "formatter": "detailed",
+      "class": "logging.handlers.RotatingFileHandler",
+      "filename": "logs/errors.log",
+      "maxBytes": 10485760,
+      "backupCount": 5
+    },
+    "performance": {
+      "level": "INFO",
+      "formatter": "json",
+      "class": "logging.handlers.RotatingFileHandler",
+      "filename": "logs/performance.log",
+      "maxBytes": 10485760,
+      "backupCount": 10
+    }
+  },
+  "loggers": {
+    "qaqc": {
+      "handlers": [
+        "console",
+        "file",
+        "error_file"
+      ],
+      "level": "DEBUG",
+      "propagate": false
+    },
+    "qaqc.performance": {
+      "handlers": [
+        "performance"
+      ],
+      "level": "INFO",
+      "propagate": false
+    },
+    "qaqc.analysis": {
+      "handlers": [
+        "file"
+      ],
+      "level": "INFO",
+      "propagate": false
+    }
+  },
+  "root": {
+    "handlers": [
+      "console",
+      "file"
+    ],
+    "level": "INFO"
+  }
+}

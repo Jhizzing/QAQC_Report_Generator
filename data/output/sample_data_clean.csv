@@ -1,0 +1,11 @@
+sample_id,sample_type,result,qualifier,detection_limit,lab_batch,analysis_date,analyst,method
+STD-001,STANDARD,0.85,,0.01,BATCH-001,2025-10-21,Analyst A,Fire Assay
+STD-002,STANDARD,0.87,,0.01,BATCH-001,2025-10-21,Analyst A,Fire Assay
+STD-003,STANDARD,0.83,,0.01,BATCH-001,2025-10-21,Analyst A,Fire Assay
+BLK-001,BLANK,0.01,,0.01,BATCH-001,2025-10-21,Analyst A,Fire Assay
+BLK-002,BLANK,0.02,,0.01,BATCH-001,2025-10-21,Analyst A,Fire Assay
+DUP-001,DUPLICATE,1.25,,0.01,BATCH-001,2025-10-21,Analyst A,Fire Assay
+DUP-001,DUPLICATE,1.28,,0.01,BATCH-001,2025-10-21,Analyst A,Fire Assay
+SMP-001,SAMPLE,1.5,,0.01,BATCH-001,2025-10-21,Analyst A,Fire Assay
+SMP-002,SAMPLE,2.1,,0.01,BATCH-001,2025-10-21,Analyst A,Fire Assay
+SMP-003,SAMPLE,0.005,<DL,0.01,BATCH-001,2025-10-21,Analyst A,Fire Assay

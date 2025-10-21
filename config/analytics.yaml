@@ -1,0 +1,19 @@
+analytics:
+  enabled: true
+  privacy:
+    anonymize_data: true
+    retention_days: 90
+  reports:
+    daily_summary: true
+    monthly_analysis: true
+    weekly_report: true
+  tracking:
+    error_patterns: true
+    feature_usage: true
+    performance_metrics: true
+    usage_frequency: true
+data_collection:
+  error_events: true
+  performance_data: true
+  system_metrics: true
+  user_actions: true

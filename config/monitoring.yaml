@@ -1,0 +1,31 @@
+monitoring:
+  alerts:
+    email:
+      enabled: false
+      recipients: []
+    log:
+      enabled: true
+      level: WARNING
+  enabled: true
+  metrics:
+    error_rate:
+      enabled: true
+      threshold_percent: 5
+    file_size:
+      enabled: true
+      threshold_mb: 100
+    memory_usage:
+      enabled: true
+      threshold_mb: 1000
+    processing_time:
+      enabled: true
+      threshold_seconds: 300
+performance:
+  metrics:
+    analysis_time: true
+    data_processing: true
+    report_generation: true
+    visualization_time: true
+  tracking:
+    enabled: true
+    sample_rate: 1.0
