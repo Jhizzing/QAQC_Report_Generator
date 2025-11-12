@@ -17,6 +17,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QThread
 from PyQt6.QtGui import QFont
 
 from ..styles.geological_theme import GeologicalTheme
+from .green_checkbox import GreenCheckBox
 
 
 class AnalysisType(Enum):
@@ -139,18 +140,18 @@ class AnalysisPanel(QWidget):
         self.config_group = QGroupBox("Analysis Configuration")
         config_layout = QVBoxLayout(self.config_group)
 
-        # Analysis type checkboxes
-        self.standards_check = QCheckBox("Standards Analysis")
+        # Analysis type checkboxes (using custom green checkboxes with visible ticks)
+        self.standards_check = GreenCheckBox("Standards Analysis")
         self.standards_check.setChecked(True)
         self.standards_check.setStyleSheet("font-weight: bold; color: #2E5266;")
         config_layout.addWidget(self.standards_check)
 
-        self.blanks_check = QCheckBox("Blanks Analysis")
+        self.blanks_check = GreenCheckBox("Blanks Analysis")
         self.blanks_check.setChecked(True)
         self.blanks_check.setStyleSheet("font-weight: bold; color: #2E5266;")
         config_layout.addWidget(self.blanks_check)
 
-        self.duplicates_check = QCheckBox("Duplicates Analysis")
+        self.duplicates_check = GreenCheckBox("Duplicates Analysis")
         self.duplicates_check.setChecked(True)
         self.duplicates_check.setStyleSheet("font-weight: bold; color: #2E5266;")
         config_layout.addWidget(self.duplicates_check)

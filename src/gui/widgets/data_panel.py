@@ -7,6 +7,7 @@ QAQC Analysis Application. Designed for geologists working with assay data.
 
 from typing import Optional, Dict, Any, List
 from pathlib import Path
+import pandas as pd
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
@@ -17,6 +18,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QThread
 from PyQt6.QtGui import QFont
 
 from ..styles.geological_theme import GeologicalTheme
+from ...data.importer import DataImporter
 
 
 class DataImportThread(QThread):
@@ -38,33 +40,67 @@ class DataImportThread(QThread):
                 self.error_occurred.emit("No valid file selected")
                 return
 
-            # TODO: Implement actual data import using DataImporter
-            # This is a placeholder for now
+            self.progress_updated.emit(10)
+            self.msleep(50)
 
-            # Simulate progress
-            for i in range(101):
-                self.progress_updated.emit(i)
-                self.msleep(20)  # Simulate processing time
+            # Initialize data importer
+            importer = DataImporter()
 
-            # Simulate data structure
+            self.progress_updated.emit(30)
+            self.msleep(50)
+
+            # Read the file
+            df = importer.read_table(self.file_path)
+
+            self.progress_updated.emit(60)
+            self.msleep(50)
+
+            # Get column mapping suggestions
+            suggestions = importer.suggest_mapping(df.columns.tolist())
+
+            # Build mapping dictionary (use suggested mappings with confidence > 0.8)
+            auto_mapping = {}
+            for canonical, (header, confidence) in suggestions.items():
+                if header and confidence >= 0.8:
+                    auto_mapping[canonical] = header
+
+            self.progress_updated.emit(80)
+            self.msleep(50)
+
+            # Prepare data preview (first 10 rows)
+            preview_rows = min(10, len(df))
+            data_preview = []
+            for idx in range(preview_rows):
+                row_data = []
+                for col in df.columns:
+                    value = df.iloc[idx][col]
+                    # Convert to string, handle NaN
+                    if pd.isna(value):
+                        row_data.append("")
+                    else:
+                        row_data.append(str(value))
+                data_preview.append(row_data)
+
+            # Prepare data info structure (ONLY pass lightweight metadata through signal)
+            # The DataFrame will be re-read in the main thread to avoid all threading issues
             data_info = {
                 'file_path': self.file_path,
                 'file_name': Path(self.file_path).name,
-                'sample_count': 1250,
-                'columns': ['sample_id', 'sample_type', 'result', 'qualifier', 'detection_limit'],
-                'data_preview': [
-                    ['STD-001', 'STANDARD', '0.85', '', '0.01'],
-                    ['STD-002', 'STANDARD', '0.87', '', '0.01'],
-                    ['BLK-001', 'BLANK', '0.01', '', '0.01'],
-                    ['DUP-001', 'DUPLICATE', '1.25', '', '0.01'],
-                    ['SMP-001', 'SAMPLE', '1.5', '', '0.01']
-                ]
+                'sample_count': len(df),
+                'columns': df.columns.tolist(),
+                'data_preview': data_preview,
+                'suggested_mapping': auto_mapping,
+                'all_suggestions': suggestions
+                # NOTE: DataFrame is NOT passed through signal - will be re-read in main thread
             }
 
+            self.progress_updated.emit(100)
             self.data_loaded.emit(data_info)
 
         except Exception as e:
-            self.error_occurred.emit(str(e))
+            import traceback
+            error_msg = f"Import error: {str(e)}\n{traceback.format_exc()}"
+            self.error_occurred.emit(error_msg)
 
 
 class DataPanel(QWidget):
@@ -131,6 +167,46 @@ class DataPanel(QWidget):
         self.data_table = QTableWidget()
         self.data_table.setMaximumHeight(200)
         self.data_table.setAlternatingRowColors(True)
+        self.data_table.setShowGrid(True)
+        self.data_table.setGridStyle(Qt.PenStyle.SolidLine)
+        self.data_table.verticalHeader().setVisible(False)  # Hide row numbers
+        self.data_table.horizontalHeader().setStretchLastSection(True)
+        self.data_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        # Increase row height for better readability
+        self.data_table.verticalHeader().setDefaultSectionSize(32)
+        # Initially set to 0 rows/columns to avoid dark squares
+        self.data_table.setRowCount(0)
+        self.data_table.setColumnCount(0)
+        # Style empty cells to be invisible and clean appearance with subtle selection
+        self.data_table.setStyleSheet("""
+            QTableWidget {
+                background-color: #FFFFFF;
+                gridline-color: #E9ECEF;
+                border: 1px solid #DEE2E6;
+            }
+            QTableWidget::item:empty {
+                background-color: transparent;
+                border: none;
+            }
+            QTableWidget::item {
+                padding: 6px 8px;
+                background-color: #FFFFFF;
+            }
+            QTableWidget::item:alternate {
+                background-color: #F8F9FA;
+            }
+            QTableWidget::item:selected {
+                background-color: #E3F2FD;
+                color: #1A1A1A;
+            }
+            QTableWidget::item:hover {
+                background-color: #E9ECEF;
+            }
+            QTableWidget::item:selected:hover {
+                background-color: #D1E7F0;
+                color: #1A1A1A;
+            }
+        """)
         preview_layout.addWidget(self.data_table)
 
         layout.addWidget(self.preview_group)
@@ -144,6 +220,45 @@ class DataPanel(QWidget):
         self.mapping_table.setColumnCount(2)
         self.mapping_table.setHorizontalHeaderLabels(["Required Field", "Mapped Column"])
         self.mapping_table.setMaximumHeight(150)
+        self.mapping_table.setShowGrid(True)
+        self.mapping_table.setGridStyle(Qt.PenStyle.SolidLine)
+        self.mapping_table.verticalHeader().setVisible(False)  # Hide row numbers
+        self.mapping_table.horizontalHeader().setStretchLastSection(True)
+        self.mapping_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        # Increase row height for better readability (especially for dropdowns)
+        self.mapping_table.verticalHeader().setDefaultSectionSize(36)
+        # Initially set to 0 rows to avoid dark squares
+        self.mapping_table.setRowCount(0)
+        # Style empty cells to be invisible and clean appearance with subtle selection
+        self.mapping_table.setStyleSheet("""
+            QTableWidget {
+                background-color: #FFFFFF;
+                gridline-color: #E9ECEF;
+                border: 1px solid #DEE2E6;
+            }
+            QTableWidget::item:empty {
+                background-color: transparent;
+                border: none;
+            }
+            QTableWidget::item {
+                padding: 6px 8px;
+                background-color: #FFFFFF;
+            }
+            QTableWidget::item:alternate {
+                background-color: #F8F9FA;
+            }
+            QTableWidget::item:selected {
+                background-color: #E3F2FD;
+                color: #1A1A1A;
+            }
+            QTableWidget::item:hover {
+                background-color: #E9ECEF;
+            }
+            QTableWidget::item:selected:hover {
+                background-color: #D1E7F0;
+                color: #1A1A1A;
+            }
+        """)
         mapping_layout.addWidget(self.mapping_table)
 
         # Auto-map button
@@ -212,17 +327,94 @@ class DataPanel(QWidget):
         """Load data from file."""
         self.status_label.setText("Loading data...")
         self.progress_bar.setVisible(True)
+        self.progress_bar.setValue(0)
         self.import_button.setEnabled(False)
 
-        # Start import thread
-        self.import_thread = DataImportThread(file_path)
-        self.import_thread.data_loaded.connect(self.on_data_loaded)
-        self.import_thread.progress_updated.connect(self.progress_bar.setValue)
-        self.import_thread.error_occurred.connect(self.on_import_error)
-        self.import_thread.start()
+        # Process in main thread to avoid PyQt6 threading crashes
+        # Use QApplication.processEvents() to keep UI responsive
+        try:
+            from PyQt6.QtWidgets import QApplication
+            app = QApplication.instance()
+
+            # Validate file
+            if not file_path or not Path(file_path).exists():
+                self.on_import_error("No valid file selected")
+                return
+
+            app.processEvents()  # Keep UI responsive
+            self.progress_bar.setValue(10)
+
+            # Initialize data importer
+            importer = DataImporter()
+            app.processEvents()
+            self.progress_bar.setValue(30)
+
+            # Read the file
+            df = importer.read_table(file_path)
+            app.processEvents()
+            self.progress_bar.setValue(60)
+
+            # Get column mapping suggestions
+            suggestions = importer.suggest_mapping(df.columns.tolist())
+
+            # Build mapping dictionary
+            auto_mapping = {}
+            for canonical, (header, confidence) in suggestions.items():
+                if header and confidence >= 0.8:
+                    auto_mapping[canonical] = header
+
+            app.processEvents()
+            self.progress_bar.setValue(80)
+
+            # Prepare data preview (first 10 rows)
+            preview_rows = min(10, len(df))
+            data_preview = []
+            for idx in range(preview_rows):
+                row_data = []
+                for col in df.columns:
+                    value = df.iloc[idx][col]
+                    if pd.isna(value):
+                        row_data.append("")
+                    else:
+                        row_data.append(str(value))
+                data_preview.append(row_data)
+
+            app.processEvents()
+            self.progress_bar.setValue(100)
+
+            # Prepare data info structure
+            data_info = {
+                'file_path': file_path,
+                'file_name': Path(file_path).name,
+                'sample_count': len(df),
+                'columns': df.columns.tolist(),
+                'data_preview': data_preview,
+                'dataframe': df,  # Safe to include now - we're in main thread
+                'suggested_mapping': auto_mapping,
+                'all_suggestions': suggestions
+            }
+
+            # Call handler directly (no signal needed)
+            self.on_data_loaded(data_info)
+
+        except Exception as e:
+            import traceback
+            error_msg = f"Import error: {str(e)}\n{traceback.format_exc()}"
+            self.on_import_error(error_msg)
 
     def on_data_loaded(self, data_info: Dict[str, Any]):
         """Handle data loaded signal."""
+        # Re-read the file in the main thread (safest approach - avoids all threading issues)
+        # This is slightly less efficient but completely thread-safe
+        try:
+            importer = DataImporter()
+            df = importer.read_table(data_info['file_path'])
+            data_info['dataframe'] = df
+        except Exception as e:
+            QMessageBox.critical(self, "Data Error",
+                               f"Failed to load DataFrame in main thread:\n{str(e)}")
+            return
+
         self.current_data = data_info
 
         # Update file information
@@ -235,8 +427,9 @@ class DataPanel(QWidget):
         # Update data preview
         self.update_data_preview(data_info)
 
-        # Update column mapping
-        self.setup_column_mapping(data_info['columns'])
+        # Update column mapping with suggested mappings
+        suggested_mapping = data_info.get('suggested_mapping', {})
+        self.setup_column_mapping(data_info['columns'], suggested_mapping)
 
         # Enable controls
         self.auto_map_button.setEnabled(True)
@@ -273,15 +466,23 @@ class DataPanel(QWidget):
         self.data_table.setHorizontalHeaderLabels(columns)
 
         for row, row_data in enumerate(preview_data):
-            for col, cell_data in enumerate(row_data):
-                item = QTableWidgetItem(str(cell_data))
+            for col in range(len(columns)):
+                if col < len(row_data):
+                    cell_data = row_data[col]
+                    item = QTableWidgetItem(str(cell_data) if cell_data else "")
+                else:
+                    item = QTableWidgetItem("")
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.data_table.setItem(row, col, item)
 
-        # Resize columns to content
+        # Resize columns to content with minimum width
         self.data_table.resizeColumnsToContents()
+        # Set minimum column widths to prevent squishing
+        for col in range(len(columns)):
+            current_width = self.data_table.columnWidth(col)
+            self.data_table.setColumnWidth(col, max(current_width, 80))
 
-    def setup_column_mapping(self, columns: List[str]):
+    def setup_column_mapping(self, columns: List[str], suggested_mapping: Optional[Dict[str, str]] = None):
         """Setup column mapping interface."""
         if not columns:
             # Clear mapping table if no columns
@@ -309,12 +510,19 @@ class DataPanel(QWidget):
             combo.addItem("-- Select Column --")
             combo.addItems(columns)
 
-            # Auto-detect if possible
-            field_lower = field.lower()
-            for i, col in enumerate(columns):
-                if field_lower in col.lower() or col.lower() in field_lower:
-                    combo.setCurrentIndex(i + 1)
-                    break
+            # Use suggested mapping if available
+            if suggested_mapping and field in suggested_mapping:
+                mapped_col = suggested_mapping[field]
+                if mapped_col in columns:
+                    idx = columns.index(mapped_col)
+                    combo.setCurrentIndex(idx + 1)
+            else:
+                # Fallback: Auto-detect if possible
+                field_lower = field.lower()
+                for i, col in enumerate(columns):
+                    if field_lower in col.lower() or col.lower() in field_lower:
+                        combo.setCurrentIndex(i + 1)
+                        break
 
             self.mapping_table.setCellWidget(row, 1, combo)
             combo.currentTextChanged.connect(self.on_mapping_changed)
@@ -323,14 +531,40 @@ class DataPanel(QWidget):
         self.mapping_table.resizeColumnsToContents()
 
     def auto_detect_mapping(self):
-        """Auto-detect column mapping."""
-        # TODO: Implement intelligent column mapping
-        # This would use the existing DataImporter functionality
+        """Auto-detect column mapping using DataImporter suggestions."""
+        if not self.current_data or 'columns' not in self.current_data:
+            QMessageBox.warning(self, "No Data", "Please import data first.")
+            return
+
+        columns = self.current_data['columns']
+        importer = DataImporter()
+        suggestions = importer.suggest_mapping(columns)
+
+        # Apply high-confidence mappings automatically
+        applied_count = 0
+        for row in range(self.mapping_table.rowCount()):
+            field_item = self.mapping_table.item(row, 0)
+            if not field_item:
+                continue
+
+            field = field_item.text().lower().replace(' ', '_')
+            combo = self.mapping_table.cellWidget(row, 1)
+            if not combo:
+                continue
+
+            if field in suggestions:
+                suggested_col, confidence = suggestions[field]
+                if suggested_col and confidence >= 0.8:
+                    if suggested_col in columns:
+                        idx = columns.index(suggested_col)
+                        combo.setCurrentIndex(idx + 1)
+                        applied_count += 1
 
         QMessageBox.information(
             self,
-            "Auto-Mapping",
-            "Auto-mapping functionality will be implemented with the DataImporter integration."
+            "Auto-Mapping Complete",
+            f"Applied {applied_count} column mappings with high confidence (≥80%).\n"
+            "Please review and adjust any remaining mappings manually."
         )
 
     def on_mapping_changed(self):
@@ -371,7 +605,9 @@ class DataPanel(QWidget):
 
         self.file_path_label.setText("No file selected")
         self.file_stats_label.setText("")
+        # Clear tables completely to avoid dark squares
         self.data_table.setRowCount(0)
+        self.data_table.setColumnCount(0)
         self.mapping_table.setRowCount(0)
         self.crm_combo.setCurrentIndex(0)
         self.crm_info_label.setText("")

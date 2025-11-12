@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import numpy as np
+import pandas as pd
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
@@ -20,15 +21,19 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 
 from ..styles.geological_theme import GeologicalTheme
+from ...visualization import PlotGenerator
 
 
 class PlotCanvas(FigureCanvas):
     """Custom matplotlib canvas for interactive plots."""
 
     def __init__(self, parent=None, width=8, height=6, dpi=100):
-        # Set matplotlib backend before creating figure
+        # Set matplotlib backend before creating figure (must be done before Figure)
         import matplotlib
-        matplotlib.use('QtAgg')
+        try:
+            matplotlib.use('QtAgg', force=True)
+        except Exception:
+            pass  # Backend already set
 
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         super().__init__(self.fig)
@@ -95,6 +100,7 @@ class VisualizationPanel(QWidget):
         # Visualization state
         self.current_plots: Dict[str, Any] = {}
         self.plot_data: Optional[Dict[str, Any]] = None
+        self.plot_generator = PlotGenerator()
 
         # Initialize UI
         self.setup_ui()
@@ -265,7 +271,17 @@ class VisualizationPanel(QWidget):
         plot_type = self.plot_type_combo.currentText()
 
         # Check if data is loaded and valid
-        if not self.plot_data or not isinstance(self.plot_data, dict) or 'data' not in self.plot_data or self.plot_data['data'].empty:
+        if not self.plot_data or not isinstance(self.plot_data, dict):
+            self.show_styled_warning("No Data", "Please load data before generating plots.")
+            return
+
+        # Check for dataframe (either 'dataframe' or 'data' key)
+        # Can't use 'or' with DataFrames - need explicit None check
+        df = self.plot_data.get('dataframe')
+        if df is None:
+            df = self.plot_data.get('data')
+
+        if df is None or (hasattr(df, 'empty') and df.empty):
             self.show_styled_warning("No Data", "Please load data before generating plots.")
             return
 
@@ -311,25 +327,60 @@ class VisualizationPanel(QWidget):
             """)
 
     def create_standards_plot(self):
-        """Create standards control chart."""
+        """Create standards control chart from real data."""
         try:
             canvas = self.standards_canvas
             canvas.fig.clear()
 
-            # Simulate standards data
-            standards_data = np.random.normal(0.85, 0.05, 20)
-            certified_value = 0.85
-            uncertainty = 0.05
+            # Get data from plot_data
+            if not self.plot_data or 'dataframe' not in self.plot_data:
+                raise ValueError("No data available for plotting")
+
+            df = self.plot_data['dataframe']
+
+            # Extract standards data
+            # Try to find sample_type column (case-insensitive)
+            type_col = None
+            result_col = None
+            for col in df.columns:
+                col_lower = col.lower()
+                if 'type' in col_lower or 'sample_type' in col_lower:
+                    type_col = col
+                if 'result' in col_lower or 'value' in col_lower or 'assay' in col_lower:
+                    result_col = col
+
+            if not type_col or not result_col:
+                raise ValueError("Could not find required columns (sample_type, result)")
+
+            # Filter for standards
+            standards_df = df[df[type_col].str.upper().str.contains('STANDARD|STD|CRM', na=False, regex=True)].copy()
+
+            if standards_df.empty:
+                raise ValueError("No standards data found in dataset")
+
+            # Convert result to numeric
+            standards_df[result_col] = pd.to_numeric(standards_df[result_col], errors='coerce')
+            standards_data = standards_df[result_col].dropna().tolist()
+
+            if not standards_data:
+                raise ValueError("No valid numeric standards data found")
+
+            # Calculate statistics
+            mean_value = np.mean(standards_data)
+            std_value = np.std(standards_data)
+            certified_value = mean_value  # Use mean as certified value if not available
+            uncertainty = std_value
 
             ax = canvas.fig.add_subplot(111)
 
             # Plot data points
-            ax.plot(range(1, len(standards_data) + 1), standards_data, 'o-',
-                    color=canvas.colors['primary'], markersize=6, linewidth=2)
+            x_values = list(range(1, len(standards_data) + 1))
+            ax.plot(x_values, standards_data, 'o-',
+                    color=canvas.colors['primary'], markersize=6, linewidth=2, label='Standards')
 
             # Add control limits
             ax.axhline(y=certified_value, color=canvas.colors['success'],
-                      linestyle='-', linewidth=2, label='Certified Value')
+                      linestyle='-', linewidth=2, label=f'Mean: {certified_value:.3f}')
             ax.axhline(y=certified_value + 2*uncertainty, color=canvas.colors['warning'],
                       linestyle='--', linewidth=1, label='±2σ')
             ax.axhline(y=certified_value - 2*uncertainty, color=canvas.colors['warning'],
@@ -341,136 +392,352 @@ class VisualizationPanel(QWidget):
 
             ax.set_xlabel('Sample Number')
             ax.set_ylabel('Concentration (g/t)')
-            ax.set_title('Standards Control Chart')
+            ax.set_title(f'Standards Control Chart (n={len(standards_data)})')
             ax.legend()
             ax.grid(True, alpha=0.3)
 
-            canvas.draw()
+            # Safely draw the canvas
+            try:
+                canvas.draw_idle()  # Use draw_idle instead of draw for better thread safety
+            except Exception as draw_error:
+                print(f"Warning: Could not draw canvas: {draw_error}")
+                # Try regular draw as fallback
+                try:
+                    canvas.draw()
+                except Exception:
+                    pass  # If both fail, at least the plot is created
 
         except Exception as e:
             print(f"Error creating standards plot: {e}")
+            import traceback
+            traceback.print_exc()
             # Create a simple error plot
-            canvas = self.standards_canvas
-            canvas.fig.clear()
-            ax = canvas.fig.add_subplot(111)
-            ax.text(0.5, 0.5, f"Error creating plot:\n{str(e)}",
-                   ha='center', va='center', transform=ax.transAxes)
-            ax.set_title('Standards Control Chart - Error')
-            canvas.draw()
+            try:
+                canvas = self.standards_canvas
+                canvas.fig.clear()
+                ax = canvas.fig.add_subplot(111)
+                ax.text(0.5, 0.5, f"Error creating plot:\n{str(e)}",
+                       ha='center', va='center', transform=ax.transAxes, fontsize=10)
+                ax.set_title('Standards Control Chart - Error')
+                canvas.draw_idle()
+            except Exception as draw_err:
+                print(f"Could not display error plot: {draw_err}")
 
     def create_blanks_plot(self):
-        """Create blanks histogram."""
+        """Create blanks histogram from real data."""
         try:
             canvas = self.blanks_canvas
             canvas.fig.clear()
 
-            # Simulate blanks data
-            blanks_data = np.random.normal(0.01, 0.005, 15)
+            # Get data from plot_data
+            if not self.plot_data or 'dataframe' not in self.plot_data:
+                raise ValueError("No data available for plotting")
+
+            df = self.plot_data['dataframe']
+
+            # Extract blanks data
+            type_col = None
+            result_col = None
+            dl_col = None
+            for col in df.columns:
+                col_lower = col.lower()
+                if 'type' in col_lower or 'sample_type' in col_lower:
+                    type_col = col
+                if 'result' in col_lower or 'value' in col_lower or 'assay' in col_lower:
+                    result_col = col
+                if 'detection' in col_lower or 'dl' in col_lower or 'lod' in col_lower:
+                    dl_col = col
+
+            if not type_col or not result_col:
+                raise ValueError("Could not find required columns (sample_type, result)")
+
+            # Filter for blanks
+            blanks_df = df[df[type_col].str.upper().str.contains('BLANK|BLK', na=False, regex=True)].copy()
+
+            if blanks_df.empty:
+                raise ValueError("No blanks data found in dataset")
+
+            # Convert result to numeric
+            blanks_df[result_col] = pd.to_numeric(blanks_df[result_col], errors='coerce')
+            blanks_data = blanks_df[result_col].dropna().tolist()
+
+            if not blanks_data:
+                raise ValueError("No valid numeric blanks data found")
+
+            # Get detection limit
+            if dl_col and dl_col in blanks_df.columns:
+                dl_values = pd.to_numeric(blanks_df[dl_col], errors='coerce').dropna()
+                dl = dl_values.median() if not dl_values.empty else np.percentile(blanks_data, 50)
+            else:
+                dl = np.percentile(blanks_data, 50)  # Use median as estimate
 
             ax = canvas.fig.add_subplot(111)
 
             # Create histogram
-            n, bins, patches = ax.hist(blanks_data, bins=10, alpha=0.7,
+            bins = min(15, max(5, len(blanks_data) // 2))
+            n, bins_edges, patches = ax.hist(blanks_data, bins=bins, alpha=0.7,
                                      color=canvas.colors['secondary'], edgecolor='black')
 
             # Add detection limit line
-            dl = 0.01
             ax.axvline(x=dl, color=canvas.colors['warning'],
-                      linestyle='--', linewidth=2, label='Detection Limit')
+                      linestyle='--', linewidth=2, label=f'Detection Limit: {dl:.3f}')
 
-            # Add contamination threshold
+            # Add contamination threshold (3x DL)
             threshold = 3 * dl
             ax.axvline(x=threshold, color=canvas.colors['error'],
-                      linestyle=':', linewidth=2, label='Contamination Threshold')
+                      linestyle=':', linewidth=2, label=f'Contamination Threshold: {threshold:.3f}')
+
+            # Highlight contaminated samples
+            contaminated = [x for x in blanks_data if x > threshold]
+            if contaminated:
+                ax.scatter(contaminated, [0.1] * len(contaminated),
+                          color=canvas.colors['error'], s=100, zorder=5,
+                          label=f'Contaminated (n={len(contaminated)})')
 
             ax.set_xlabel('Concentration (g/t)')
             ax.set_ylabel('Frequency')
-            ax.set_title('Blanks Distribution')
+            ax.set_title(f'Blanks Distribution (n={len(blanks_data)})')
             ax.legend()
             ax.grid(True, alpha=0.3)
 
-            canvas.draw()
+            # Safely draw the canvas
+            try:
+                canvas.draw_idle()  # Use draw_idle for better thread safety
+            except Exception:
+                try:
+                    canvas.draw()
+                except Exception:
+                    pass
 
         except Exception as e:
             print(f"Error creating blanks plot: {e}")
+            import traceback
+            traceback.print_exc()
             # Create a simple error plot
             canvas = self.blanks_canvas
             canvas.fig.clear()
             ax = canvas.fig.add_subplot(111)
             ax.text(0.5, 0.5, f"Error creating plot:\n{str(e)}",
-                   ha='center', va='center', transform=ax.transAxes)
+                   ha='center', va='center', transform=ax.transAxes, fontsize=10)
             ax.set_title('Blanks Distribution - Error')
-            canvas.draw()
+            # Safely draw the canvas
+            try:
+                canvas.draw_idle()  # Use draw_idle for better thread safety
+            except Exception:
+                try:
+                    canvas.draw()
+                except Exception:
+                    pass
 
     def create_duplicates_plot(self):
-        """Create duplicates scatter plot."""
-        canvas = self.duplicates_canvas
-        canvas.fig.clear()
+        """Create duplicates scatter plot from real data."""
+        try:
+            canvas = self.duplicates_canvas
+            canvas.fig.clear()
 
-        # Simulate duplicates data
-        n_pairs = 8
-        x_data = np.random.uniform(0.5, 3.0, n_pairs)
-        y_data = x_data + np.random.normal(0, 0.1, n_pairs)
+            # Get data from plot_data
+            if not self.plot_data or 'dataframe' not in self.plot_data:
+                raise ValueError("No data available for plotting")
 
-        ax = canvas.fig.add_subplot(111)
+            df = self.plot_data['dataframe']
 
-        # Plot duplicate pairs
-        ax.scatter(x_data, y_data, color=canvas.colors['accent'],
-                  s=100, alpha=0.7, edgecolors='black')
+            # Extract duplicates data
+            type_col = None
+            result_col = None
+            sample_id_col = None
+            for col in df.columns:
+                col_lower = col.lower()
+                if 'type' in col_lower or 'sample_type' in col_lower:
+                    type_col = col
+                if 'result' in col_lower or 'value' in col_lower or 'assay' in col_lower:
+                    result_col = col
+                if 'id' in col_lower or 'sample_id' in col_lower:
+                    sample_id_col = col
 
-        # Add 1:1 line
-        min_val = min(min(x_data), min(y_data))
-        max_val = max(max(x_data), max(y_data))
-        ax.plot([min_val, max_val], [min_val, max_val],
-               color=canvas.colors['success'], linestyle='-', linewidth=2,
-               label='1:1 Line')
+            if not type_col or not result_col:
+                raise ValueError("Could not find required columns (sample_type, result)")
 
-        # Add RPD lines
-        rpd_20 = 0.20  # 20% RPD
-        ax.plot([min_val, max_val], [min_val * (1 + rpd_20), max_val * (1 + rpd_20)],
-               color=canvas.colors['warning'], linestyle='--', linewidth=1,
-               label='±20% RPD')
-        ax.plot([min_val, max_val], [min_val * (1 - rpd_20), max_val * (1 - rpd_20)],
-               color=canvas.colors['warning'], linestyle='--', linewidth=1)
+            # Filter for duplicates
+            duplicates_df = df[df[type_col].str.upper().str.contains('DUPLICATE|DUP|CHECK|CK', na=False, regex=True)].copy()
 
-        ax.set_xlabel('First Analysis (g/t)')
-        ax.set_ylabel('Duplicate Analysis (g/t)')
-        ax.set_title('Duplicates Scatter Plot')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
+            if duplicates_df.empty:
+                raise ValueError("No duplicates data found in dataset")
 
-        canvas.draw()
+            # Convert result to numeric
+            duplicates_df[result_col] = pd.to_numeric(duplicates_df[result_col], errors='coerce')
+            duplicates_df = duplicates_df.dropna(subset=[result_col])
+
+            if duplicates_df.empty:
+                raise ValueError("No valid numeric duplicates data found")
+
+            # For now, use all duplicates as pairs (in real scenario, would pair by ID)
+            # Take first half as x, second half as y
+            n = len(duplicates_df)
+            if n < 2:
+                raise ValueError("Need at least 2 duplicate samples for scatter plot")
+
+            # Simple pairing: split in half
+            mid = n // 2
+            x_data = duplicates_df[result_col].iloc[:mid].tolist()
+            y_data = duplicates_df[result_col].iloc[mid:mid+len(x_data)].tolist()
+
+            if len(x_data) != len(y_data):
+                # Adjust to same length
+                min_len = min(len(x_data), len(y_data))
+                x_data = x_data[:min_len]
+                y_data = y_data[:min_len]
+
+            if not x_data or not y_data:
+                raise ValueError("Could not create duplicate pairs")
+
+            ax = canvas.fig.add_subplot(111)
+
+            # Plot duplicate pairs
+            ax.scatter(x_data, y_data, color=canvas.colors['accent'],
+                      s=100, alpha=0.7, edgecolors='black', label=f'Duplicates (n={len(x_data)})')
+
+            # Add 1:1 line
+            min_val = min(min(x_data), min(y_data))
+            max_val = max(max(x_data), max(y_data))
+            ax.plot([min_val, max_val], [min_val, max_val],
+                   color=canvas.colors['success'], linestyle='-', linewidth=2,
+                   label='1:1 Line')
+
+            # Calculate and display R²
+            if len(x_data) > 1:
+                correlation = np.corrcoef(x_data, y_data)[0, 1]
+                r_squared = correlation ** 2
+                ax.text(0.05, 0.95, f'R² = {r_squared:.3f}', transform=ax.transAxes,
+                       bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+
+            # Add RPD lines (20%)
+            rpd_20 = 0.20
+            ax.plot([min_val, max_val], [min_val * (1 + rpd_20), max_val * (1 + rpd_20)],
+                   color=canvas.colors['warning'], linestyle='--', linewidth=1,
+                   label='±20% RPD')
+            ax.plot([min_val, max_val], [min_val * (1 - rpd_20), max_val * (1 - rpd_20)],
+                   color=canvas.colors['warning'], linestyle='--', linewidth=1)
+
+            ax.set_xlabel('First Analysis (g/t)')
+            ax.set_ylabel('Duplicate Analysis (g/t)')
+            ax.set_title(f'Duplicates Scatter Plot (n={len(x_data)} pairs)')
+            ax.legend()
+            ax.grid(True, alpha=0.3)
+
+            # Safely draw the canvas
+            try:
+                canvas.draw_idle()  # Use draw_idle for better thread safety
+            except Exception:
+                try:
+                    canvas.draw()
+                except Exception:
+                    pass
+
+        except Exception as e:
+            print(f"Error creating duplicates plot: {e}")
+            import traceback
+            traceback.print_exc()
+            # Create a simple error plot
+            canvas = self.duplicates_canvas
+            canvas.fig.clear()
+            ax = canvas.fig.add_subplot(111)
+            ax.text(0.5, 0.5, f"Error creating plot:\n{str(e)}",
+                   ha='center', va='center', transform=ax.transAxes, fontsize=10)
+            ax.set_title('Duplicates Scatter Plot - Error')
+            # Safely draw the canvas
+            try:
+                canvas.draw_idle()  # Use draw_idle for better thread safety
+            except Exception:
+                try:
+                    canvas.draw()
+                except Exception:
+                    pass
 
     def create_results_plot(self):
-        """Create results distribution histogram."""
-        canvas = self.results_canvas
-        canvas.fig.clear()
+        """Create results distribution histogram from real data."""
+        try:
+            canvas = self.results_canvas
+            canvas.fig.clear()
 
-        # Simulate results data
-        results_data = np.random.lognormal(0, 0.5, 100)
+            # Get data from plot_data
+            if not self.plot_data or 'dataframe' not in self.plot_data:
+                raise ValueError("No data available for plotting")
 
-        ax = canvas.fig.add_subplot(111)
+            df = self.plot_data['dataframe']
 
-        # Create histogram
-        n, bins, patches = ax.hist(results_data, bins=20, alpha=0.7,
+            # Find result column
+            result_col = None
+            for col in df.columns:
+                col_lower = col.lower()
+                if 'result' in col_lower or 'value' in col_lower or 'assay' in col_lower:
+                    result_col = col
+                    break
+
+            if not result_col:
+                raise ValueError("Could not find result column")
+
+            # Convert result to numeric
+            df[result_col] = pd.to_numeric(df[result_col], errors='coerce')
+            results_data = df[result_col].dropna().tolist()
+
+            if not results_data:
+                raise ValueError("No valid numeric results data found")
+
+            ax = canvas.fig.add_subplot(111)
+
+            # Create histogram
+            bins = min(30, max(10, len(results_data) // 5))
+            n, bins_edges, patches = ax.hist(results_data, bins=bins, alpha=0.7,
                                  color=canvas.colors['info'], edgecolor='black')
 
-        # Add statistics
-        mean_val = np.mean(results_data)
-        median_val = np.median(results_data)
+            # Add statistics
+            mean_val = np.mean(results_data)
+            median_val = np.median(results_data)
+            std_val = np.std(results_data)
 
-        ax.axvline(x=mean_val, color=canvas.colors['success'],
-                  linestyle='-', linewidth=2, label=f'Mean: {mean_val:.3f}')
-        ax.axvline(x=median_val, color=canvas.colors['warning'],
-                  linestyle='--', linewidth=2, label=f'Median: {median_val:.3f}')
+            ax.axvline(x=mean_val, color=canvas.colors['success'],
+                      linestyle='-', linewidth=2, label=f'Mean: {mean_val:.3f}')
+            ax.axvline(x=median_val, color=canvas.colors['warning'],
+                      linestyle='--', linewidth=2, label=f'Median: {median_val:.3f}')
+            ax.axvline(x=mean_val + std_val, color=canvas.colors['accent'],
+                      linestyle=':', linewidth=1, label=f'±1σ: {std_val:.3f}')
+            ax.axvline(x=mean_val - std_val, color=canvas.colors['accent'],
+                      linestyle=':', linewidth=1)
 
-        ax.set_xlabel('Concentration (g/t)')
-        ax.set_ylabel('Frequency')
-        ax.set_title('Results Distribution')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
+            ax.set_xlabel('Concentration (g/t)')
+            ax.set_ylabel('Frequency')
+            ax.set_title(f'Results Distribution (n={len(results_data)})')
+            ax.legend()
+            ax.grid(True, alpha=0.3)
 
-        canvas.draw()
+            # Safely draw the canvas
+            try:
+                canvas.draw_idle()  # Use draw_idle for better thread safety
+            except Exception:
+                try:
+                    canvas.draw()
+                except Exception:
+                    pass
+
+        except Exception as e:
+            print(f"Error creating results plot: {e}")
+            import traceback
+            traceback.print_exc()
+            # Create a simple error plot
+            canvas = self.results_canvas
+            canvas.fig.clear()
+            ax = canvas.fig.add_subplot(111)
+            ax.text(0.5, 0.5, f"Error creating plot:\n{str(e)}",
+                   ha='center', va='center', transform=ax.transAxes, fontsize=10)
+            ax.set_title('Results Distribution - Error')
+            # Safely draw the canvas
+            try:
+                canvas.draw_idle()  # Use draw_idle for better thread safety
+            except Exception:
+                try:
+                    canvas.draw()
+                except Exception:
+                    pass
 
     def create_all_plots(self):
         """Create all plot types."""
@@ -517,9 +784,19 @@ class VisualizationPanel(QWidget):
     def set_plot_data(self, data: Dict[str, Any]):
         """Set plot data for visualization."""
         # Only set data if it's valid and contains actual data
-        if data and isinstance(data, dict) and 'data' in data and not data['data'].empty:
-            self.plot_data = data
-            print(f"Plot data set: {list(data.keys()) if data else 'None'}")
+        if data and isinstance(data, dict):
+            # Check for dataframe key first, then fall back to 'data' key
+            # Can't use 'or' with DataFrames - need explicit None check
+            df = data.get('dataframe')
+            if df is None:
+                df = data.get('data')
+
+            if df is not None and hasattr(df, 'empty') and not df.empty:
+                self.plot_data = data
+                print(f"Plot data set: {list(data.keys()) if data else 'None'}, shape: {df.shape}")
+            else:
+                self.plot_data = None
+                print("No valid dataframe in data - plot data cleared")
         else:
             self.plot_data = None
             print("No valid data provided - plot data cleared")

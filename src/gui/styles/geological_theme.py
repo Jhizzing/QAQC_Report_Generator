@@ -75,9 +75,9 @@ class GeologicalTheme:
             'hover': '#E9ECEF',       # Light hover
             'hover_dark': '#DEE2E6',  # Dark hover
 
-            # Selection colors
+            # Selection colors (more subtle for better text visibility)
             'selection': '#3498DB',    # Blue selection
-            'selection_light': '#85C1E9', # Light blue selection
+            'selection_light': '#E3F2FD', # Very light blue selection (subtle)
         }
 
     def _define_fonts(self) -> Dict[str, str]:
@@ -308,6 +308,73 @@ class GeologicalTheme:
             color: {self.colors['text_secondary']};
         }}
 
+        /* Spin Boxes (QSpinBox, QDoubleSpinBox) */
+        QSpinBox, QDoubleSpinBox {{
+            background-color: {self.colors['surface']};
+            color: {self.colors['text_primary']};
+            border: {self.sizes['border_width']} solid {self.colors['border']};
+            border-radius: {self.sizes['border_radius']};
+            padding: {self.sizes['padding_small']};
+            min-height: 28px;
+        }}
+
+        QSpinBox:focus, QDoubleSpinBox:focus {{
+            border-color: {self.colors['primary']};
+        }}
+
+        QSpinBox:disabled, QDoubleSpinBox:disabled {{
+            background-color: {self.colors['surface_alt']};
+            color: {self.colors['text_secondary']};
+        }}
+
+        QSpinBox::up-button, QDoubleSpinBox::up-button {{
+            background-color: {self.colors['surface']};
+            border: none;
+            border-left: 1px solid {self.colors['border']};
+            border-top-right-radius: {self.sizes['border_radius']};
+            width: 20px;
+        }}
+
+        QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover {{
+            background-color: {self.colors['hover']};
+        }}
+
+        QSpinBox::up-button:pressed, QDoubleSpinBox::up-button:pressed {{
+            background-color: {self.colors['border']};
+        }}
+
+        QSpinBox::down-button, QDoubleSpinBox::down-button {{
+            background-color: {self.colors['surface']};
+            border: none;
+            border-left: 1px solid {self.colors['border']};
+            border-bottom-right-radius: {self.sizes['border_radius']};
+            width: 20px;
+        }}
+
+        QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {{
+            background-color: {self.colors['hover']};
+        }}
+
+        QSpinBox::down-button:pressed, QDoubleSpinBox::down-button:pressed {{
+            background-color: {self.colors['border']};
+        }}
+
+        QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {{
+            width: 8px;
+            height: 8px;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 4px solid {self.colors['text_primary']};
+        }}
+
+        QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {{
+            width: 8px;
+            height: 8px;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid {self.colors['text_primary']};
+        }}
+
         /* Text Edits */
         QTextEdit {{
             background-color: {self.colors['surface']};
@@ -328,6 +395,7 @@ class GeologicalTheme:
             border: {self.sizes['border_width']} solid {self.colors['border']};
             border-radius: {self.sizes['border_radius']};
             padding: {self.sizes['padding_small']};
+            min-height: 28px;
         }}
 
         QComboBox:focus {{
@@ -347,6 +415,33 @@ class GeologicalTheme:
             margin-right: 5px;
         }}
 
+        /* Combo Box Dropdown Items - increased row height and very subtle selection */
+        QComboBox QAbstractItemView {{
+            background-color: {self.colors['surface']};
+            border: 1px solid {self.colors['border']};
+            border-radius: {self.sizes['border_radius']};
+            selection-background-color: #F0F7FA;
+            selection-color: {self.colors['text_primary']};
+            outline: none;
+        }}
+
+        QComboBox QAbstractItemView::item {{
+            min-height: 32px;
+            padding: 6px 10px;
+            color: {self.colors['text_primary']};
+            background-color: {self.colors['surface']};
+        }}
+
+        QComboBox QAbstractItemView::item:selected {{
+            background-color: #F0F7FA;
+            color: {self.colors['text_primary']};
+        }}
+
+        QComboBox QAbstractItemView::item:hover {{
+            background-color: #F5F8FA;
+            color: {self.colors['text_primary']};
+        }}
+
         /* Check Boxes */
         QCheckBox {{
             color: {self.colors['text_primary']};
@@ -354,20 +449,25 @@ class GeologicalTheme:
         }}
 
         QCheckBox::indicator {{
-            width: 16px;
-            height: 16px;
-            border: {self.sizes['border_width']} solid {self.colors['border']};
+            width: 18px;
+            height: 18px;
+            border: 2px solid {self.colors['border_dark']};
             border-radius: {self.sizes['border_radius']};
             background-color: {self.colors['surface']};
         }}
 
         QCheckBox::indicator:checked {{
-            background-color: {self.colors['primary']};
-            border-color: {self.colors['primary']};
+            background-color: {self.colors['success']};
+            border-color: {self.colors['success']};
+        }}
+
+        QCheckBox::indicator:checked:hover {{
+            background-color: {self.colors['success_light']};
+            border-color: {self.colors['success_light']};
         }}
 
         QCheckBox::indicator:hover {{
-            border-color: {self.colors['primary']};
+            border-color: {self.colors['success']};
         }}
 
         /* Radio Buttons */
@@ -567,11 +667,17 @@ class GeologicalTheme:
             border: {self.sizes['border_width']} solid {self.colors['border']};
             border-radius: {self.sizes['border_radius']};
             gridline-color: {self.colors['border']};
+            alternate-background-color: {self.colors['surface_alt']};
         }}
 
         QTableWidget::item {{
-            padding: {self.sizes['padding_small']};
+            padding: 6px 8px;
             border: none;
+            background-color: {self.colors['surface']};
+        }}
+
+        QTableWidget::item:alternate {{
+            background-color: {self.colors['surface_alt']};
         }}
 
         QTableWidget::item:selected {{
@@ -583,12 +689,43 @@ class GeologicalTheme:
             background-color: {self.colors['hover']};
         }}
 
-        QHeaderView::section {{
-            background-color: {self.colors['surface_alt']};
+        QTableWidget::item:selected:hover {{
+            background-color: #D1E7F0;
             color: {self.colors['text_primary']};
-            border: {self.sizes['border_width']} solid {self.colors['border']};
-            padding: {self.sizes['padding_small']};
-            font-weight: bold;
+        }}
+
+        /* Empty cells - make them invisible/transparent */
+        QTableWidget::item:empty {{
+            background-color: transparent;
+            border: none;
+        }}
+
+        /* Header styling - cleaner and less clunky */
+        QHeaderView {{
+            background-color: {self.colors['surface']};
+        }}
+
+        QHeaderView::section {{
+            background-color: {self.colors['surface']};
+            color: {self.colors['text_primary']};
+            border: none;
+            border-bottom: 2px solid {self.colors['border_dark']};
+            border-right: 1px solid {self.colors['border']};
+            padding: 8px 10px;
+            font-weight: 600;
+            font-size: 11px;
+        }}
+
+        QHeaderView::section:first {{
+            border-left: none;
+        }}
+
+        QHeaderView::section:last {{
+            border-right: none;
+        }}
+
+        QHeaderView::section:hover {{
+            background-color: {self.colors['hover']};
         }}
 
         /* Splitter */

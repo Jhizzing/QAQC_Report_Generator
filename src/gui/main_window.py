@@ -451,7 +451,17 @@ class QAQCApplication(QMainWindow):
 
         # Pass data to visualization panel only if there's valid data
         if hasattr(self, 'visualization_panel'):
-            if data_info and 'data' in data_info and not data_info['data'].empty:
+            # Check for dataframe in data_info
+            if data_info and 'dataframe' in data_info and not data_info['dataframe'].empty:
+                # Create plot data structure
+                plot_data = {
+                    'data': data_info['dataframe'],
+                    'dataframe': data_info['dataframe'],
+                    'file_name': data_info.get('file_name', 'Unknown'),
+                    'sample_count': data_info.get('sample_count', 0)
+                }
+                self.visualization_panel.set_plot_data(plot_data)
+            elif data_info and 'data' in data_info and not data_info['data'].empty:
                 self.visualization_panel.set_plot_data(data_info)
             else:
                 self.visualization_panel.set_plot_data(None)

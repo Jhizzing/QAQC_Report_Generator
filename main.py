@@ -25,6 +25,7 @@ from src.data.crm_manager import CRMManager  # noqa: E402
 from src.analysis import StandardsAnalyzer, BlanksAnalyzer, DuplicatesAnalyzer  # noqa: E402
 from src.visualization import PlotGenerator  # noqa: E402
 from src.reporting import ExcelReporter, PDFReporter  # noqa: E402
+from src.utils.runtime_paths import resolve_runtime_path  # noqa: E402
 
 try:
     import yaml  # type: ignore
@@ -33,11 +34,12 @@ except Exception:  # pragma: no cover
 
 
 def load_config(config_file: str) -> Dict:
-    if not os.path.exists(config_file):
+    config_path = resolve_runtime_path(config_file)
+    if config_path is None or not config_path.exists():
         return {}
     if yaml is None:
         return {}
-    with open(config_file, "r", encoding="utf-8") as f:
+    with open(config_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 

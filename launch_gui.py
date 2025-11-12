@@ -7,12 +7,12 @@ designed specifically for geologists working with assay data.
 """
 
 import sys
-import os
 from pathlib import Path
 
 # Add src directory to Python path
 src_path = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_path))
+
 
 def check_dependencies():
     """Check if required dependencies are available."""
@@ -26,6 +26,7 @@ def check_dependencies():
         print("Make sure you're in the virtual environment:")
         print("   source venv/bin/activate")
         return False
+
 
 def main():
     """Main entry point for GUI application."""
@@ -59,7 +60,10 @@ def main():
     except Exception as e:
         print(f"Error launching GUI: {e}")
         print("Please check your installation and try again.")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
+
 
 if __name__ == "__main__":
     sys.exit(main())

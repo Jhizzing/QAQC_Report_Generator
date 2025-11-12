@@ -7,9 +7,10 @@ CRM metadata for use in standards analysis.
 """
 
 import yaml
-import os
 from datetime import datetime, date
 from typing import Dict, List, Optional, Tuple
+
+from src.utils.runtime_paths import resolve_runtime_path
 
 
 class CRMManager:
@@ -32,11 +33,14 @@ class CRMManager:
             database_path: Path to CRM database YAML file
         """
         if database_path is None:
-            # Default to crm_database.yaml in project root
-            current_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-            database_path = os.path.join(current_dir, 'crm_database.yaml')
+            resolved = resolve_runtime_path('crm_database.yaml')
+        else:
+            resolved = resolve_runtime_path(database_path)
 
-        self.database_path = database_path
+        if resolved is None:
+            raise FileNotFoundError(f"CRM database not found at {database_path or 'crm_database.yaml'}")
+
+        self.database_path = str(resolved)
         self.database = self._load_database()
 
     def _load_database(self) -> Dict:
