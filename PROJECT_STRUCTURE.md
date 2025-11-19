@@ -21,6 +21,9 @@ QAQC report generator/
 │   │   ├── importer.py          # Data import and mapping
 │   │   ├── processor.py         # Data processing
 │   │   └── crm_manager.py       # CRM management
+│   ├── 📁 core/                  # Core application logic
+│   │   ├── __init__.py
+│   │   └── project_manager.py   # Project persistence (save/load)
 │   ├── 📁 analysis/             # Analysis modules
 │   │   └── __init__.py          # Standards, Blanks, Duplicates
 │   ├── 📁 visualization/         # Plot generation
@@ -88,6 +91,7 @@ QAQC report generator/
 ## 🎯 Key Directories
 
 ### **Source Code (`src/`)**
+- **`core/`**: Core application logic including project persistence
 - **`data/`**: Data import, processing, and CRM management
 - **`analysis/`**: QAQC analysis modules (Standards, Blanks, Duplicates)
 - **`visualization/`**: Plot generation and visualization

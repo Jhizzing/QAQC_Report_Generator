@@ -28,6 +28,7 @@ class StandardsAnalyzer:
         self.z_score_threshold = self.config.get('z_score_threshold', 2.0)
         self.recovery_limits = self.config.get('recovery_limits', (90, 110))  # %
         self.precision_threshold = self.config.get('precision_threshold', 5.0)  # %RSD
+        self.westgard_config = self.config.get('westgard_rules', {'enable': False, 'rules': []})
 
     def calculate_z_scores(self, measured: list, certified: float, uncertainty: float = None) -> list:
         """
@@ -72,6 +73,85 @@ class StandardsAnalyzer:
             'max_z_score': max_z,
             'mean_z_score': mean_z,
             'z_scores': z_scores
+        }
+
+    def check_westgard_rules(self, z_scores: list) -> dict:
+        """
+        Check Westgard rules for process control.
+
+        Implemented Rules:
+        - 1:3s: One value outside +/- 3SD (Failure)
+        - 2:2s: Two consecutive values outside +/- 2SD (Failure)
+        - R:4s: Range between consecutive values > 4SD (Failure)
+        - 10:x: Ten consecutive values on same side of mean (Warning/Bias)
+
+        Args:
+            z_scores: List of Z-scores (chronological order)
+
+        Returns:
+            Dictionary with rule violations
+        """
+        if not self.westgard_config.get('enable', False):
+            return {'violations': [], 'failed': False}
+
+        violations = []
+        rules = self.westgard_config.get('rules', [])
+        n = len(z_scores)
+
+        for i in range(n):
+            z = z_scores[i]
+            prev_z = z_scores[i-1] if i > 0 else 0
+
+            # 1:3s Rule (Random Error)
+            if "1_3s" in rules and abs(z) > 3:
+                violations.append(f"1_3s failure at index {i}: Z={z:.2f}")
+
+            # 2:2s Rule (Systematic Error)
+            if "2_2s" in rules and i > 0:
+                if (z > 2 and prev_z > 2) or (z < -2 and prev_z < -2):
+                    violations.append(f"2_2s failure at index {i}: Consecutive > 2SD")
+
+            # R:4s Rule (Random Error)
+            if "R_4s" in rules and i > 0:
+                if abs(z - prev_z) > 4:
+                    violations.append(f"R_4s failure at index {i}: Range > 4SD")
+
+        # 10:x Rule (Systematic Bias)
+        if "10_x" in rules and n >= 10:
+            # Check the last 10 points
+            last_10 = z_scores[-10:]
+            if all(v > 0 for v in last_10) or all(v < 0 for v in last_10):
+                violations.append("10_x warning: Last 10 values on same side of mean")
+
+        return {
+            'violations': violations,
+            'failed': any("failure" in v for v in violations)
+        }
+
+    def calculate_drift(self, z_scores: list, window: int = 5) -> dict:
+        """
+        Calculate rolling drift.
+
+        Args:
+            z_scores: List of Z-scores
+            window: Rolling window size
+
+        Returns:
+            Dictionary with drift analysis
+        """
+        if len(z_scores) < window:
+            return {'drift_detected': False, 'trend': 0.0}
+
+        # Simple rolling mean of last 'window' points
+        recent_mean = sum(z_scores[-window:]) / window
+        
+        # Drift is significant if rolling mean > 1.5 SD
+        drift_detected = abs(recent_mean) > 1.5
+
+        return {
+            'drift_detected': drift_detected,
+            'recent_mean_z': recent_mean,
+            'trend': "Positive" if recent_mean > 0 else "Negative"
         }
 
     def calculate_recovery(self, measured: list, certified: float) -> list:
@@ -159,6 +239,8 @@ class StandardsAnalyzer:
         # Calculate metrics
         z_scores = self.calculate_z_scores(measured, certified, uncertainty)
         bias_assessment = self.detect_bias(z_scores)
+        westgard_assessment = self.check_westgard_rules(z_scores)
+        drift_assessment = self.calculate_drift(z_scores)
         recoveries = self.calculate_recovery(measured, certified)
         recovery_assessment = self.assess_recovery(recoveries)
         precision_assessment = self.calculate_precision(measured)
@@ -166,6 +248,7 @@ class StandardsAnalyzer:
         # Overall assessment
         overall_acceptable = (
             not bias_assessment['bias_detected'] and
+            not westgard_assessment['failed'] and
             recovery_assessment['acceptable'] and
             precision_assessment['acceptable']
         )
@@ -173,6 +256,8 @@ class StandardsAnalyzer:
         return {
             'overall_acceptable': overall_acceptable,
             'bias': bias_assessment,
+            'westgard': westgard_assessment,
+            'drift': drift_assessment,
             'recovery': recovery_assessment,
             'precision': precision_assessment,
             'summary': {
@@ -374,6 +459,9 @@ class DuplicatesAnalyzer:
         self.rpd_threshold = self.config.get('rpd_threshold', 20.0)  # %
         self.precision_limit = self.config.get('precision_limit', 15.0)  # %
         self.nugget_threshold = self.config.get('nugget_threshold', 0.3)  # ratio
+        self.precision_method = self.config.get('precision_method', 'simple_rpd')
+        self.hyperbolic_m = self.config.get('hyperbolic_m', 1.0)
+        self.hyperbolic_c = self.config.get('hyperbolic_c', 0.0)
 
     def calculate_rpd(self, value1: float, value2: float) -> float:
         """
@@ -424,6 +512,52 @@ class DuplicatesAnalyzer:
             'max_rpd': max_rpd,
             'acceptable': acceptable,
             'threshold': self.rpd_threshold
+        }
+
+    def calculate_hyperbolic_precision(self, duplicates: list) -> dict:
+        """
+        Calculate precision using the Hyperbolic Method (Simandl, 1997).
+        
+        y^2 = m^2 * x^2 + c^2
+        Where y = Absolute Difference, x = Mean Value
+        
+        Args:
+            duplicates: List of [value1, value2] pairs
+
+        Returns:
+            Dictionary with hyperbolic precision assessment
+        """
+        if not duplicates:
+            return {'failures': [], 'failure_rate': 0, 'acceptable': True}
+
+        failures = []
+        m = self.hyperbolic_m
+        c = self.hyperbolic_c
+
+        for i, (v1, v2) in enumerate(duplicates):
+            mean_val = (v1 + v2) / 2
+            abs_diff = abs(v1 - v2)
+            
+            # Calculate max allowed difference (hyperbolic curve)
+            max_diff = (m**2 * mean_val**2 + c**2) ** 0.5
+            
+            if abs_diff > max_diff:
+                failures.append({
+                    'index': i,
+                    'mean': mean_val,
+                    'diff': abs_diff,
+                    'limit': max_diff
+                })
+
+        failure_rate = len(failures) / len(duplicates)
+        acceptable = failure_rate <= 0.1  # Max 10% failure rate
+
+        return {
+            'method': 'hyperbolic',
+            'failures': failures,
+            'failure_rate': failure_rate,
+            'acceptable': acceptable,
+            'params': {'m': m, 'c': c}
         }
 
     def detect_systematic_errors(self, duplicates: list) -> dict:
@@ -493,7 +627,15 @@ class DuplicatesAnalyzer:
         duplicates = data.get('duplicates', [])
 
         # Calculate metrics
-        precision = self.assess_precision(duplicates)
+        if self.precision_method == 'hyperbolic':
+            precision = self.calculate_hyperbolic_precision(duplicates)
+            # Add RPD stats for reference
+            rpd_stats = self.assess_precision(duplicates)
+            precision['mean_rpd'] = rpd_stats['mean_rpd']
+            precision['max_rpd'] = rpd_stats['max_rpd']
+        else:
+            precision = self.assess_precision(duplicates)
+
         systematic = self.detect_systematic_errors(duplicates)
         nugget_ratio = self.calculate_nugget_ratio(duplicates)
 

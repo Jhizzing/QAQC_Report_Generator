@@ -17,12 +17,14 @@ The program automates the validation and reporting of QAQC results from drilling
 - **✅ Mock Data Validation**: Successfully tested with realistic datasets
 - **✅ Production Ready**: Full CLI interface with professional output
 - **✅ GUI Complete**: Fully functional PyQt6 GUI with data import, analysis, visualization, and report export (Excel/PDF)
+- **✅ Project Persistence**: Save and load projects (.qaqc) to resume work later
 
 ### Key Achievements
 - **Data Processing**: Robust CSV/XLSX import with intelligent column mapping
 - **QAQC Analysis**: Standards, blanks, and duplicates analysis with CRM integration
 - **Visualization**: Professional plots (control charts, scatter plots, histograms)
 - **Reporting**: Excel and PDF reports with executive summaries
+- **Persistence**: Full save/load functionality for project state
 - **Quality Assurance**: Comprehensive error handling and data validation
 
 ---

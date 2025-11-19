@@ -1,0 +1,18 @@
+CRM_ID,Element,CertifiedValue,SD,Unit,Method,Matrix,Supplier
+OREAS 22e,Au,0.624,0.019,ppm,Fire Assay,Quartz,OREAS
+OREAS 22e,Cu,0.234,0.008,%,4-Acid,Quartz,OREAS
+OREAS 24b,Au,2.15,0.05,ppm,Fire Assay,Basalt,OREAS
+OREAS 24b,Cu,1.52,0.04,%,4-Acid,Basalt,OREAS
+OREAS 235,Au,1.59,0.04,ppm,Fire Assay,Sediment,OREAS
+OREAS 235,Fe,4.25,0.15,%,4-Acid,Sediment,OREAS
+OREAS 501b,Au,0.248,0.009,ppm,Fire Assay,Porphyry,OREAS
+OREAS 501b,Cu,0.268,0.008,%,4-Acid,Porphyry,OREAS
+OREAS 501b,Mo,98,4,ppm,4-Acid,Porphyry,OREAS
+OREAS 600,Ag,24.5,0.8,ppm,4-Acid,Epithermal,OREAS
+OREAS 600,Au,0.203,0.008,ppm,Fire Assay,Epithermal,OREAS
+OREAS 904,Au,0.452,0.014,ppm,Fire Assay,Oxide,OREAS
+OREAS 904,Cu,0.152,0.005,%,4-Acid,Oxide,OREAS
+AMIS0304,Au,1.24,0.08,ppm,Fire Assay,Greenstone,AMIS
+AMIS0304,Ag,2.1,0.3,ppm,4-Acid,Greenstone,AMIS
+G310-4,Au,0.98,0.04,ppm,Fire Assay,Rock,Geostats
+G310-4,S,1.2,0.1,%,Total S,Rock,Geostats

@@ -118,6 +118,8 @@ class DataPanel(QWidget):
     data_loaded = pyqtSignal(dict)
     data_changed = pyqtSignal(dict)
     column_mapping_changed = pyqtSignal(dict)
+    analysis_requested = pyqtSignal(dict)
+    configuration_changed = pyqtSignal(dict)
 
     def __init__(self):
         super().__init__()

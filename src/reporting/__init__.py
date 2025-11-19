@@ -375,6 +375,9 @@ Overall QAQC Status: {status}
 Analysis Date: {analysis_results.get('analysis_date', 'N/A')}
 Total Samples: {analysis_results.get('total_samples', 0)}
 
+JORC COMPLIANCE SUMMARY:
+{analysis_results.get('compliance', {}).get('jorc_statement', 'Compliance analysis not available.')}
+
 STANDARDS ANALYSIS: {'PASS' if standards.get('overall_acceptable', False) else 'FAIL'}
 - Bias Detection: {'YES' if standards.get('bias', {}).get('bias_detected', False) else 'NO'}
 - Recovery: {standards.get('recovery', {}).get('mean_recovery', 0):.1f}%
@@ -520,6 +523,60 @@ SPATIAL ANALYSIS:
 
         return section.strip()
 
+    def create_jorc_table1_section(self, analysis_results: dict) -> str:
+        """
+        Create JORC Table 1 helper section.
+
+        Args:
+            analysis_results: Dictionary with all analysis results
+
+        Returns:
+            Formatted JORC Table 1 text
+        """
+        compliance = analysis_results.get('compliance', {})
+        jorc_statement = compliance.get('jorc_statement', 'N/A')
+        
+        standards = analysis_results.get('standards', {})
+        blanks = analysis_results.get('blanks', {})
+        duplicates = analysis_results.get('duplicates', {})
+
+        section = f"""
+JORC TABLE 1 - SECTION 1 (SAMPLING TECHNIQUES AND DATA)
+=======================================================
+
+The following text is generated to assist the Competent Person in completing JORC Table 1.
+Please review and edit as necessary to ensure it accurately reflects the project's specific procedures.
+
+Criteria: Quality of assay data and laboratory tests
+----------------------------------------------------
+"Nature of quality control procedures adopted (e.g. standards, blanks, duplicates, external laboratory checks) and whether acceptable levels of accuracy (i.e. lack of bias) and precision have been established."
+
+SUGGESTED TEXT:
+{jorc_statement}
+
+Standards Analysis:
+Analysis of Certified Reference Materials (CRMs) indicates that accuracy is {'acceptable' if standards.get('overall_acceptable') else 'outside of tolerance'}.
+- Bias: {'No significant bias detected' if not standards.get('bias', {}).get('bias_detected') else 'Bias detected in some standards'}.
+- Precision: {'Acceptable' if standards.get('precision', {}).get('acceptable') else 'Low precision observed'}.
+
+Blanks Analysis:
+Analysis of blank samples indicates that contamination is {'minimal' if blanks.get('overall_acceptable') else 'present'}.
+- Contamination Rate: {blanks.get('contamination', {}).get('contamination_rate', 0) * 100:.1f}% of blanks returned values > 3x MDL.
+
+Duplicates Analysis:
+Analysis of duplicate samples indicates that precision is {'acceptable' if duplicates.get('overall_acceptable') else 'poor'}.
+- Sampling/Analytical Precision: Mean RPD of {duplicates.get('precision', {}).get('mean_rpd', 0):.1f}%.
+
+Criteria: Verification of sampling and assaying
+-----------------------------------------------
+"The verification of significant intersections by either independent or alternative personnel."
+
+SUGGESTED TEXT:
+Significant intersections have been verified by internal QAQC procedures.
+No independent verification has been performed at this stage (modify if incorrect).
+"""
+        return section.strip()
+
     def generate_pdf_report(self, analysis_results: dict, plots: dict = None, filename: str = None) -> str:
         """
         Generate complete PDF report.
@@ -584,6 +641,14 @@ SPATIAL ANALYSIS:
             content.append(self.create_detailed_section('Duplicates', analysis_results['duplicates']))
             content.append("")
             content.append("")
+
+            content.append("")
+            content.append("")
+
+        # JORC Table 1 Helper
+        content.append(self.create_jorc_table1_section(analysis_results))
+        content.append("")
+        content.append("")
 
         # Appendices
         content.append("APPENDICES")

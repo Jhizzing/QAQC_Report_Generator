@@ -24,7 +24,9 @@ from .widgets.analysis_panel import AnalysisPanel
 from .widgets.visualization_panel import VisualizationPanel
 from .styles.geological_theme import GeologicalTheme
 from .utils.gui_helpers import GuiHelpers
+from .utils.gui_helpers import GuiHelpers
 from src.reporting import ExcelReporter, PDFReporter
+from src.core.project_manager import ProjectManager
 
 
 class QAQCApplication(QMainWindow):
@@ -47,7 +49,10 @@ class QAQCApplication(QMainWindow):
         self.output_dir = Path.cwd() / "output"
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.excel_reporter = ExcelReporter({'include_raw_data': True})
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.excel_reporter = ExcelReporter({'include_raw_data': True})
         self.pdf_reporter = PDFReporter({'include_plots': True})
+        self.project_manager = ProjectManager()
 
         # Initialize UI
         self.setup_ui()
@@ -120,7 +125,14 @@ class QAQCApplication(QMainWindow):
         open_action.setShortcut(QKeySequence.StandardKey.Open)
         open_action.setStatusTip('Open assay data file')
         open_action.triggered.connect(self.open_file)
+        open_action.triggered.connect(self.open_file)
         file_menu.addAction(open_action)
+
+        # Open project
+        open_project_action = QAction('Open Project...', self)
+        open_project_action.setStatusTip('Open existing project')
+        open_project_action.triggered.connect(self.open_project)
+        file_menu.addAction(open_project_action)
 
         # Recent files
         file_menu.addSeparator()
@@ -383,8 +395,76 @@ class QAQCApplication(QMainWindow):
 
     def save_project(self):
         """Save the current project."""
-        # TODO: Implement project saving
-        QMessageBox.information(self, "Save Project", "Project saving not yet implemented.")
+        if not self.current_data and not self.config:
+            QMessageBox.warning(self, "Empty Project", "Nothing to save.")
+            return
+
+        default_filename = self.output_dir / "project.qaqc"
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Project",
+            str(default_filename),
+            "QAQC Project Files (*.qaqc)"
+        )
+
+        if file_path:
+            if not file_path.endswith('.qaqc'):
+                file_path += '.qaqc'
+            
+            try:
+                state = {
+                    "config": self.config,
+                    "results": self.analysis_results,
+                    "data": self.current_data
+                }
+                self.project_manager.save_project(state, file_path)
+                self.status_label.setText(f"Project saved: {Path(file_path).name}")
+                QMessageBox.information(self, "Success", "Project saved successfully.")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to save project:\n{str(e)}")
+
+    def open_project(self):
+        """Open an existing project."""
+        if self.current_data or self.config:
+            if not self.ask_save_changes():
+                return
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open Project",
+            "",
+            "QAQC Project Files (*.qaqc)"
+        )
+
+        if file_path:
+            try:
+                self.status_label.setText("Loading project...")
+                state = self.project_manager.load_project(file_path)
+                
+                # Restore state
+                self.reset_application()
+                
+                if state.get("data"):
+                    self.on_data_loaded(state["data"])
+                    # Restore column mapping if present in config
+                    if state.get("config") and "column_mapping" in state["config"]:
+                         # We need to manually trigger mapping update in DataPanel if we want it reflected in UI
+                         # For now, just setting it in config is enough for analysis
+                         pass
+
+                if state.get("config"):
+                    self.config = state["config"]
+                    # TODO: Restore configuration in AnalysisPanel UI
+                    
+                if state.get("results"):
+                    self.analysis_results = state["results"]
+                    self.on_analysis_results(self.analysis_results)
+                    
+                self.status_label.setText(f"Project loaded: {Path(file_path).name}")
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to load project:\n{str(e)}")
+                self.status_label.setText("Error loading project")
 
     def export_results(self):
         """Export analysis results."""
@@ -597,7 +677,13 @@ class QAQCApplication(QMainWindow):
 
     def on_analysis_requested(self, configuration):
         """Handle analysis requested signal."""
-        self.run_analysis_with_config(configuration)
+        self.config = configuration
+        self.status_label.setText("Analysis running...")
+
+    def on_column_mapping_changed(self, mapping):
+        """Handle column mapping changed signal."""
+        self.config['column_mapping'] = mapping
+        self.status_label.setText("Column mapping updated")
 
     def on_configuration_changed(self, configuration):
         """Handle configuration changed signal."""

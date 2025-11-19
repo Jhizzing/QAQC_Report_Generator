@@ -49,6 +49,13 @@ qaqc:
       warning: 2.0
       failure: 3.0
     bias_threshold: 0.1  # 10% bias threshold
+    westgard_rules:
+      enable: true
+      rules:
+        - "1_3s"  # Fail: 1 value > 3SD
+        - "2_2s"  # Fail: 2 consecutive values > 2SD
+        - "R_4s"  # Fail: Range between consecutive values > 4SD
+        - "10_x"  # Warning: 10 consecutive values on same side of mean
 
   # Blanks settings
   blanks:
@@ -60,6 +67,9 @@ qaqc:
   # Duplicates settings
   duplicates:
     types: ["Duplicate", "DUP", "Check", "CK"]
+    precision_method: "hyperbolic"  # Options: "simple_rpd", "hyperbolic"
+    hyperbolic_m: 1.0  # Slope for hyperbolic curve
+    hyperbolic_c: 0.0  # Intercept
     rpd_thresholds:
       excellent: 5.0
       good: 10.0
@@ -67,6 +77,14 @@ qaqc:
       poor: 50.0
     correlation_threshold: 0.8
     nugget_ratio_threshold: 0.3
+
+  # Insertion Rates (JORC Compliance)
+  insertion_rates:
+    target_total: 20.0  # %
+    target_standards: 5.0
+    target_blanks: 5.0
+    target_duplicates: 5.0
+    target_check_assays: 5.0
 
 # Visualization Settings
 visualization:

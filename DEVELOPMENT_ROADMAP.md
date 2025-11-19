@@ -12,7 +12,7 @@
 - [x] ✅ **Main Entry Point** - main.py with CLI and GUI options
 
 #### **Week 2: Data Import & Processing**
-- [ ] **Data Importer Module** (`src/data/importer.py`)
+- [x] **Data Importer Module** (`src/data/importer.py`)
   - CSV/XLSX file reading
   - Column mapping interface
   - Data validation and cleaning
@@ -72,7 +72,7 @@
 ### **Phase 4: User Interface (Weeks 7-8)**
 
 #### **Week 7: GUI Framework**
-- [ ] **GUI Main Window** (`src/gui/main_window.py`)
+- [x] **GUI Main Window** (`src/gui/main_window.py`)
   - File selection interface
   - Column mapping dialog
   - Progress indicators
@@ -88,6 +88,11 @@
   - Interactive plots
   - Data tables
   - Export options
+
+- [x] **Project Persistence** (`src/core/project_manager.py`)
+  - Save project state (.qaqc)
+  - Load project state
+  - Embed raw data for portability
 
 ### **Phase 5: Testing & Polish (Weeks 9-10)**
 
