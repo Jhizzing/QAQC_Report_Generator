@@ -7,6 +7,8 @@ QAQC Analysis Application. Designed for geologists working with assay data.
 
 from typing import Optional, Dict, Any, List
 from enum import Enum
+from pathlib import Path
+import pandas as pd
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
@@ -18,6 +20,8 @@ from PyQt6.QtGui import QFont
 
 from ..styles.geological_theme import GeologicalTheme
 from .green_checkbox import GreenCheckBox
+from ...analysis import StandardsAnalyzer, BlanksAnalyzer, DuplicatesAnalyzer
+from ...data.crm_manager import CRMManager
 
 
 class AnalysisType(Enum):
@@ -41,64 +45,180 @@ class AnalysisThread(QThread):
         self.configuration = configuration
 
     def run(self):
-        """Run analysis in separate thread."""
+        """Run analysis in separate thread using real analysis modules."""
         try:
-            # TODO: Implement actual analysis using existing analysis modules
-            # This is a placeholder for now
+            # Get dataframe from data_info
+            df = self.data_info.get('dataframe')
+            if df is None or df.empty:
+                self.error_occurred.emit("No data available for analysis")
+                return
 
-            # Simulate analysis progress
+            # Initialize analyzers with configuration
+            config = self.configuration.get('analysis_config', {})
+            standards_analyzer = StandardsAnalyzer(config.get('standards', {}))
+            blanks_analyzer = BlanksAnalyzer(config.get('blanks', {}))
+            duplicates_analyzer = DuplicatesAnalyzer(config.get('duplicates', {}))
+
+            # Initialize CRM manager
+            crm_db_path = self.configuration.get('crm_database', 'crm_database.yaml')
+            crm_manager = None
+            try:
+                if crm_db_path:
+                    crm_manager = CRMManager(crm_db_path)
+            except FileNotFoundError:
+                self.status_updated.emit(f"CRM database not found at {crm_db_path}")
+                crm_manager = None
+            except Exception as exc:
+                self.status_updated.emit(f"CRM database error: {exc}")
+                crm_manager = None
+
             self.status_updated.emit("Initializing analysis...")
             self.progress_updated.emit(10)
-            self.msleep(500)
 
-            self.status_updated.emit("Running standards analysis...")
-            self.progress_updated.emit(30)
-            self.msleep(1000)
+            results = {}
+            df = df.copy()
 
-            self.status_updated.emit("Running blanks analysis...")
-            self.progress_updated.emit(60)
-            self.msleep(1000)
+            # Ensure result column is numeric
+            if 'result' in df.columns:
+                df['result'] = pd.to_numeric(df['result'], errors='coerce')
 
-            self.status_updated.emit("Running duplicates analysis...")
-            self.progress_updated.emit(80)
-            self.msleep(1000)
+            # Find sample_type column (case-insensitive)
+            type_col = None
+            for col in df.columns:
+                if col.lower() in ['sample_type', 'type', 'samp_type']:
+                    type_col = col
+                    break
 
-            self.status_updated.emit("Generating results...")
-            self.progress_updated.emit(90)
-            self.msleep(500)
+            if not type_col:
+                self.error_occurred.emit("Could not find sample_type column")
+                return
 
-            # Simulate analysis results
-            results = {
-                'standards': {
-                    'enabled': self.configuration.get('standards_enabled', True),
-                    'status': 'PASS',
-                    'z_scores': [0.5, -0.8, 1.2, -0.3, 0.7],
-                    'bias': 0.02,
-                    'recovery': 98.5,
-                    'precision': 2.1
-                },
-                'blanks': {
-                    'enabled': self.configuration.get('blanks_enabled', True),
-                    'status': 'FAIL',
-                    'contamination_count': 2,
-                    'carryover_detected': True,
-                    'mdl': 0.008
-                },
-                'duplicates': {
-                    'enabled': self.configuration.get('duplicates_enabled', True),
-                    'status': 'PASS',
-                    'rpd_values': [5.2, 8.1, 3.7, 6.9],
-                    'precision': 7.1,
-                    'correlation': 0.95
-                }
-            }
+            # Standards Analysis
+            if self.configuration.get('standards_enabled', False):
+                self.status_updated.emit("Running standards analysis...")
+                self.progress_updated.emit(30)
+
+                standards_data = self._prepare_standards_data(df, type_col, crm_manager)
+                if standards_data:
+                    standards_result = standards_analyzer.analyze_standards(standards_data)
+                    results['standards'] = standards_result
+                else:
+                    results['standards'] = {'error': 'No standards data available or CRM not found'}
+
+            # Blanks Analysis
+            if self.configuration.get('blanks_enabled', False):
+                self.status_updated.emit("Running blanks analysis...")
+                self.progress_updated.emit(60)
+
+                blanks_data = self._prepare_blanks_data(df, type_col)
+                if blanks_data:
+                    blanks_result = blanks_analyzer.analyze_blanks(blanks_data)
+                    results['blanks'] = blanks_result
+                else:
+                    results['blanks'] = {'error': 'No blanks data available'}
+
+            # Duplicates Analysis
+            if self.configuration.get('duplicates_enabled', False):
+                self.status_updated.emit("Running duplicates analysis...")
+                self.progress_updated.emit(80)
+
+                duplicates_data = self._prepare_duplicates_data(df, type_col)
+                if duplicates_data:
+                    duplicates_result = duplicates_analyzer.analyze_duplicates(duplicates_data)
+                    results['duplicates'] = duplicates_result
+                else:
+                    results['duplicates'] = {'error': 'No duplicates data available'}
+
+            # Add summary information
+            results['total_samples'] = len(df)
+            results['analysis_date'] = pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
 
             self.progress_updated.emit(100)
             self.status_updated.emit("Analysis completed")
             self.analysis_completed.emit(results)
 
         except Exception as e:
-            self.error_occurred.emit(str(e))
+            import traceback
+            error_msg = f"Analysis error: {str(e)}\n{traceback.format_exc()}"
+            self.error_occurred.emit(error_msg)
+
+    def _prepare_standards_data(self, df, type_col, crm_manager):
+        """Prepare data for standards analysis."""
+        # Filter standards samples
+        standards_df = df[df[type_col].str.upper().str.contains('STANDARD|STD|CRM', na=False, regex=True)].copy()
+        if len(standards_df) == 0:
+            return None
+
+        # Get CRM information
+        crm_name = self.configuration.get('crm_name')
+        if not crm_name and crm_manager:
+            # Auto-select CRM based on concentration
+            mean_conc = standards_df['result'].mean()
+            suitable_crms = crm_manager.get_crms_by_concentration_range(mean_conc * 0.5, mean_conc * 2.0)
+            if suitable_crms:
+                best_crm = min(suitable_crms, key=lambda x: abs(x['certified_value'] - mean_conc))
+                crm_name = best_crm['name']
+
+        if not crm_name or not crm_manager:
+            return None
+
+        # Get CRM data
+        crm_info = crm_manager.get_crm_by_name(crm_name)
+        if not crm_info:
+            return None
+
+        return {
+            'measured': standards_df['result'].dropna().tolist(),
+            'certified': crm_info.get('certified_value', 0),
+            'uncertainty': crm_info.get('uncertainty', crm_info.get('certified_value', 0) * 0.05)
+        }
+
+    def _prepare_blanks_data(self, df, type_col):
+        """Prepare data for blanks analysis."""
+        blanks_df = df[df[type_col].str.upper().str.contains('BLANK|BLK', na=False, regex=True)].copy()
+        if len(blanks_df) == 0:
+            return None
+
+        # Get previous samples for carry-over analysis (simplified)
+        all_samples = df.sort_index()
+        previous_samples = []
+        if len(blanks_df) > 0:
+            first_blank_idx = blanks_df.index.min()
+            prev_samples = all_samples[all_samples.index < first_blank_idx]
+            if 'result' in prev_samples.columns:
+                previous_samples = prev_samples['result'].dropna().tolist()
+
+        return {
+            'blanks': blanks_df['result'].dropna().tolist(),
+            'previous_samples': previous_samples
+        }
+
+    def _prepare_duplicates_data(self, df, type_col):
+        """Prepare data for duplicates analysis."""
+        # Find duplicate pairs
+        duplicates_df = df[df[type_col].str.upper().str.contains('DUPLICATE|DUP|CHECK|CK', na=False, regex=True)].copy()
+        if len(duplicates_df) < 2:
+            return None
+
+        # Simple pairing: split in half for now
+        # In production, would pair by sample_id
+        n = len(duplicates_df)
+        mid = n // 2
+        values = duplicates_df['result'].dropna().tolist()
+
+        if len(values) < 2:
+            return None
+
+        # Create pairs from first and second half
+        pairs = []
+        for i in range(min(mid, len(values) - mid)):
+            if i + mid < len(values):
+                pairs.append([values[i], values[i + mid]])
+
+        if not pairs:
+            return None
+
+        return {'duplicates': pairs}
 
 
 class AnalysisPanel(QWidget):
@@ -124,11 +244,16 @@ class AnalysisPanel(QWidget):
         self.current_configuration: Dict[str, Any] = {}
         self.current_results: Optional[Dict[str, Any]] = None
         self.analysis_thread: Optional[AnalysisThread] = None
+        self.data_info: Optional[Dict[str, Any]] = None  # Store data info for analysis
 
         # Initialize UI
         self.setup_ui()
         self.setup_connections()
         self.apply_theme()
+
+    def set_data_info(self, data_info: Dict[str, Any]):
+        """Set data info for analysis."""
+        self.data_info = data_info
 
     def setup_ui(self):
         """Set up the analysis panel user interface."""
@@ -362,9 +487,15 @@ class AnalysisPanel(QWidget):
         self.setStyleSheet(theme.get_widget_style('analysis_panel'))
 
     def run_analysis(self):
-        """Run QAQC analysis."""
+        """Run QAQC analysis using real analysis modules."""
         if not self.standards_check.isChecked() and not self.blanks_check.isChecked() and not self.duplicates_check.isChecked():
             self.status_label.setText("Please select at least one analysis type")
+            self.status_label.setStyleSheet("color: #E74C3C; font-weight: bold;")
+            return
+
+        # Check if data is available
+        if not hasattr(self, 'data_info') or not self.data_info or 'dataframe' not in self.data_info:
+            self.status_label.setText("Please load data before running analysis")
             self.status_label.setStyleSheet("color: #E74C3C; font-weight: bold;")
             return
 
@@ -374,17 +505,20 @@ class AnalysisPanel(QWidget):
         # Emit analysis requested signal
         self.analysis_requested.emit(configuration)
 
-        # Start analysis thread (placeholder)
+        # Start analysis thread with real analysis
         self.status_label.setText("Starting analysis...")
         self.status_label.setStyleSheet("color: #F39C12; font-weight: bold;")
         self.progress_bar.setVisible(True)
+        self.progress_bar.setValue(0)
         self.run_button.setEnabled(False)
 
-        # TODO: Implement actual analysis execution
-        # This would integrate with the existing analysis modules
-
-        # Simulate analysis completion
-        self.simulate_analysis_completion()
+        # Create and start analysis thread
+        self.analysis_thread = AnalysisThread(self.data_info, configuration)
+        self.analysis_thread.analysis_completed.connect(self.on_analysis_completed)
+        self.analysis_thread.progress_updated.connect(self.progress_bar.setValue)
+        self.analysis_thread.status_updated.connect(self.status_label.setText)
+        self.analysis_thread.error_occurred.connect(self.on_analysis_error)
+        self.analysis_thread.start()
 
     def simulate_analysis_completion(self):
         """Simulate analysis completion for demonstration."""
@@ -435,52 +569,114 @@ class AnalysisPanel(QWidget):
         self.results_ready.emit(results)
 
     def update_results_display(self, results: Dict[str, Any]):
-        """Update the results display."""
+        """Update the results display with real analysis results."""
         display_text = "QAQC Analysis Results\n"
         display_text += "=" * 50 + "\n\n"
 
+        # Skip metadata keys
+        skip_keys = ['total_samples', 'analysis_date']
+
         for analysis_type, result in results.items():
-            if result.get('enabled', False):
-                status = result.get('status', 'UNKNOWN')
+            if analysis_type in skip_keys:
+                continue
+
+            if isinstance(result, dict) and 'error' in result:
+                display_text += f"{analysis_type.upper()} ANALYSIS: ERROR\n"
+                display_text += f"  • {result['error']}\n\n"
+                continue
+
+            # Get status from real analysis results
+            if isinstance(result, dict):
+                overall_acceptable = result.get('overall_acceptable', False)
+                status = "PASS" if overall_acceptable else "FAIL"
                 status_color = "✓" if status == "PASS" else "✗"
 
                 display_text += f"{analysis_type.upper()} ANALYSIS: {status_color} {status}\n"
 
                 if analysis_type == 'standards':
-                    display_text += f"  • Z-Scores: {result.get('z_scores', [])}\n"
-                    display_text += f"  • Bias: {result.get('bias', 0):.3f}\n"
-                    display_text += f"  • Recovery: {result.get('recovery', 0):.1f}%\n"
-                    display_text += f"  • Precision: {result.get('precision', 0):.1f}%\n"
+                    bias = result.get('bias', {})
+                    recovery = result.get('recovery', {})
+                    precision = result.get('precision', {})
+                    summary = result.get('summary', {})
+
+                    display_text += f"  • Measurements: {summary.get('n_measurements', 0)}\n"
+                    display_text += f"  • Certified Value: {summary.get('certified_value', 0):.3f} g/t\n"
+                    if bias.get('z_scores'):
+                        z_scores = bias['z_scores']
+                        display_text += f"  • Z-Scores: {[f'{z:.2f}' for z in z_scores[:5]]}{'...' if len(z_scores) > 5 else ''}\n"
+                    display_text += f"  • Max Z-Score: {bias.get('max_z_score', 0):.2f}\n"
+                    display_text += f"  • Mean Recovery: {recovery.get('mean_recovery', 0):.1f}%\n"
+                    display_text += f"  • Precision (RSD): {precision.get('rsd', 0):.1f}%\n"
 
                 elif analysis_type == 'blanks':
-                    display_text += f"  • Contamination: {result.get('contamination_count', 0)} samples\n"
-                    display_text += f"  • Carry-over: {'Yes' if result.get('carryover_detected', False) else 'No'}\n"
-                    display_text += f"  • MDL: {result.get('mdl', 0):.3f} g/t\n"
+                    contamination = result.get('contamination', {})
+                    carryover = result.get('carryover', {})
+                    summary = result.get('summary', {})
+
+                    display_text += f"  • Blanks Analyzed: {summary.get('n_blanks', 0)}\n"
+                    display_text += f"  • MDL: {summary.get('mdl', 0):.4f} g/t\n"
+                    contaminated = contamination.get('contaminated_samples', [])
+                    display_text += f"  • Contaminated: {len(contaminated)} samples\n"
+                    display_text += f"  • Contamination Rate: {contamination.get('contamination_rate', 0)*100:.1f}%\n"
+                    display_text += f"  • Carry-over Detected: {'Yes' if carryover.get('carryover_detected', False) else 'No'}\n"
 
                 elif analysis_type == 'duplicates':
-                    display_text += f"  • RPD Values: {result.get('rpd_values', [])}\n"
-                    display_text += f"  • Precision: {result.get('precision', 0):.1f}%\n"
-                    display_text += f"  • Correlation: {result.get('correlation', 0):.2f}\n"
+                    precision = result.get('precision', {})
+                    summary = result.get('summary', {})
+
+                    display_text += f"  • Duplicate Pairs: {summary.get('n_duplicates', 0)}\n"
+                    rpd_values = precision.get('rpd_values', [])
+                    if rpd_values:
+                        display_text += f"  • RPD Values: {[f'{r:.1f}%' for r in rpd_values[:5]]}{'...' if len(rpd_values) > 5 else ''}\n"
+                    display_text += f"  • Mean RPD: {precision.get('mean_rpd', 0):.1f}%\n"
+                    display_text += f"  • Max RPD: {precision.get('max_rpd', 0):.1f}%\n"
+                    display_text += f"  • Nugget Ratio: {result.get('nugget_ratio', 0):.3f}\n"
 
                 display_text += "\n"
 
+        # Add summary
+        if 'total_samples' in results:
+            display_text += f"\nTotal Samples: {results['total_samples']}\n"
+        if 'analysis_date' in results:
+            display_text += f"Analysis Date: {results['analysis_date']}\n"
+
         self.results_display.setPlainText(display_text)
 
+    def on_analysis_error(self, error_message: str):
+        """Handle analysis error."""
+        self.status_label.setText(f"Analysis error: {error_message[:50]}...")
+        self.status_label.setStyleSheet("color: #E74C3C; font-weight: bold;")
+        self.progress_bar.setVisible(False)
+        self.run_button.setEnabled(True)
+
+        # Show error in results display
+        self.results_display.setPlainText(f"Analysis Error:\n{error_message}")
+
     def get_current_configuration(self) -> Dict[str, Any]:
-        """Get current analysis configuration."""
+        """Get current analysis configuration including analysis parameters."""
         return {
             'standards_enabled': self.standards_check.isChecked(),
             'blanks_enabled': self.blanks_check.isChecked(),
             'duplicates_enabled': self.duplicates_check.isChecked(),
-            'z_score_threshold': self.z_score_spin.value(),
-            'recovery_limits': [self.recovery_min_spin.value(), self.recovery_max_spin.value()],
-            'precision_threshold': self.precision_spin.value(),
-            'contamination_threshold': self.contamination_spin.value(),
-            'carryover_threshold': self.carryover_spin.value(),
-            'blank_limit': self.blank_limit_spin.value(),
-            'rpd_threshold': self.rpd_spin.value(),
-            'precision_limit': self.precision_limit_spin.value(),
-            'nugget_threshold': self.nugget_spin.value()
+            'crm_database': 'crm_database.yaml',  # Default CRM database path
+            'crm_name': None,  # Can be set via UI later
+            'analysis_config': {
+                'standards': {
+                    'z_score_threshold': self.z_score_spin.value(),
+                    'recovery_limits': (self.recovery_min_spin.value(), self.recovery_max_spin.value()),
+                    'precision_threshold': self.precision_spin.value()
+                },
+                'blanks': {
+                    'contamination_threshold': self.contamination_spin.value(),
+                    'carryover_threshold': self.carryover_spin.value(),
+                    'blank_limit': self.blank_limit_spin.value()
+                },
+                'duplicates': {
+                    'rpd_threshold': self.rpd_spin.value(),
+                    'precision_limit': self.precision_limit_spin.value(),
+                    'nugget_threshold': self.nugget_spin.value()
+                }
+            }
         }
 
     def on_configuration_changed(self):
@@ -493,6 +689,7 @@ class AnalysisPanel(QWidget):
         """Reset the analysis panel to initial state."""
         self.current_configuration = {}
         self.current_results = None
+        self.data_info = None
 
         # Reset checkboxes
         self.standards_check.setChecked(True)

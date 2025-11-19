@@ -287,7 +287,8 @@ class ExcelReporter:
             filename = f"qaqc_report_{timestamp}.xlsx"
 
         # Ensure output directory exists
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        output_dir = os.path.dirname(filename) or "."
+        os.makedirs(output_dir, exist_ok=True)
 
         # Create Excel writer
         with pd.ExcelWriter(filename, engine='openpyxl') as writer:
@@ -540,7 +541,8 @@ SPATIAL ANALYSIS:
             filename = f"qaqc_report_{timestamp}.pdf"
 
         # Ensure output directory exists
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        output_dir = os.path.dirname(filename) or "."
+        os.makedirs(output_dir, exist_ok=True)
 
         # Create report content
         report_content = self._build_report_content(analysis_results, plots)

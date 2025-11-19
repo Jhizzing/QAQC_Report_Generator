@@ -16,7 +16,7 @@ The program automates the validation and reporting of QAQC results from drilling
 - **✅ Testing**: 101 tests passing with comprehensive coverage
 - **✅ Mock Data Validation**: Successfully tested with realistic datasets
 - **✅ Production Ready**: Full CLI interface with professional output
-- **✅ GUI Complete**: Fully functional PyQt6 GUI with data import, analysis, and visualization
+- **✅ GUI Complete**: Fully functional PyQt6 GUI with data import, analysis, visualization, and report export (Excel/PDF)
 
 ### Key Achievements
 - **Data Processing**: Robust CSV/XLSX import with intelligent column mapping
@@ -98,6 +98,18 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 ```
+
+### GUI Workflow
+
+1. Activate the virtual environment and launch the GUI:
+   ```bash
+   source venv/bin/activate
+   python3 launch_gui.py
+   ```
+2. **Import Data** (left panel) – supports CSV/XLSX with preview and column mapping.
+3. **Configure & Run Analysis** (center panel) – standards, blanks, duplicates analyzers with CRM validation. Results are written back to the GUI immediately.
+4. **Visualize Results** (bottom panel) – control charts, histograms, scatter plots, with PASS/FAIL summaries sourced from the analysis engine.
+5. **Export Reports** – `File → Export Results…` lets you generate Excel (`.xlsx`) and/or PDF (`.pdf`) QAQC summaries. Reports default to the `output/` directory unless another path is chosen.
 
 ### Basic Usage
 ```bash

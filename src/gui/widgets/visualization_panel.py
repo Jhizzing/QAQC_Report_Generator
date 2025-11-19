@@ -100,6 +100,7 @@ class VisualizationPanel(QWidget):
         # Visualization state
         self.current_plots: Dict[str, Any] = {}
         self.plot_data: Optional[Dict[str, Any]] = None
+        self.analysis_results: Optional[Dict[str, Any]] = None
         self.plot_generator = PlotGenerator()
 
         # Initialize UI
@@ -300,20 +301,36 @@ class VisualizationPanel(QWidget):
                 self.create_all_plots()
 
             self.export_button.setEnabled(True)
-            self.plot_info_label.setText(f"Generated: {plot_type}")
-            self.plot_info_label.setStyleSheet("""
-                QLabel {
-                    color: #27AE60;
-                    font-weight: bold;
-                    padding: 8px;
-                    background-color: #F8F9FA;
-                    border: 1px solid #DEE2E6;
-                    border-radius: 4px;
-                }
-            """)
+            summary = self._build_plot_summary(plot_type)
+            if summary:
+                self.plot_info_label.setText(summary)
+                self.plot_info_label.setStyleSheet("""
+                    QLabel {
+                        color: #1A1A1A;
+                        font-weight: bold;
+                        padding: 8px;
+                        background-color: #E7F5EE;
+                        border: 1px solid #B6E0C2;
+                        border-radius: 4px;
+                    }
+                """)
+            else:
+                self.plot_info_label.setText(f"Generated: {plot_type}")
+                self.plot_info_label.setStyleSheet("""
+                    QLabel {
+                        color: #27AE60;
+                        font-weight: bold;
+                        padding: 8px;
+                        background-color: #F8F9FA;
+                        border: 1px solid #DEE2E6;
+                        border-radius: 4px;
+                    }
+                """)
 
         except Exception as e:
-            QMessageBox.critical(self, "Plot Error", f"Failed to generate plot: {str(e)}")
+            print(f"Error generating plot: {e}")
+            import traceback
+            traceback.print_exc()
             self.plot_info_label.setText(f"Error: {str(e)}")
             self.plot_info_label.setStyleSheet("""
                 QLabel {
@@ -368,8 +385,21 @@ class VisualizationPanel(QWidget):
             # Calculate statistics
             mean_value = np.mean(standards_data)
             std_value = np.std(standards_data)
-            certified_value = mean_value  # Use mean as certified value if not available
+            certified_value = mean_value  # Default if no CRM info available
             uncertainty = std_value
+
+            # Incorporate analysis results if available
+            analysis_result = None
+            if hasattr(self, 'analysis_results') and self.analysis_results:
+                analysis_result = self.analysis_results.get('standards')
+
+            if isinstance(analysis_result, dict):
+                summary = analysis_result.get('summary', {})
+                precision = analysis_result.get('precision', {})
+
+                certified_value = summary.get('certified_value', certified_value)
+                uncertainty = summary.get('uncertainty', uncertainty)
+                std_value = precision.get('std_dev', std_value) or std_value
 
             ax = canvas.fig.add_subplot(111)
 
@@ -381,18 +411,22 @@ class VisualizationPanel(QWidget):
             # Add control limits
             ax.axhline(y=certified_value, color=canvas.colors['success'],
                       linestyle='-', linewidth=2, label=f'Mean: {certified_value:.3f}')
-            ax.axhline(y=certified_value + 2*uncertainty, color=canvas.colors['warning'],
+            ax.axhline(y=certified_value + 2*std_value, color=canvas.colors['warning'],
                       linestyle='--', linewidth=1, label='±2σ')
-            ax.axhline(y=certified_value - 2*uncertainty, color=canvas.colors['warning'],
+            ax.axhline(y=certified_value - 2*std_value, color=canvas.colors['warning'],
                       linestyle='--', linewidth=1)
-            ax.axhline(y=certified_value + 3*uncertainty, color=canvas.colors['error'],
+            ax.axhline(y=certified_value + 3*std_value, color=canvas.colors['error'],
                       linestyle=':', linewidth=1, label='±3σ')
-            ax.axhline(y=certified_value - 3*uncertainty, color=canvas.colors['error'],
+            ax.axhline(y=certified_value - 3*std_value, color=canvas.colors['error'],
                       linestyle=':', linewidth=1)
 
             ax.set_xlabel('Sample Number')
             ax.set_ylabel('Concentration (g/t)')
-            ax.set_title(f'Standards Control Chart (n={len(standards_data)})')
+            title = f'Standards Control Chart (n={len(standards_data)})'
+            if isinstance(analysis_result, dict):
+                status = "PASS" if analysis_result.get('overall_acceptable', False) else "FAIL"
+                title += f' • {status}'
+            ax.set_title(title)
             ax.legend()
             ax.grid(True, alpha=0.3)
 
@@ -471,6 +505,17 @@ class VisualizationPanel(QWidget):
             else:
                 dl = np.percentile(blanks_data, 50)  # Use median as estimate
 
+            contamination_threshold = 3 * dl
+            analysis_result = None
+            if hasattr(self, 'analysis_results') and self.analysis_results:
+                analysis_result = self.analysis_results.get('blanks')
+                if isinstance(analysis_result, dict):
+                    contamination_info = analysis_result.get('contamination', {})
+                    mdl_value = analysis_result.get('mdl') or analysis_result.get('summary', {}).get('mdl')
+                    if mdl_value:
+                        dl = mdl_value
+                    contamination_threshold = contamination_info.get('threshold', contamination_threshold)
+
             ax = canvas.fig.add_subplot(111)
 
             # Create histogram
@@ -482,13 +527,16 @@ class VisualizationPanel(QWidget):
             ax.axvline(x=dl, color=canvas.colors['warning'],
                       linestyle='--', linewidth=2, label=f'Detection Limit: {dl:.3f}')
 
-            # Add contamination threshold (3x DL)
-            threshold = 3 * dl
-            ax.axvline(x=threshold, color=canvas.colors['error'],
-                      linestyle=':', linewidth=2, label=f'Contamination Threshold: {threshold:.3f}')
+            # Add contamination threshold
+            ax.axvline(x=contamination_threshold, color=canvas.colors['error'],
+                      linestyle=':', linewidth=2, label=f'Contamination Threshold: {contamination_threshold:.3f}')
 
             # Highlight contaminated samples
-            contaminated = [x for x in blanks_data if x > threshold]
+            contaminated = [x for x in blanks_data if x > contamination_threshold]
+            if isinstance(analysis_result, dict):
+                contaminated_from_results = analysis_result.get('contamination', {}).get('contaminated_samples')
+                if contaminated_from_results:
+                    contaminated = contaminated_from_results
             if contaminated:
                 ax.scatter(contaminated, [0.1] * len(contaminated),
                           color=canvas.colors['error'], s=100, zorder=5,
@@ -496,7 +544,11 @@ class VisualizationPanel(QWidget):
 
             ax.set_xlabel('Concentration (g/t)')
             ax.set_ylabel('Frequency')
-            ax.set_title(f'Blanks Distribution (n={len(blanks_data)})')
+            title = f'Blanks Distribution (n={len(blanks_data)})'
+            if isinstance(analysis_result, dict):
+                status = "PASS" if analysis_result.get('overall_acceptable', False) else "FAIL"
+                title += f' • {status}'
+            ax.set_title(title)
             ax.legend()
             ax.grid(True, alpha=0.3)
 
@@ -610,17 +662,30 @@ class VisualizationPanel(QWidget):
                 ax.text(0.05, 0.95, f'R² = {r_squared:.3f}', transform=ax.transAxes,
                        bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
-            # Add RPD lines (20%)
-            rpd_20 = 0.20
-            ax.plot([min_val, max_val], [min_val * (1 + rpd_20), max_val * (1 + rpd_20)],
+            # Determine RPD threshold from analysis results or fallback to 20%
+            rpd_threshold = 0.20
+            analysis_result = None
+            if hasattr(self, 'analysis_results') and self.analysis_results:
+                analysis_result = self.analysis_results.get('duplicates')
+                if isinstance(analysis_result, dict):
+                    precision_info = analysis_result.get('precision', {})
+                    threshold_value = precision_info.get('threshold')
+                    if threshold_value is not None:
+                        rpd_threshold = (threshold_value / 100.0) if threshold_value > 1 else threshold_value
+
+            ax.plot([min_val, max_val], [min_val * (1 + rpd_threshold), max_val * (1 + rpd_threshold)],
                    color=canvas.colors['warning'], linestyle='--', linewidth=1,
-                   label='±20% RPD')
-            ax.plot([min_val, max_val], [min_val * (1 - rpd_20), max_val * (1 - rpd_20)],
+                   label=f'±{rpd_threshold*100:.0f}% RPD')
+            ax.plot([min_val, max_val], [min_val * (1 - rpd_threshold), max_val * (1 - rpd_threshold)],
                    color=canvas.colors['warning'], linestyle='--', linewidth=1)
 
             ax.set_xlabel('First Analysis (g/t)')
             ax.set_ylabel('Duplicate Analysis (g/t)')
-            ax.set_title(f'Duplicates Scatter Plot (n={len(x_data)} pairs)')
+            title = f'Duplicates Scatter Plot (n={len(x_data)} pairs)'
+            if isinstance(analysis_result, dict):
+                status = "PASS" if analysis_result.get('overall_acceptable', False) else "FAIL"
+                title += f' • {status}'
+            ax.set_title(title)
             ax.legend()
             ax.grid(True, alpha=0.3)
 
@@ -801,10 +866,29 @@ class VisualizationPanel(QWidget):
             self.plot_data = None
             print("No valid data provided - plot data cleared")
 
+    def set_analysis_results(self, results: Dict[str, Any]):
+        """Store analysis results for use in visualization summaries."""
+        self.analysis_results = results
+        if results:
+            summary = self._build_plot_summary(self.plot_type_combo.currentText())
+            if summary:
+                self.plot_info_label.setText(summary)
+                self.plot_info_label.setStyleSheet("""
+                    QLabel {
+                        color: #1A1A1A;
+                        font-weight: bold;
+                        padding: 8px;
+                        background-color: #E7F5EE;
+                        border: 1px solid #B6E0C2;
+                        border-radius: 4px;
+                    }
+                """)
+
     def reset(self):
         """Reset the visualization panel to initial state."""
         self.current_plots = {}
         self.plot_data = None
+        self.analysis_results = None
 
         # Clear all canvases
         self.standards_canvas.fig.clear()
@@ -826,3 +910,66 @@ class VisualizationPanel(QWidget):
         """)
 
         self.export_button.setEnabled(False)
+
+    def _build_plot_summary(self, plot_type: str) -> Optional[str]:
+        """Build a summary message for the plot based on analysis results."""
+        if not self.analysis_results or not isinstance(self.analysis_results, dict):
+            return None
+
+        summary_lines: List[str] = []
+
+        mapping = {
+            "Standards Control Chart": "standards",
+            "Blanks Histogram": "blanks",
+            "Duplicates Scatter Plot": "duplicates",
+            "Results Distribution": None,
+            "All Plots": None,
+        }
+
+        key = mapping.get(plot_type)
+        if key and key in self.analysis_results:
+            result = self.analysis_results[key]
+            if isinstance(result, dict):
+                if 'error' in result:
+                    summary_lines.append(f"{plot_type}: ERROR - {result['error']}")
+                else:
+                    status = "PASS" if result.get('overall_acceptable', False) else "FAIL"
+                    summary_lines.append(f"{plot_type}: {status}")
+
+                    if key == 'standards':
+                        bias = result.get('bias', {})
+                        recovery = result.get('recovery', {})
+                        precision = result.get('precision', {})
+                        summary_lines.append(
+                            f"Max Z: {bias.get('max_z_score', 0):.2f} | Mean Recovery: {recovery.get('mean_recovery', 0):.1f}% | RSD: {precision.get('rsd', 0):.1f}%"
+                        )
+                    elif key == 'blanks':
+                        contamination = result.get('contamination', {})
+                        summary_lines.append(
+                            f"Contaminated: {len(contamination.get('contaminated_samples', []))} | Rate: {contamination.get('contamination_rate', 0)*100:.1f}%"
+                        )
+                    elif key == 'duplicates':
+                        precision = result.get('precision', {})
+                        summary_lines.append(
+                            f"Mean RPD: {precision.get('mean_rpd', 0):.1f}% | Max RPD: {precision.get('max_rpd', 0):.1f}%"
+                        )
+
+        if 'total_samples' in self.analysis_results and plot_type == 'Results Distribution':
+            summary_lines.append(
+                f"Total Samples: {self.analysis_results.get('total_samples', 0)}"
+            )
+
+        if plot_type == 'All Plots':
+            statuses: List[str] = []
+            for key in ('standards', 'blanks', 'duplicates'):
+                result = self.analysis_results.get(key)
+                if isinstance(result, dict):
+                    if 'error' in result:
+                        statuses.append(f"{key.title()}: ERROR")
+                    else:
+                        status = "PASS" if result.get('overall_acceptable', False) else "FAIL"
+                        statuses.append(f"{key.title()}: {status}")
+            if statuses:
+                summary_lines.extend(statuses)
+
+        return "\n".join(summary_lines) if summary_lines else None

@@ -24,6 +24,7 @@ from .widgets.analysis_panel import AnalysisPanel
 from .widgets.visualization_panel import VisualizationPanel
 from .styles.geological_theme import GeologicalTheme
 from .utils.gui_helpers import GuiHelpers
+from src.reporting import ExcelReporter, PDFReporter
 
 
 class QAQCApplication(QMainWindow):
@@ -43,6 +44,10 @@ class QAQCApplication(QMainWindow):
         self.current_data = None
         self.analysis_results = None
         self.config = {}
+        self.output_dir = Path.cwd() / "output"
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.excel_reporter = ExcelReporter({'include_raw_data': True})
+        self.pdf_reporter = PDFReporter({'include_plots': True})
 
         # Initialize UI
         self.setup_ui()
@@ -280,10 +285,13 @@ class QAQCApplication(QMainWindow):
         # Connect data panel signals
         self.data_panel.data_loaded.connect(self.on_data_loaded)
         self.data_panel.data_changed.connect(self.on_data_changed)
+        self.data_panel.column_mapping_changed.connect(self.on_column_mapping_changed)
+        self.data_panel.analysis_requested.connect(self.on_analysis_requested)
+        self.data_panel.configuration_changed.connect(self.on_configuration_changed)
 
-        # Connect analysis panel signals
         self.analysis_panel.analysis_requested.connect(self.on_analysis_requested)
         self.analysis_panel.configuration_changed.connect(self.on_configuration_changed)
+        self.analysis_panel.results_ready.connect(self.on_analysis_results)
 
         # Connect visualization panel signals
         self.visualization_panel.plot_requested.connect(self.on_plot_requested)
@@ -383,9 +391,117 @@ class QAQCApplication(QMainWindow):
         if not self.analysis_results:
             QMessageBox.warning(self, "No Results", "No analysis results to export.")
             return
+        if not self.current_data or 'dataframe' not in self.current_data:
+            QMessageBox.warning(self, "No Data", "Raw data is unavailable for export.")
+            return
 
-        # TODO: Implement result export
-        QMessageBox.information(self, "Export Results", "Result export not yet implemented.")
+        dialog = QMessageBox(self)
+        dialog.setWindowTitle("Export QAQC Results")
+        dialog.setText("Select the report format to export.")
+        excel_button = dialog.addButton("Excel (.xlsx)", QMessageBox.ButtonRole.AcceptRole)
+        pdf_button = dialog.addButton("PDF (.pdf)", QMessageBox.ButtonRole.AcceptRole)
+        both_button = dialog.addButton("Excel + PDF", QMessageBox.ButtonRole.AcceptRole)
+        cancel_button = dialog.addButton(QMessageBox.StandardButton.Cancel)
+        dialog.exec()
+
+        clicked = dialog.clickedButton()
+        if clicked == cancel_button or clicked is None:
+            return
+
+        export_excel = clicked in (excel_button, both_button)
+        export_pdf = clicked in (pdf_button, both_button)
+
+        exported_paths = []
+
+        if export_excel:
+            path = self._export_excel_report()
+            if path:
+                exported_paths.append(path)
+
+        if export_pdf:
+            path = self._export_pdf_report()
+            if path:
+                exported_paths.append(path)
+
+        if exported_paths:
+            message = "Export completed successfully:\n\n" + "\n".join(exported_paths)
+            QMessageBox.information(self, "Export Successful", message)
+
+    def _export_excel_report(self) -> Optional[str]:
+        """Export Excel report and return generated path."""
+        default_filename = self.output_dir / "qaqc_report.xlsx"
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Excel Report",
+            str(default_filename),
+            "Excel Report (*.xlsx)"
+        )
+
+        if not filename:
+            return None
+
+        filename_path = Path(filename)
+        if filename_path.suffix.lower() != ".xlsx":
+            filename_path = filename_path.with_suffix(".xlsx")
+
+        raw_data = {'data': self.current_data['dataframe']}
+
+        try:
+            generated_path = self.excel_reporter.generate_excel_report(
+                self.analysis_results,
+                raw_data=raw_data,
+                filename=str(filename_path)
+            )
+            return generated_path
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "Export Failed",
+                f"Failed to generate Excel report:\n{exc}"
+            )
+            return None
+
+    def _export_pdf_report(self) -> Optional[str]:
+        """Export PDF report and return generated path."""
+        default_filename = self.output_dir / "qaqc_report.pdf"
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export PDF Report",
+            str(default_filename),
+            "PDF Report (*.pdf)"
+        )
+
+        if not filename:
+            return None
+
+        filename_path = Path(filename)
+        if filename_path.suffix.lower() != ".pdf":
+            filename_path = filename_path.with_suffix(".pdf")
+
+        plots_summary = None
+        if hasattr(self.visualization_panel, 'plot_info_label'):
+            summary_text = self.visualization_panel.plot_info_label.text()
+            if summary_text:
+                plots_summary = {
+                    'Plot Summary': {
+                        'description': summary_text
+                    }
+                }
+
+        try:
+            generated_path = self.pdf_reporter.generate_pdf_report(
+                self.analysis_results,
+                plots=plots_summary,
+                filename=str(filename_path)
+            )
+            return generated_path
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "Export Failed",
+                f"Failed to generate PDF report:\n{exc}"
+            )
+            return None
 
     def run_analysis(self):
         """Run QAQC analysis."""
@@ -393,8 +509,8 @@ class QAQCApplication(QMainWindow):
             QMessageBox.warning(self, "No Data", "Please load data before running analysis.")
             return
 
-        # TODO: Implement analysis execution
-        QMessageBox.information(self, "Run Analysis", "Analysis execution not yet implemented.")
+        # Trigger analysis via analysis panel
+        self.analysis_panel.run_analysis()
 
     def configure_analysis(self):
         """Configure analysis parameters."""
@@ -449,6 +565,10 @@ class QAQCApplication(QMainWindow):
         self.update_data_info()
         self.status_label.setText("Data loaded successfully")
 
+        # Pass data to analysis panel
+        if hasattr(self, 'analysis_panel'):
+            self.analysis_panel.set_data_info(data_info)
+
         # Pass data to visualization panel only if there's valid data
         if hasattr(self, 'visualization_panel'):
             # Check for dataframe in data_info
@@ -472,6 +592,9 @@ class QAQCApplication(QMainWindow):
         self.current_data = data_info
         self.update_data_info()
 
+        if hasattr(self, 'analysis_panel'):
+            self.analysis_panel.set_data_info(data_info)
+
     def on_analysis_requested(self, configuration):
         """Handle analysis requested signal."""
         self.run_analysis_with_config(configuration)
@@ -479,6 +602,13 @@ class QAQCApplication(QMainWindow):
     def on_configuration_changed(self, configuration):
         """Handle configuration changed signal."""
         self.config = configuration
+
+    def on_analysis_results(self, results):
+        """Handle analysis results and update visualization panel."""
+        self.analysis_results = results
+        if hasattr(self, 'visualization_panel'):
+            self.visualization_panel.set_analysis_results(results)
+        self.status_label.setText("Analysis results available")
 
     def on_plot_requested(self, plot_type):
         """Handle plot requested signal."""
@@ -512,14 +642,21 @@ class QAQCApplication(QMainWindow):
 
     def run_analysis_with_config(self, configuration):
         """Run analysis with given configuration."""
-        # TODO: Implement analysis execution
-        pass
+        # Store configuration and trigger analysis
+        self.config = configuration
+        if self.current_data:
+            self.analysis_panel.run_analysis()
 
     def update_data_info(self):
         """Update data information in status bar."""
         if self.current_data:
-            # TODO: Update with actual data info
-            self.data_info_label.setText("Data loaded")
+            dataframe = self.current_data.get('dataframe')
+            if dataframe is not None:
+                self.data_info_label.setText(
+                    f"Samples: {len(dataframe)} | Columns: {len(dataframe.columns)}"
+                )
+            else:
+                self.data_info_label.setText("Data loaded")
         else:
             self.data_info_label.setText("No data loaded")
 
