@@ -388,57 +388,66 @@ class GeologicalTheme:
             border-color: {self.colors['primary']};
         }}
 
-        /* Combo Boxes */
+        /* Combo Boxes - Redesigned (Button Style) */
         QComboBox {{
             background-color: {self.colors['surface']};
             color: {self.colors['text_primary']};
             border: {self.sizes['border_width']} solid {self.colors['border']};
             border-radius: {self.sizes['border_radius']};
-            padding: {self.sizes['padding_small']};
-            min-height: 28px;
+            padding: 6px 10px;  /* Symmetric padding */
+            min-height: 30px;
+            text-align: center;
         }}
 
         QComboBox:focus {{
             border-color: {self.colors['primary']};
+            background-color: {self.colors['surface']};
+        }}
+
+        QComboBox:hover {{
+            border-color: {self.colors['border_dark']};
+            background-color: #FAFBFC;
         }}
 
         QComboBox::drop-down {{
+            width: 0px;
             border: none;
-            width: 20px;
+            background-color: transparent;
         }}
 
         QComboBox::down-arrow {{
             image: none;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            border-top: 5px solid {self.colors['text_primary']};
-            margin-right: 5px;
+            border: none;
+            width: 0;
+            height: 0;
         }}
 
-        /* Combo Box Dropdown Items - increased row height and very subtle selection */
+        /* Combo Box Dropdown Items - light and clean */
         QComboBox QAbstractItemView {{
             background-color: {self.colors['surface']};
             border: 1px solid {self.colors['border']};
-            border-radius: {self.sizes['border_radius']};
-            selection-background-color: #F0F7FA;
+            border-radius: 6px;
+            padding: 4px;
+            selection-background-color: #F8FAFB;
             selection-color: {self.colors['text_primary']};
             outline: none;
         }}
 
         QComboBox QAbstractItemView::item {{
-            min-height: 32px;
-            padding: 6px 10px;
+            min-height: 30px;
+            padding: 8px 12px;
             color: {self.colors['text_primary']};
-            background-color: {self.colors['surface']};
+            background-color: transparent;
+            border-radius: 4px;
         }}
 
         QComboBox QAbstractItemView::item:selected {{
-            background-color: #F0F7FA;
+            background-color: #EDF2F7;
             color: {self.colors['text_primary']};
         }}
 
         QComboBox QAbstractItemView::item:hover {{
-            background-color: #F5F8FA;
+            background-color: #F7FAFC;
             color: {self.colors['text_primary']};
         }}
 
@@ -786,6 +795,68 @@ class GeologicalTheme:
         QScrollBar::add-line:horizontal,
         QScrollBar::sub-line:horizontal {{
             width: 0px;
+        }}
+
+        /* Sidebar Styles */
+        QWidget#sidebar {{
+            background-color: #2E5266; /* Primary Dark */
+            border-right: 1px solid #1A3A4A;
+        }}
+
+        QFrame#sidebarHeader {{
+            background-color: #1A3A4A;
+            border-bottom: 1px solid #4A7C59;
+        }}
+
+        QLabel#sidebarTitle {{
+            color: #FFFFFF;
+            font-size: 18px;
+            font-weight: bold;
+        }}
+
+        QLabel#sidebarSubtitle {{
+            color: #A0C1B8;
+            font-size: 12px;
+            font-style: italic;
+        }}
+
+        QFrame#navContainer {{
+            background-color: transparent;
+            border: none;
+        }}
+
+        QWidget#sidebar QPushButton {{
+            text-align: left;
+            padding-left: 20px;
+            border: none;
+            border-radius: 0px;
+            background-color: transparent;
+            color: #E0E0E0;
+            font-size: 14px;
+            border-left: 4px solid transparent;
+        }}
+
+        QWidget#sidebar QPushButton:hover {{
+            background-color: #3A6378;
+            color: #FFFFFF;
+            border-left: 4px solid #4A7C59; /* Primary Light accent */
+        }}
+
+        QWidget#sidebar QPushButton:checked {{
+            background-color: #1A3A4A;
+            color: #FFFFFF;
+            border-left: 4px solid #D2691E; /* Accent color */
+            font-weight: bold;
+        }}
+
+        QFrame#sidebarFooter {{
+            background-color: #1A3A4A;
+            border-top: 1px solid #2E5266;
+        }}
+
+        QLabel#sidebarVersion {{
+            color: #607D8B;
+            font-size: 10px;
         }}
         """
 

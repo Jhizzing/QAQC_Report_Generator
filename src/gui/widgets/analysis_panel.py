@@ -13,7 +13,7 @@ import pandas as pd
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QCheckBox, QGroupBox, QSpinBox, QDoubleSpinBox, QComboBox,
-    QProgressBar, QTextEdit, QTabWidget, QFormLayout
+    QProgressBar, QTextEdit, QTabWidget, QFormLayout, QGridLayout
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QThread
 from PyQt6.QtGui import QFont
@@ -298,6 +298,10 @@ class AnalysisPanel(QWidget):
         self.duplicates_tab = self.create_duplicates_tab()
         self.params_tabs.addTab(self.duplicates_tab, "Duplicates")
 
+        # JORC Compliance tab
+        self.jorc_tab = self.create_jorc_tab()
+        self.params_tabs.addTab(self.jorc_tab, "JORC Compliance")
+
         layout.addWidget(self.params_tabs)
 
         # Analysis execution group
@@ -460,6 +464,135 @@ class AnalysisPanel(QWidget):
 
         return tab
 
+    def create_jorc_tab(self) -> QWidget:
+        """Create JORC compliance parameters tab."""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        layout.setSpacing(15)
+        layout.setContentsMargins(10, 10, 10, 10)
+
+        # Insertion Rates Group - Use Grid Layout for compactness
+        insertion_group = QGroupBox("JORC Insertion Rate Targets (%)")
+        insertion_layout = QGridLayout(insertion_group)
+        insertion_layout.setSpacing(10)
+
+        # Standards
+        insertion_layout.addWidget(QLabel("Standards:"), 0, 0)
+        self.jorc_standards_spin = QDoubleSpinBox()
+        self.jorc_standards_spin.setRange(0.0, 20.0)
+        self.jorc_standards_spin.setValue(5.0)
+        self.jorc_standards_spin.setDecimals(1)
+        self.jorc_standards_spin.setSuffix("%")
+        self.jorc_standards_spin.setToolTip("JORC recommended: ≥5%")
+        insertion_layout.addWidget(self.jorc_standards_spin, 0, 1)
+
+        # Blanks
+        insertion_layout.addWidget(QLabel("Blanks:"), 0, 2)
+        self.jorc_blanks_spin = QDoubleSpinBox()
+        self.jorc_blanks_spin.setRange(0.0, 20.0)
+        self.jorc_blanks_spin.setValue(5.0)
+        self.jorc_blanks_spin.setDecimals(1)
+        self.jorc_blanks_spin.setSuffix("%")
+        self.jorc_blanks_spin.setToolTip("JORC recommended: ≥5%")
+        insertion_layout.addWidget(self.jorc_blanks_spin, 0, 3)
+
+        # Duplicates
+        insertion_layout.addWidget(QLabel("Duplicates:"), 1, 0)
+        self.jorc_duplicates_spin = QDoubleSpinBox()
+        self.jorc_duplicates_spin.setRange(0.0, 20.0)
+        self.jorc_duplicates_spin.setValue(5.0)
+        self.jorc_duplicates_spin.setDecimals(1)
+        self.jorc_duplicates_spin.setSuffix("%")
+        self.jorc_duplicates_spin.setToolTip("JORC recommended: ≥5%")
+        insertion_layout.addWidget(self.jorc_duplicates_spin, 1, 1)
+
+        # Total QAQC
+        insertion_layout.addWidget(QLabel("Total QAQC:"), 1, 2)
+        self.jorc_total_spin = QDoubleSpinBox()
+        self.jorc_total_spin.setRange(0.0, 50.0)
+        self.jorc_total_spin.setValue(20.0)
+        self.jorc_total_spin.setDecimals(1)
+        self.jorc_total_spin.setSuffix("%")
+        self.jorc_total_spin.setToolTip("JORC recommended: ≥20%")
+        insertion_layout.addWidget(self.jorc_total_spin, 1, 3)
+
+        # Use JORC Defaults button
+        jorc_defaults_btn = QPushButton("Use JORC Defaults")
+        jorc_defaults_btn.setToolTip("Set all rates to JORC recommended values (5%/5%/5%/20%)")
+        jorc_defaults_btn.clicked.connect(self.set_jorc_defaults)
+        insertion_layout.addWidget(jorc_defaults_btn, 2, 0, 1, 4)
+
+        layout.addWidget(insertion_group)
+
+        # Bottom section - Horizontal layout for Westgard and Precision
+        bottom_layout = QHBoxLayout()
+        
+        # Westgard Rules Group
+        westgard_group = QGroupBox("Westgard Rules")
+        westgard_layout = QVBoxLayout(westgard_group)
+        westgard_layout.setSpacing(8)
+
+        self.westgard_enabled = GreenCheckBox("Enable Rules")
+        self.westgard_enabled.setChecked(True)
+        self.westgard_enabled.setToolTip("Enable process control rules for standards analysis")
+        westgard_layout.addWidget(self.westgard_enabled)
+
+        # Add info label
+        info_label = QLabel("Rules: 1-3s, 2-2s,\nR-4s, 10-x")
+        info_label.setStyleSheet("color: #607D8B; font-size: 10px; font-style: italic;")
+        westgard_layout.addWidget(info_label)
+        westgard_layout.addStretch()
+
+        bottom_layout.addWidget(westgard_group)
+
+        # Precision Method Group
+        precision_group = QGroupBox("Precision Method")
+        precision_layout = QFormLayout(precision_group)
+        precision_layout.setSpacing(10)
+
+        self.precision_method_combo = QComboBox()
+        self.precision_method_combo.addItems(["Simple RPD", "Hyperbolic"])
+        self.precision_method_combo.setCurrentIndex(1)  # Default to hyperbolic
+        self.precision_method_combo.setToolTip("Hyperbolic method accounts for nugget effect")
+        precision_layout.addRow("Method:", self.precision_method_combo)
+
+        # Hyperbolic parameters
+        self.hyperbolic_m_spin = QDoubleSpinBox()
+        self.hyperbolic_m_spin.setRange(0.1, 5.0)
+        self.hyperbolic_m_spin.setValue(1.0)
+        self.hyperbolic_m_spin.setDecimals(2)
+        self.hyperbolic_m_spin.setToolTip("Slope (m)")
+        precision_layout.addRow("Slope (m):", self.hyperbolic_m_spin)
+
+        self.hyperbolic_c_spin = QDoubleSpinBox()
+        self.hyperbolic_c_spin.setRange(-2.0, 2.0)
+        self.hyperbolic_c_spin.setValue(0.0)
+        self.hyperbolic_c_spin.setDecimals(2)
+        self.hyperbolic_c_spin.setToolTip("Intercept (c)")
+        precision_layout.addRow("Intercept (c):", self.hyperbolic_c_spin)
+
+        bottom_layout.addWidget(precision_group)
+        
+        layout.addLayout(bottom_layout)
+        layout.addStretch()
+        
+        return tab
+        self.hyperbolic_c_spin.setDecimals(2)
+        self.hyperbolic_c_spin.setToolTip("Intercept parameter for hyperbolic curve")
+        precision_layout.addRow("Hyperbolic C:", self.hyperbolic_c_spin)
+
+        layout.addWidget(precision_group)
+
+        layout.addStretch()
+        return tab
+
+    def set_jorc_defaults(self):
+        """Set JORC default insertion rates."""
+        self.jorc_standards_spin.setValue(5.0)
+        self.jorc_blanks_spin.setValue(5.0)
+        self.jorc_duplicates_spin.setValue(5.0)
+        self.jorc_total_spin.setValue(20.0)
+
     def setup_connections(self):
         """Set up signal connections."""
         self.run_button.clicked.connect(self.run_analysis)
@@ -480,6 +613,16 @@ class AnalysisPanel(QWidget):
         self.rpd_spin.valueChanged.connect(self.on_configuration_changed)
         self.precision_limit_spin.valueChanged.connect(self.on_configuration_changed)
         self.nugget_spin.valueChanged.connect(self.on_configuration_changed)
+
+        # JORC parameter controls
+        self.jorc_standards_spin.valueChanged.connect(self.on_configuration_changed)
+        self.jorc_blanks_spin.valueChanged.connect(self.on_configuration_changed)
+        self.jorc_duplicates_spin.valueChanged.connect(self.on_configuration_changed)
+        self.jorc_total_spin.valueChanged.connect(self.on_configuration_changed)
+        self.westgard_enabled.toggled.connect(self.on_configuration_changed)
+        self.precision_method_combo.currentIndexChanged.connect(self.on_configuration_changed)
+        self.hyperbolic_m_spin.valueChanged.connect(self.on_configuration_changed)
+        self.hyperbolic_c_spin.valueChanged.connect(self.on_configuration_changed)
 
     def apply_theme(self):
         """Apply the geological theme."""
@@ -664,7 +807,8 @@ class AnalysisPanel(QWidget):
                 'standards': {
                     'z_score_threshold': self.z_score_spin.value(),
                     'recovery_limits': (self.recovery_min_spin.value(), self.recovery_max_spin.value()),
-                    'precision_threshold': self.precision_spin.value()
+                    'precision_threshold': self.precision_spin.value(),
+                    'westgard_enabled': self.westgard_enabled.isChecked() if hasattr(self, 'westgard_enabled') else True
                 },
                 'blanks': {
                     'contamination_threshold': self.contamination_spin.value(),
@@ -674,8 +818,20 @@ class AnalysisPanel(QWidget):
                 'duplicates': {
                     'rpd_threshold': self.rpd_spin.value(),
                     'precision_limit': self.precision_limit_spin.value(),
-                    'nugget_threshold': self.nugget_spin.value()
+                    'nugget_threshold': self.nugget_spin.value(),
+                    'precision_method': 'hyperbolic' if hasattr(self, 'precision_method_combo') and self.precision_method_combo.currentIndex() == 1 else 'simple_rpd',
+                    'hyperbolic_m': self.hyperbolic_m_spin.value() if hasattr(self, 'hyperbolic_m_spin') else 1.0,
+                    'hyperbolic_c': self.hyperbolic_c_spin.value() if hasattr(self, 'hyperbolic_c_spin') else 0.0
                 }
+            },
+            'jorc_settings': {
+                'insertion_rates': {
+                    'target_standards': self.jorc_standards_spin.value() if hasattr(self, 'jorc_standards_spin') else 5.0,
+                    'target_blanks': self.jorc_blanks_spin.value() if hasattr(self, 'jorc_blanks_spin') else 5.0,
+                    'target_duplicates': self.jorc_duplicates_spin.value() if hasattr(self, 'jorc_duplicates_spin') else 5.0,
+                    'target_total': self.jorc_total_spin.value() if hasattr(self, 'jorc_total_spin') else 20.0
+                },
+                'westgard_enabled': self.westgard_enabled.isChecked() if hasattr(self, 'westgard_enabled') else True
             }
         }
 

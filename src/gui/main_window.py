@@ -13,7 +13,7 @@ from typing import Optional, Dict, Any
 
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QSplitter, QMenuBar, QToolBar, QStatusBar,
+    QStackedWidget, QMenuBar, QToolBar, QStatusBar,
     QMessageBox, QFileDialog, QProgressBar, QLabel
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
@@ -22,11 +22,14 @@ from PyQt6.QtGui import QAction, QIcon, QKeySequence
 from .widgets.data_panel import DataPanel
 from .widgets.analysis_panel import AnalysisPanel
 from .widgets.visualization_panel import VisualizationPanel
+from .widgets.sidebar import Sidebar
 from .styles.geological_theme import GeologicalTheme
-from .utils.gui_helpers import GuiHelpers
+from .styles.dark_theme import DarkTheme
+from .dialogs.settings_dialog import SettingsDialog
 from .utils.gui_helpers import GuiHelpers
 from src.reporting import ExcelReporter, PDFReporter
 from src.core.project_manager import ProjectManager
+from src.core.settings_manager import SettingsManager
 
 
 class QAQCApplication(QMainWindow):
@@ -49,10 +52,10 @@ class QAQCApplication(QMainWindow):
         self.output_dir = Path.cwd() / "output"
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.excel_reporter = ExcelReporter({'include_raw_data': True})
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.excel_reporter = ExcelReporter({'include_raw_data': True})
         self.pdf_reporter = PDFReporter({'include_plots': True})
         self.project_manager = ProjectManager()
+        self.settings_manager = SettingsManager()
+        self.current_theme = None  # Track current theme
 
         # Initialize UI
         self.setup_ui()
@@ -73,29 +76,33 @@ class QAQCApplication(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        # Create main layout
+        # Create main layout (Horizontal: Sidebar + Content)
         main_layout = QHBoxLayout(central_widget)
-        main_layout.setContentsMargins(5, 5, 5, 5)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
 
-        # Create main splitter
-        main_splitter = QSplitter(Qt.Orientation.Horizontal)
-        main_layout.addWidget(main_splitter)
+        # Create Sidebar
+        self.sidebar = Sidebar()
+        main_layout.addWidget(self.sidebar)
+
+        # Create Content Area (Stacked Widget)
+        self.content_area = QStackedWidget()
+        main_layout.addWidget(self.content_area)
 
         # Create panels
         self.data_panel = DataPanel()
         self.analysis_panel = AnalysisPanel()
         self.visualization_panel = VisualizationPanel()
 
-        # Add panels to splitter
-        main_splitter.addWidget(self.data_panel)
-        main_splitter.addWidget(self.analysis_panel)
-        main_splitter.addWidget(self.visualization_panel)
+        # Add panels to stacked widget
+        self.content_area.addWidget(self.data_panel)
+        self.content_area.addWidget(self.analysis_panel)
+        self.content_area.addWidget(self.visualization_panel)
 
-        # Set splitter proportions (30%, 30%, 40%)
-        main_splitter.setSizes([300, 300, 400])
-        main_splitter.setStretchFactor(0, 0)  # Data panel fixed
-        main_splitter.setStretchFactor(1, 0)  # Analysis panel fixed
-        main_splitter.setStretchFactor(2, 1)  # Visualization panel flexible
+        # Add buttons to sidebar
+        self.sidebar.add_button("Data Management", index=0)
+        self.sidebar.add_button("Analysis Configuration", index=1)
+        self.sidebar.add_button("Visualization & Reporting", index=2)
 
         # Create menu bar
         self.create_menu_bar()
@@ -196,6 +203,25 @@ class QAQCApplication(QMainWindow):
         toggle_visualization_action.triggered.connect(self.toggle_visualization_panel)
         view_menu.addAction(toggle_visualization_action)
 
+        # Tools menu
+        tools_menu = menubar.addMenu('&Tools')
+        
+        # CRM Management
+        crm_action = QAction('&CRM Management...', self)
+        crm_action.setStatusTip('Manage Certified Reference Materials')
+        # crm_action.triggered.connect(self.manage_crms) # TODO: Implement CRM manager
+        crm_action.setEnabled(False) # Disable until implemented
+        tools_menu.addAction(crm_action)
+        
+        tools_menu.addSeparator()
+        
+        # Settings action
+        settings_action = QAction('&Settings...', self)
+        settings_action.setShortcut('Ctrl+,')
+        settings_action.setStatusTip('Configure application settings')
+        settings_action.triggered.connect(self.open_settings)
+        tools_menu.addAction(settings_action)
+
         # Analysis menu
         analysis_menu = menubar.addMenu('&Analysis')
 
@@ -211,21 +237,6 @@ class QAQCApplication(QMainWindow):
         config_analysis_action.setStatusTip('Configure analysis parameters')
         config_analysis_action.triggered.connect(self.configure_analysis)
         analysis_menu.addAction(config_analysis_action)
-
-        # Tools menu
-        tools_menu = menubar.addMenu('&Tools')
-
-        # CRM Management
-        crm_action = QAction('&CRM Management...', self)
-        crm_action.setStatusTip('Manage Certified Reference Materials')
-        crm_action.triggered.connect(self.manage_crms)
-        tools_menu.addAction(crm_action)
-
-        # Settings
-        settings_action = QAction('&Settings...', self)
-        settings_action.setStatusTip('Application settings')
-        settings_action.triggered.connect(self.show_settings)
-        tools_menu.addAction(settings_action)
 
         # Help menu
         help_menu = menubar.addMenu('&Help')
@@ -309,10 +320,13 @@ class QAQCApplication(QMainWindow):
         self.visualization_panel.plot_requested.connect(self.on_plot_requested)
         self.visualization_panel.export_requested.connect(self.on_export_requested)
 
+        # Connect sidebar signals
+        self.sidebar.navigation_changed.connect(self.on_navigation_changed)
+
     def apply_theme(self):
         """Apply the geological theme to the application."""
-        theme = GeologicalTheme()
-        self.setStyleSheet(theme.get_main_style())
+        # Apply theme from settings
+        self.apply_current_theme()
 
         # Apply theme to all child widgets
         self.apply_theme_to_children(self)
@@ -706,6 +720,27 @@ class QAQCApplication(QMainWindow):
         # TODO: Implement export functionality
         pass
 
+    def on_navigation_changed(self, index, name):
+        """Handle sidebar navigation changes."""
+        self.content_area.setCurrentIndex(index)
+        self.status_label.setText(f"Switched to {name}")
+
+    # Panel visibility handlers
+    def toggle_data_panel(self, visible):
+        """Switch to data panel."""
+        if visible:
+            self.sidebar.set_active_index(0)
+
+    def toggle_analysis_panel(self, visible):
+        """Switch to analysis panel."""
+        if visible:
+            self.sidebar.set_active_index(1)
+
+    def toggle_visualization_panel(self, visible):
+        """Switch to visualization panel."""
+        if visible:
+            self.sidebar.set_active_index(2)
+
     # Helper methods
     def load_data_file(self, file_path):
         """Load data from file."""
@@ -761,6 +796,44 @@ class QAQCApplication(QMainWindow):
         # Update status
         self.status_label.setText("Ready")
         self.data_info_label.setText("No data loaded")
+
+    def open_settings(self):
+        """Open settings dialog."""
+        dialog = SettingsDialog(self.settings_manager, self)
+        dialog.theme_changed.connect(self.switch_theme)
+        dialog.exec()
+        
+    def switch_theme(self, theme_name: str):
+        """Switch application theme."""
+        # Apply saved theme setting
+        self.apply_current_theme()
+        self.status_label.setText(f"Theme switched to: {theme_name.title()}")
+        
+    def apply_current_theme(self):
+        """Apply theme based on current settings."""
+        theme_setting = self.settings_manager.get("appearance/theme")
+        
+        # Determine which theme to use
+        if theme_setting == "dark":
+            theme = DarkTheme()
+        elif theme_setting == "light":
+            theme = GeologicalTheme()
+        elif theme_setting == "auto":
+            # TODO: Detect system theme preference
+            # For now, default to light
+            theme = GeologicalTheme()
+        else:
+            theme = GeologicalTheme()
+            
+        # Apply stylesheet
+        self.setStyleSheet(theme.get_main_style())
+        self.current_theme = theme
+        
+        # Reapply to child widgets if needed
+        for panel in [self.data_panel, self.analysis_panel, self.visualization_panel]:
+            if hasattr(panel, 'apply_theme'):
+                # Child panels may have their own theme application
+                pass
 
     def ask_save_changes(self):
         """Ask user if they want to save changes."""
