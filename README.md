@@ -142,10 +142,21 @@ python main.py --input data/ --output results --infer-mapping --normalize-result
 
 ### Lane B – Web (Multi-user, scalable)
 - **Backend:** FastAPI, PostgreSQL, SQLModel/SQLAlchemy
-- **Frontend:** React + TypeScript + Plotly.js or ECharts
+- **Frontend:** React + TypeScript + Plotly.js or ECharts (See [react_ui/README.md](react_ui/README.md))
 - **Reports:** HTML templating (Jinja2) → PDF (WeasyPrint)
 - **Deployment:** Docker / Docker Compose or Kubernetes
 - **Auth:** Azure AD / Auth0 / Role-based permissions
+
+### New React UI Available 🚀
+A modern web interface is being developed in the `react_ui/` directory. It features drag-and-drop imports, interactive control charts, and a guided wizard workflow.
+
+To try it out:
+```bash
+cd react_ui
+npm install
+npm run dev
+```
+See [react_ui/README.md](react_ui/README.md) for full documentation.
 
 ---
 
