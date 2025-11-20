@@ -7,7 +7,7 @@ import { guessMapping } from '../../utils/smartMapper';
 
 interface ImportWorkflowProps {
     onComplete?: (data: any) => void;
-    onLoadDemoData?: () => void;
+    onLoadDemoData?: (category?: 'gold' | 'photon') => void;
 }
 
 export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLoadDemoData }) => {
@@ -101,19 +101,33 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
                         <p className="text-sm text-gray-400 mt-1">Supported: .xlsx, .csv</p>
                     </div>
 
-                    {/* Demo Data Button */}
+                    {/* Demo Data Buttons */}
                     <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <button
-                            onClick={() => {
-                                if (onLoadDemoData) onLoadDemoData();
-                            }}
-                            className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                        >
-                            <FileSpreadsheet className="w-5 h-5" />
-                            📊 Load Demo Data (Gold QAQC Sample)
-                        </button>
+                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 text-center">
+                            📊 Try with Sample Data
+                        </p>
+                        <div className="grid grid-cols-1 gap-3">
+                            <button
+                                onClick={() => {
+                                    if (onLoadDemoData) onLoadDemoData('gold');
+                                }}
+                                className="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-gray-900 rounded-xl font-semibold hover:from-primary-light hover:to-primary transition-all shadow-lg hover:shadow-xl hover:shadow-primary/20 flex items-center justify-center gap-2"
+                            >
+                                <FileSpreadsheet className="w-5 h-5" />
+                                Gold Fire Assay QAQC
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (onLoadDemoData) onLoadDemoData('photon');
+                                }}
+                                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-xl font-semibold hover:from-purple-600 hover:to-purple-800 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                            >
+                                <FileSpreadsheet className="w-5 h-5" />
+                                Chrysos PhotonAssay
+                            </button>
+                        </div>
                         <p className="text-xs text-center text-gray-400 mt-2">
-                            Try the workflow with pre-loaded sample data
+                            Instantly load sample data to test the workflow
                         </p>
                     </div>
 

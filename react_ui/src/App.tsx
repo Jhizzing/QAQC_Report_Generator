@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MainLayout } from './components/layout/MainLayout';
+import { Header } from './components/Header';
 import { ImportWorkflow } from './features/import/ImportWorkflow';
 import { DataCategorySelect } from './features/analysis/DataCategorySelect';
 import { MethodologyWizard, type MethodologyConfig } from './features/analysis/MethodologyWizard';
@@ -34,15 +35,18 @@ function App() {
     setWorkflowStep('category');
   };
 
-  const handleLoadDemoData = () => {
-    // Load appropriate mock data based on selected category
-    const mockData = selectedCategory === 'photon'
+  const handleLoadDemoData = (demoCategory?: 'gold' | 'photon') => {
+    // Determine which category to use
+    const categoryToUse = demoCategory || selectedCategory || 'gold';
+
+    // Load appropriate mock data based on category
+    const mockData = categoryToUse === 'photon'
       ? generateMockPhotonData()
       : generateMockGoldData();
 
     // Convert to ProcessedData format
     const processedData: ProcessedData = {
-      fileName: selectedCategory === 'photon'
+      fileName: categoryToUse === 'photon'
         ? 'Demo_PhotonAssay_Data.csv'
         : 'Demo_Gold_QAQC_Data.csv',
       headers: Object.keys(mockData.combined[0]),
@@ -51,7 +55,14 @@ function App() {
     };
 
     setData(processedData);
-    setWorkflowStep('category');
+    setSelectedCategory(categoryToUse);
+
+    // For PhotonAssay, skip category selection and go straight to methodology
+    if (categoryToUse === 'photon') {
+      setWorkflowStep('methodology');
+    } else {
+      setWorkflowStep('category');
+    }
   };
 
   const handleCategoryComplete = (category: 'gold' | 'pxrf' | 'multi' | 'photon') => {
@@ -119,6 +130,7 @@ function App() {
 
   return (
     <MainLayout>
+      <Header />
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>

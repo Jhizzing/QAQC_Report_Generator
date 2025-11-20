@@ -26,19 +26,20 @@ export const ProjectEntry: React.FC = () => {
         <div className="min-h-screen bg-background dark:bg-background-dark flex items-center justify-center p-6">
             <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8">
 
-                {/* Left Column: Welcome & Context */}
                 <div className="flex flex-col justify-center space-y-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-                            <ShieldCheck className="w-7 h-7 text-white" />
-                        </div>
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">QAQC Pro</h1>
+                    <div className="flex items-center gap-4">
+                        <img
+                            src="/logiqore-logo.png"
+                            alt="LogiQore"
+                            className="h-20 transition-all duration-200 hover:scale-105 hover:drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]"
+                        />
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">LogiQore QAQC Reporter</h1>
                     </div>
 
                     <div className="space-y-4">
                         <h2 className="text-4xl font-extrabold text-gray-900 dark:text-white leading-tight">
                             Secure, Intelligent <br />
-                            <span className="text-primary">Geological Analysis</span>
+                            <span className="text-primary">QAQC Analysis</span>
                         </h2>
                         <p className="text-lg text-gray-500 dark:text-gray-400 max-w-md">
                             Start a new session to analyze your assay data locally. Your data never leaves this device.
@@ -69,6 +70,17 @@ export const ProjectEntry: React.FC = () => {
                                     </button>
                                 ))
                             )}
+                        </div>
+                    </div>
+
+                    {/* Security Badge at Bottom */}
+                    <div className="flex items-center gap-2 pt-4">
+                        <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                            <ShieldCheck className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold text-gray-900 dark:text-white">Secure Environment</p>
+                            <p className="text-xs text-gray-500">Data processed locally on your device</p>
                         </div>
                     </div>
                 </div>

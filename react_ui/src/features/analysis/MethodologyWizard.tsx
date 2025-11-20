@@ -98,8 +98,44 @@ const pxrfQuestions: Question[] = [
     }
 ];
 
+const photonQuestions: Question[] = [
+    {
+        id: 'elements',
+        label: 'Target Elements',
+        type: 'multiselect',
+        tooltip: 'Select elements to include in QAQC analysis',
+        options: [
+            { value: 'Au', label: 'Au (Gold)' },
+            { value: 'Ag', label: 'Ag (Silver)' },
+            { value: 'Cu', label: 'Cu (Copper)' },
+            { value: 'S', label: 'S (Sulfur)' },
+            { value: 'Moisture', label: 'Moisture' }
+        ]
+    },
+    {
+        id: 'includeUncertainty',
+        label: 'Include Measurement Uncertainty?',
+        type: 'toggle',
+        tooltip: 'Use reported instrument error for precision calculations',
+        default: true
+    },
+    {
+        id: 'jarSize',
+        label: 'Sample Jar Size',
+        type: 'select',
+        tooltip: 'Standard sample mass for analysis',
+        options: [
+            { value: '500', label: '500g (Standard)', description: 'Standard jar size' },
+            { value: '350', label: '350g', description: 'Reduced volume' },
+            { value: '650', label: '650g', description: 'Max volume' }
+        ]
+    }
+];
+
 export const MethodologyWizard: React.FC<MethodologyWizardProps> = ({ category, onComplete }) => {
-    const questions = category === 'gold' ? goldQuestions : pxrfQuestions;
+    const questions = category === 'gold' ? goldQuestions : 
+                     category === 'photon' ? photonQuestions : 
+                     pxrfQuestions;
     const [currentStep, setCurrentStep] = useState(0);
     const [answers, setAnswers] = useState<any>({});
 

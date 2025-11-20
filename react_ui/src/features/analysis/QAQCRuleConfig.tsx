@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRight, ArrowLeft, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
+import { getCRMsByCategory, type CRMValue } from '../../data/crmDatabase';
 
 interface QAQCRuleConfigProps {
     category: 'gold' | 'pxrf' | 'multi' | 'photon';
@@ -32,17 +33,36 @@ interface DuplicatesConfig {
     failureThreshold: number;
 }
 
-const commonCRMs = [
-    { value: 'OREAS-101', label: 'OREAS 101 (Low-grade Au)', grade: '0.08 g/t Au' },
-    { value: 'OREAS-102', label: 'OREAS 102 (Mid-grade Au)', grade: '0.4 g/t Au' },
-    { value: 'OREAS-103', label: 'OREAS 103 (High-grade Au)', grade: '2.5 g/t Au' },
-    { value: 'OREAS-201', label: 'OREAS 201 (Cu-Au Porphyry)', grade: '0.4% Cu, 0.3 g/t Au' },
-    { value: 'CDN-GS-1A', label: 'CDN GS-1A (Syenite)', grade: 'Multi-element' },
-    { value: 'CDN-GS-3', label: 'CDN GS-3 (Sulfide)', grade: 'Multi-element' },
-];
+// Removed hardcoded commonCRMs in favor of dynamic loading from database
 
 export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, methodologyConfig, onComplete }) => {
     const [currentTab, setCurrentTab] = useState<'standards' | 'blanks' | 'duplicates'>('standards');
+    const [availableCRMs, setAvailableCRMs] = useState<CRMValue[]>([]);
+
+    useEffect(() => {
+        // Load CRMs based on category
+        let dbCategory: 'gold' | 'pxrf' | 'multi-element';
+        if (category === 'photon') {
+            dbCategory = 'gold';
+        } else if (category === 'multi') {
+            dbCategory = 'multi-element';
+        } else {
+            dbCategory = category;
+        }
+
+        const crms = getCRMsByCategory(dbCategory);
+
+        // Note: PhotonAssay uses 'gold' category CRMs for now, but we should filter for PhotonAssay specific ones if needed
+        // Actually, let's filter specifically for PhotonAssay methods if category is photon
+        if (category === 'photon') {
+            const photonCRMs = crms.filter(crm =>
+                Object.values(crm.elements).some(el => el.method === 'PhotonAssay')
+            );
+            setAvailableCRMs(photonCRMs.length > 0 ? photonCRMs : crms);
+        } else {
+            setAvailableCRMs(crms);
+        }
+    }, [category]);
 
     // Log methodology config for future integration
     console.log('Methodology config:', methodologyConfig);
@@ -120,17 +140,21 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                 Select Certified Reference Materials (CRMs)
                             </h3>
                             <div className="space-y-2">
-                                {commonCRMs.map((crm) => {
-                                    const isSelected = standardsConfig.selectedCRMs.includes(crm.value);
+                                {availableCRMs.map((crm) => {
+                                    const isSelected = standardsConfig.selectedCRMs.includes(crm.id);
+                                    const gradeString = Object.entries(crm.elements)
+                                        .map(([el, data]) => `${data.certified} ${data.unit} ${el}`)
+                                        .join(', ');
+
                                     return (
                                         <button
-                                            key={crm.value}
+                                            key={crm.id}
                                             onClick={() => {
                                                 setStandardsConfig({
                                                     ...standardsConfig,
                                                     selectedCRMs: isSelected
-                                                        ? standardsConfig.selectedCRMs.filter(c => c !== crm.value)
-                                                        : [...standardsConfig.selectedCRMs, crm.value]
+                                                        ? standardsConfig.selectedCRMs.filter(c => c !== crm.id)
+                                                        : [...standardsConfig.selectedCRMs, crm.id]
                                                 });
                                             }}
                                             className={`
@@ -148,12 +172,17 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                                 {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
                                             </div>
                                             <div className="flex-1">
-                                                <div className="font-semibold text-gray-900 dark:text-white">{crm.label}</div>
-                                                <div className="text-sm text-gray-500">{crm.grade}</div>
+                                                <div className="font-semibold text-gray-900 dark:text-white">{crm.name}</div>
+                                                <div className="text-sm text-gray-500">{gradeString}</div>
                                             </div>
                                         </button>
                                     );
                                 })}
+                                {availableCRMs.length === 0 && (
+                                    <div className="text-center py-8 text-gray-500">
+                                        No standards found for this category.
+                                    </div>
+                                )}
                             </div>
                         </div>
 
