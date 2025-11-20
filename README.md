@@ -19,6 +19,11 @@ The program automates the validation and reporting of QAQC results from drilling
 - **✅ GUI Complete**: Fully functional PyQt6 GUI with data import, analysis, visualization, and report export (Excel/PDF)
 - **✅ Project Persistence**: Save and load projects (.qaqc) to resume work later
 
+### 🌟 Recent Updates (Oct 2025)
+- **Enhanced UI/UX**: Significant improvements to button visibility and contrast (White text on colored backgrounds).
+- **Robust Data Validation**: Fixed issues where plots could be generated without valid data; improved error handling for file imports.
+- **Reliable Launcher**: New `launch_gui_simple.py` script for a guaranteed stable start.
+
 ### Key Achievements
 - **Data Processing**: Robust CSV/XLSX import with intelligent column mapping
 - **QAQC Analysis**: Standards, blanks, and duplicates analysis with CRM integration
@@ -106,7 +111,8 @@ pip install -r requirements.txt
 1. Activate the virtual environment and launch the GUI:
    ```bash
    source venv/bin/activate
-   python3 launch_gui.py
+   # Launch the enhanced GUI (Recommended for best UI experience)
+   python3 launch_gui_simple.py
    ```
 2. **Import Data** (left panel) – supports CSV/XLSX with preview and column mapping.
 3. **Configure & Run Analysis** (center panel) – standards, blanks, duplicates analyzers with CRM validation. Results are written back to the GUI immediately.
@@ -149,6 +155,8 @@ python main.py --input data/ --output results --infer-mapping --normalize-result
 
 ### New React UI Available 🚀
 A modern web interface is being developed in the `react_ui/` directory. It features drag-and-drop imports, interactive control charts, and a guided wizard workflow.
+
+**Tech Stack**: React 19, Vite, TypeScript, Tailwind CSS, Zustand.
 
 To try it out:
 ```bash
