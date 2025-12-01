@@ -65,7 +65,7 @@ export const StandardsModule: React.FC<StandardsModuleProps> = ({ results }) => 
                         <TrendingUp className="w-6 h-6 text-primary" />
                         Standards Control Chart
                     </h3>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-gray-300 mt-1">
                         Monitor CRM accuracy against certified values
                     </p>
                 </div>
@@ -93,7 +93,7 @@ export const StandardsModule: React.FC<StandardsModuleProps> = ({ results }) => 
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500">Total Samples</p>
+                            <p className="text-sm text-gray-300">Total Samples</p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalSamples}</p>
                         </div>
                         <Info className="w-8 h-8 text-blue-500" />
@@ -103,7 +103,7 @@ export const StandardsModule: React.FC<StandardsModuleProps> = ({ results }) => 
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500">Passed</p>
+                            <p className="text-sm text-gray-300">Passed</p>
                             <p className="text-2xl font-bold text-green-600">{passedSamples}</p>
                         </div>
                         <CheckCircle2 className="w-8 h-8 text-green-500" />
@@ -113,7 +113,7 @@ export const StandardsModule: React.FC<StandardsModuleProps> = ({ results }) => 
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500">Failed</p>
+                            <p className="text-sm text-gray-300">Failed</p>
                             <p className="text-2xl font-bold text-red-600">{failedSamples}</p>
                         </div>
                         <AlertTriangle className="w-8 h-8 text-red-500" />
@@ -123,7 +123,7 @@ export const StandardsModule: React.FC<StandardsModuleProps> = ({ results }) => 
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500">Pass Rate</p>
+                            <p className="text-sm text-gray-300">Pass Rate</p>
                             <p className={`text-2xl font-bold ${passRate >= 95 ? 'text-green-600' : passRate >= 85 ? 'text-yellow-600' : 'text-red-600'}`}>
                                 {passRate.toFixed(1)}%
                             </p>
@@ -222,35 +222,35 @@ export const StandardsModule: React.FC<StandardsModuleProps> = ({ results }) => 
 
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-500">Mean</p>
+                            <p className="text-sm text-gray-300">Mean</p>
                             <p className="text-lg font-semibold text-gray-900 dark:text-white">
                                 {statistics.mean.toFixed(4)}
                             </p>
                         </div>
 
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-500">Std Dev (SD)</p>
+                            <p className="text-sm text-gray-300">Std Dev (SD)</p>
                             <p className="text-lg font-semibold text-gray-900 dark:text-white">
                                 {statistics.sd.toFixed(4)}
                             </p>
                         </div>
 
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-500">RSD (%)</p>
+                            <p className="text-sm text-gray-300">RSD (%)</p>
                             <p className="text-lg font-semibold text-gray-900 dark:text-white">
                                 {statistics.rsd.toFixed(2)}%
                             </p>
                         </div>
 
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-500">Pass Rate</p>
+                            <p className="text-sm text-gray-300">Pass Rate</p>
                             <p className={`text-lg font-semibold ${statistics.passRate >= 95 ? 'text-green-600' : statistics.passRate >= 85 ? 'text-yellow-600' : 'text-red-600'}`}>
                                 {statistics.passRate.toFixed(1)}%
                             </p>
                         </div>
 
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-500">Count</p>
+                            <p className="text-sm text-gray-300">Count</p>
                             <p className="text-lg font-semibold text-gray-900 dark:text-white">
                                 {statistics.count}
                             </p>

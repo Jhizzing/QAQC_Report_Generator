@@ -74,7 +74,7 @@ export const DuplicatesModule: React.FC<DuplicatesModuleProps> = ({ results }) =
                         <Copy className="w-6 h-6 text-purple-500" />
                         Duplicates Precision Analysis
                     </h3>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-gray-300 mt-1">
                         Monitor analytical precision through duplicate sample pairs
                     </p>
                 </div>
@@ -102,7 +102,7 @@ export const DuplicatesModule: React.FC<DuplicatesModuleProps> = ({ results }) =
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500">Total Pairs</p>
+                            <p className="text-sm text-gray-300">Total Pairs</p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalPairs}</p>
                         </div>
                         <Info className="w-8 h-8 text-blue-500" />
@@ -112,7 +112,7 @@ export const DuplicatesModule: React.FC<DuplicatesModuleProps> = ({ results }) =
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500">Within Target</p>
+                            <p className="text-sm text-gray-300">Within Target</p>
                             <p className="text-2xl font-bold text-green-600">{passedPairs}</p>
                         </div>
                         <CheckCircle2 className="w-8 h-8 text-green-500" />
@@ -122,7 +122,7 @@ export const DuplicatesModule: React.FC<DuplicatesModuleProps> = ({ results }) =
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500">Poor Precision</p>
+                            <p className="text-sm text-gray-300">Poor Precision</p>
                             <p className="text-2xl font-bold text-red-600">{failedPairs}</p>
                         </div>
                         <AlertTriangle className="w-8 h-8 text-red-500" />
@@ -132,7 +132,7 @@ export const DuplicatesModule: React.FC<DuplicatesModuleProps> = ({ results }) =
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500">Pass Rate</p>
+                            <p className="text-sm text-gray-300">Pass Rate</p>
                             <p className={`text-2xl font-bold ${passRate >= 90 ? 'text-green-600' : passRate >= 75 ? 'text-yellow-600' : 'text-red-600'}`}>
                                 {passRate.toFixed(1)}%
                             </p>
@@ -276,28 +276,28 @@ export const DuplicatesModule: React.FC<DuplicatesModuleProps> = ({ results }) =
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-500">Mean RPD</p>
+                            <p className="text-sm text-gray-300">Mean RPD</p>
                             <p className="text-lg font-semibold text-gray-900 dark:text-white">
                                 {statistics.meanRPD.toFixed(2)}%
                             </p>
                         </div>
 
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-500">Mean HARD</p>
+                            <p className="text-sm text-gray-300">Mean HARD</p>
                             <p className="text-lg font-semibold text-gray-900 dark:text-white">
                                 {statistics.meanHARD.toFixed(2)}%
                             </p>
                         </div>
 
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-500">Within Target</p>
+                            <p className="text-sm text-gray-300">Within Target</p>
                             <p className={`text-lg font-semibold ${statistics.withinTarget >= 90 ? 'text-green-600' : statistics.withinTarget >= 75 ? 'text-yellow-600' : 'text-red-600'}`}>
                                 {statistics.withinTarget.toFixed(1)}%
                             </p>
                         </div>
 
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-500">Pair Count</p>
+                            <p className="text-sm text-gray-300">Pair Count</p>
                             <p className="text-lg font-semibold text-gray-900 dark:text-white">
                                 {statistics.count}
                             </p>

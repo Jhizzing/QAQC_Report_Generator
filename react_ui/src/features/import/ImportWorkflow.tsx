@@ -37,12 +37,18 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
                 const fileInStore = useImportStore.getState().files.find(f => f.file.name === file.name && f.status === 'pending');
 
                 if (fileInStore) {
-                    updateFileStatus(fileInStore.id, 'mapped', { headers: data.headers });
+                    updateFileStatus(fileInStore.id, 'mapped', {
+                        headers: data.headers,
+                        data: data.data // Store the actual row data
+                    });
                     updateMapping(fileInStore.id, mapping);
                 }
             } catch (error) {
                 console.error("Error processing file:", error);
-                // update status to error
+                const fileInStore = useImportStore.getState().files.find(f => f.file.name === file.name);
+                if (fileInStore) {
+                    updateFileStatus(fileInStore.id, 'error');
+                }
             }
         }
     };
@@ -62,20 +68,22 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
                 {['Upload Data', 'Map Columns', 'Review'].map((step, i) => (
                     <div key={step} className="flex items-center">
                         <div className={`
-              w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm
-              ${i === 0 && activeStep === 'upload' ? 'bg-primary text-white' :
-                                i === 1 && activeStep === 'mapping' ? 'bg-primary text-white' :
-                                    i === 2 && activeStep === 'review' ? 'bg-primary text-white' :
-                                        'bg-gray-100 dark:bg-gray-800 text-gray-400'}
+              w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300
+              ${(i === 0 && activeStep === 'upload') || (i === 1 && activeStep === 'mapping') || (i === 2 && activeStep === 'review')
+                                ? 'bg-primary text-white shadow-[0_0_10px_rgba(245,158,11,0.4)]'
+                                : 'bg-surface-light text-slate-500'}
             `}>
                             {i + 1}
                         </div>
-                        <span className={`ml-3 text-sm font-medium ${(i === 0 && activeStep === 'upload') || (i === 1 && activeStep === 'mapping') || (i === 2 && activeStep === 'review')
-                            ? 'text-gray-900 dark:text-white' : 'text-gray-400'
+                        <span className={`ml-3 text-sm font-medium transition-colors duration-300 ${(i === 0 && activeStep === 'upload') || (i === 1 && activeStep === 'mapping') || (i === 2 && activeStep === 'review')
+                            ? 'text-slate-100' : 'text-slate-500'
                             }`}>
                             {step}
                         </span>
-                        {i < 2 && <div className="w-16 h-0.5 bg-gray-200 dark:bg-gray-800 mx-4" />}
+                        {i < 2 && <div className={`w-16 h-0.5 mx-4 transition-colors duration-300 ${(i === 0 && activeStep !== 'upload') || (i === 1 && activeStep === 'review')
+                            ? 'bg-primary/50'
+                            : 'bg-surface-light'
+                            }`} />}
                     </div>
                 ))}
             </div>
@@ -84,21 +92,24 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
                 <div className="space-y-8">
                     <div
                         {...getRootProps()}
+                        data-tour="upload-area"
                         className={`
-              border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer
-              ${isDragActive
-                                ? 'border-primary bg-primary/5'
-                                : 'border-gray-300 dark:border-gray-700 hover:border-primary hover:bg-gray-50 dark:hover:bg-gray-800/50'
+            border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300
+            ${isDragActive
+                                ? 'border-primary bg-primary/10 scale-[1.02] shadow-[0_0_20px_rgba(245,158,11,0.2)]'
+                                : 'border-secondary-light hover:border-primary/50 hover:bg-surface-light'
                             }
-            `}
+          `}
                     >
                         <input {...getInputProps()} />
-                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Upload className="w-8 h-8 text-primary" />
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors ${isDragActive ? 'bg-primary/20 text-primary' : 'bg-gray-800 text-gray-400 group-hover:text-primary'}`}>
+                            <Upload className={`w-8 h-8 ${isDragActive ? 'animate-bounce' : ''}`} />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Upload Files</h3>
-                        <p className="text-gray-500 mt-2">Drag & drop assays, standards, or blank files here</p>
-                        <p className="text-sm text-gray-400 mt-1">Supported: .xlsx, .csv</p>
+                        <h3 className="text-xl font-bold text-white mb-2">
+                            {isDragActive ? 'Drop files now' : 'Upload Data Files'}
+                        </h3>
+                        <p className="text-gray-400 mt-2">Drag & drop assays, standards, or blank files here</p>
+                        <p className="text-xs text-gray-500 mt-4">Supports .csv, .xlsx, .xls</p>
                     </div>
 
                     {/* Demo Data Buttons */}
@@ -126,7 +137,7 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
                                 Chrysos PhotonAssay
                             </button>
                         </div>
-                        <p className="text-xs text-center text-gray-400 mt-2">
+                        <p className="text-xs text-center text-gray-300 mt-2">
                             Instantly load sample data to test the workflow
                         </p>
                     </div>
@@ -145,7 +156,7 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
                                             </div>
                                             <div>
                                                 <p className="font-medium text-gray-900 dark:text-white">{file.file.name}</p>
-                                                <p className="text-xs text-gray-500">{(file.file.size / 1024).toFixed(1)} KB</p>
+                                                <p className="text-xs text-gray-300">{(file.file.size / 1024).toFixed(1)} KB</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
@@ -161,7 +172,7 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
                                             </select>
                                             <button
                                                 onClick={() => removeFile(file.id)}
-                                                className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-600 rounded-lg transition-colors"
+                                                className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-300 hover:text-red-600 rounded-lg transition-colors"
                                             >
                                                 <X className="w-4 h-4" />
                                             </button>
@@ -187,13 +198,13 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
 
             {activeStep === 'mapping' && (
                 <div className="space-y-8">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl flex items-start gap-3">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
-                            <FileSpreadsheet className="w-5 h-5 text-blue-600 dark:text-blue-300" />
+                    <div className="bg-primary/10 border border-primary/20 p-4 rounded-xl flex items-start gap-3">
+                        <div className="p-2 bg-primary/20 rounded-lg">
+                            <FileSpreadsheet className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                            <h4 className="font-semibold text-blue-900 dark:text-blue-100">Smart Mapping Active</h4>
-                            <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                            <h4 className="font-bold text-slate-100">Smart Mapping Active</h4>
+                            <p className="text-sm text-slate-400 mt-1">
                                 We've automatically detected column headers based on common geological formats. Please review and adjust the mappings below.
                             </p>
                         </div>
@@ -201,16 +212,16 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
 
                     <div className="space-y-6">
                         {files.map((file) => (
-                            <div key={file.id} className="bg-surface dark:bg-surface-dark border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
-                                <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                            <div key={file.id} className="bg-surface border border-secondary-dark rounded-xl overflow-hidden shadow-lg">
+                                <div className="p-4 bg-surface-light border-b border-secondary-dark flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <span className="px-2 py-1 text-xs font-medium uppercase tracking-wider bg-gray-200 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">
+                                        <span className="px-2 py-1 text-xs font-bold uppercase tracking-wider bg-secondary-dark rounded text-slate-300">
                                             {file.type}
                                         </span>
-                                        <h4 className="font-semibold text-gray-900 dark:text-white">{file.file.name}</h4>
+                                        <h4 className="font-bold text-slate-50">{file.file.name}</h4>
                                     </div>
-                                    <div className="text-sm text-gray-500">
-                                        Mapped: <span className="font-medium text-green-600">85%</span>
+                                    <div className="text-sm text-slate-400">
+                                        Mapped: <span className="font-bold text-emerald-400">85%</span>
                                     </div>
                                 </div>
 
@@ -221,9 +232,9 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
                                         <div className="space-y-4">
                                             {['Sample ID', 'Sample Type'].map((field) => (
                                                 <div key={field} className="flex items-center justify-between group">
-                                                    <label className="text-sm text-gray-600 dark:text-gray-400">{field}</label>
+                                                    <label className="text-sm text-slate-400 font-medium">{field}</label>
                                                     <select
-                                                        className="text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 w-48 focus:ring-2 focus:ring-primary/50 outline-none"
+                                                        className="text-sm bg-background-dark border border-secondary-light rounded-lg px-3 py-2 w-48 focus:ring-2 focus:ring-primary/50 outline-none text-slate-200"
                                                         value={file.mapping?.[field === 'Sample ID' ? 'sampleId' : 'sampleType'] || ''}
                                                         onChange={(e) => {
                                                             const newMapping = { ...file.mapping } as any;
@@ -251,14 +262,14 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
                                                         ✓
                                                     </div>
                                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{key}</span>
-                                                    <ArrowRight className="w-3 h-3 text-gray-400 ml-auto" />
-                                                    <span className="text-xs font-mono text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                                                    <ArrowRight className="w-3 h-3 text-gray-300 ml-auto" />
+                                                    <span className="text-xs font-mono text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                                                         {value}
                                                     </span>
                                                 </div>
                                             ))}
                                             {(!file.mapping?.elementMap || Object.keys(file.mapping.elementMap).length === 0) && (
-                                                <p className="text-sm text-gray-500 text-center py-4">No elements mapped yet.</p>
+                                                <p className="text-sm text-gray-300 text-center py-4">No elements mapped yet.</p>
                                             )}
                                         </div>
                                     </div>
@@ -270,7 +281,7 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
                     <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-800">
                         <button
                             onClick={() => setStep('upload')}
-                            className="px-6 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium"
+                            className="px-6 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium"
                         >
                             Back
                         </button>
@@ -288,7 +299,7 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
             {activeStep === 'review' && (
                 <div className="text-center py-12">
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">Ready to Import</h3>
-                    <p className="text-gray-500 mt-2 mb-8">You are about to import {files.length} files into the project.</p>
+                    <p className="text-gray-300 mt-2 mb-8">You are about to import {files.length} files into the project.</p>
                     <button
                         onClick={() => {
                             // In a real app, we would aggregate all data here

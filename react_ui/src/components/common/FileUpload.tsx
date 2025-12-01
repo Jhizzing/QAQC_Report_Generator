@@ -62,7 +62,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded }) => {
                         {isProcessing ? (
                             <Loader2 className="w-8 h-8 text-primary animate-spin" />
                         ) : (
-                            <Upload className={`w-8 h-8 ${isDragActive ? 'text-primary' : 'text-gray-400'}`} />
+                            <Upload className={`w-8 h-8 ${isDragActive ? 'text-primary' : 'text-gray-300'}`} />
                         )}
                     </div>
 
@@ -70,7 +70,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded }) => {
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                             {isDragActive ? 'Drop your file here' : 'Upload Assay Data'}
                         </h3>
-                        <p className="text-sm text-gray-500 max-w-sm mx-auto">
+                        <p className="text-sm text-gray-300 max-w-sm mx-auto">
                             Drag and drop your Excel or CSV file here, or click to browse.
                             <br />
                             <span className="text-xs opacity-75">Supports .xlsx, .xls, .csv</span>

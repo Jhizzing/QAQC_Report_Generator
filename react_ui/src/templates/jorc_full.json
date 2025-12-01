@@ -1,0 +1,442 @@
+{
+    "template_id": "logiqore_qaqc_full_report_v1",
+    "template_type": "full_report",
+    "title": "LogiQore QAQC Full Report",
+    "description": "Text-heavy, JORC-aligned QAQC report with tables, figures, and user commentary.",
+    "sections": [
+        {
+            "id": "meta",
+            "label": "Metadata",
+            "order": 0,
+            "optional": false,
+            "blocks": [
+                {
+                    "id": "project_name",
+                    "type": "meta",
+                    "label": "Project Name",
+                    "key": "project_name",
+                    "required": true,
+                    "order": 1
+                },
+                {
+                    "id": "date_range",
+                    "type": "meta",
+                    "label": "Date Range",
+                    "key": "date_range",
+                    "required": true,
+                    "order": 2
+                },
+                {
+                    "id": "generated_date",
+                    "type": "meta",
+                    "label": "Generated Date",
+                    "key": "generated_date",
+                    "required": true,
+                    "order": 3
+                },
+                {
+                    "id": "app_version",
+                    "type": "meta",
+                    "label": "Application Version",
+                    "key": "app_version",
+                    "required": true,
+                    "order": 4
+                }
+            ]
+        },
+        {
+            "id": "executive_summary",
+            "label": "1. Executive Summary",
+            "order": 1,
+            "optional": false,
+            "blocks": [
+                {
+                    "id": "exec_purpose",
+                    "type": "text_auto",
+                    "label": "Purpose",
+                    "description": "Automatically generated summary of the report purpose.",
+                    "key": "report_purpose",
+                    "order": 1
+                },
+                {
+                    "id": "exec_key_findings",
+                    "type": "text_auto",
+                    "label": "Key Findings",
+                    "description": "Bullet-style summary of main QAQC outcomes.",
+                    "key": "key_findings",
+                    "order": 2
+                },
+                {
+                    "id": "exec_user_commentary",
+                    "type": "text_user",
+                    "label": "User Commentary (Optional)",
+                    "description": "User interpretation of QAQC performance and implications.",
+                    "key": "user_exec_summary",
+                    "placeholder": "Add your interpretation, risk assessment, and decisions for reporting...",
+                    "required": false,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "id": "introduction",
+            "label": "2. Introduction",
+            "order": 2,
+            "optional": false,
+            "blocks": [
+                {
+                    "id": "intro_background_auto",
+                    "type": "text_auto",
+                    "label": "Background",
+                    "description": "Project context, deposit style, labs and methods from metadata.",
+                    "key": "intro_background",
+                    "order": 1
+                },
+                {
+                    "id": "intro_data_summary_auto",
+                    "type": "text_auto",
+                    "label": "Data Summary",
+                    "description": "Total samples and QAQC sample counts.",
+                    "key": "intro_data_summary",
+                    "order": 2
+                },
+                {
+                    "id": "intro_objectives_auto",
+                    "type": "text_auto",
+                    "label": "Objectives",
+                    "description": "High-level QAQC objectives mapped to JORC requirements.",
+                    "key": "intro_objectives",
+                    "order": 3
+                },
+                {
+                    "id": "intro_user_notes",
+                    "type": "text_user",
+                    "label": "User Notes",
+                    "description": "Notes on special campaigns, unusual sampling conditions, etc.",
+                    "key": "user_intro_notes",
+                    "placeholder": "Describe any project-specific context that affects QAQC...",
+                    "required": false,
+                    "order": 4
+                }
+            ]
+        },
+        {
+            "id": "qaqc_program_overview",
+            "label": "3. QAQC Program Overview",
+            "order": 3,
+            "optional": false,
+            "blocks": [
+                {
+                    "id": "overview_standards_auto",
+                    "type": "text_auto",
+                    "label": "Standards (CRMs)",
+                    "description": "List of CRM types and certified ranges.",
+                    "key": "overview_crms",
+                    "order": 1
+                },
+                {
+                    "id": "overview_blanks_auto",
+                    "type": "text_auto",
+                    "label": "Blanks",
+                    "description": "Blank material description and expected values.",
+                    "key": "overview_blanks",
+                    "order": 2
+                },
+                {
+                    "id": "overview_duplicates_auto",
+                    "type": "text_auto",
+                    "label": "Duplicates",
+                    "description": "Duplicate types and counts (field, crush, pulp).",
+                    "key": "overview_duplicates",
+                    "order": 3
+                },
+                {
+                    "id": "overview_lab_repeats_auto",
+                    "type": "text_auto",
+                    "label": "Lab Repeats",
+                    "description": "Internal lab repeats and umpire sample counts.",
+                    "key": "overview_lab_repeats",
+                    "order": 4
+                },
+                {
+                    "id": "overview_user_notes",
+                    "type": "text_user",
+                    "label": "User Notes",
+                    "description": "Description of the QAQC philosophy and any deviations from standard practice.",
+                    "key": "user_overview_notes",
+                    "placeholder": "Document any deviations from standard QAQC procedures...",
+                    "required": false,
+                    "order": 5
+                }
+            ]
+        },
+        {
+            "id": "standards_performance",
+            "label": "4. Standards (CRMs) Performance",
+            "order": 4,
+            "optional": false,
+            "blocks": [
+                {
+                    "id": "crm_summary_table",
+                    "type": "table_auto",
+                    "label": "CRM Summary Table",
+                    "description": "CRM ID, certified value, assay mean, bias %, std dev, pass/fail.",
+                    "key": "table_crm_summary",
+                    "order": 1
+                },
+                {
+                    "id": "crm_bias_figure",
+                    "type": "figure_auto",
+                    "label": "CRM Bias Plot",
+                    "description": "Bias vs certified value with control limits.",
+                    "key": "figure_crm_bias",
+                    "order": 2
+                },
+                {
+                    "id": "crm_timeseries_figure",
+                    "type": "figure_auto",
+                    "label": "CRM Time Series",
+                    "description": "CRM results over time, highlighting failures.",
+                    "key": "figure_crm_timeseries",
+                    "order": 3
+                },
+                {
+                    "id": "crm_user_commentary",
+                    "type": "text_user",
+                    "label": "User Commentary",
+                    "description": "Interpretation of CRM performance and any systematic bias.",
+                    "key": "user_crm_commentary",
+                    "placeholder": "Comment on overall accuracy, systematic bias, and failed batches...",
+                    "required": false,
+                    "order": 4
+                }
+            ]
+        },
+        {
+            "id": "blanks_performance",
+            "label": "5. Blanks Performance",
+            "order": 5,
+            "optional": false,
+            "blocks": [
+                {
+                    "id": "blanks_summary_table",
+                    "type": "table_auto",
+                    "label": "Blank Summary Table",
+                    "description": "Blank mean, max, % above threshold, suspect batches.",
+                    "key": "table_blanks_summary",
+                    "order": 1
+                },
+                {
+                    "id": "blanks_figure",
+                    "type": "figure_auto",
+                    "label": "Blank Results Plot",
+                    "description": "Blank values by batch or sequence.",
+                    "key": "figure_blanks",
+                    "order": 2
+                },
+                {
+                    "id": "blanks_user_commentary",
+                    "type": "text_user",
+                    "label": "User Commentary",
+                    "description": "Contamination risk and any prep/lab issues.",
+                    "key": "user_blanks_commentary",
+                    "placeholder": "Discuss contamination events and potential causes...",
+                    "required": false,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "id": "duplicates_performance",
+            "label": "6. Duplicate Performance",
+            "order": 6,
+            "optional": false,
+            "blocks": [
+                {
+                    "id": "duplicates_summary_table",
+                    "type": "table_auto",
+                    "label": "Duplicate Statistics Table",
+                    "description": "RPD, CV, precision metrics per grade bin or sample type.",
+                    "key": "table_duplicates_summary",
+                    "order": 1
+                },
+                {
+                    "id": "duplicates_scatter_figure",
+                    "type": "figure_auto",
+                    "label": "Duplicate Scatter Plot",
+                    "description": "Sample vs duplicate with y=x line.",
+                    "key": "figure_duplicates_scatter",
+                    "order": 2
+                },
+                {
+                    "id": "duplicates_precision_figure",
+                    "type": "figure_auto",
+                    "label": "Precision Envelope Plot",
+                    "description": "Relative difference vs grade with precision envelopes.",
+                    "key": "figure_duplicates_precision",
+                    "order": 3
+                },
+                {
+                    "id": "duplicates_user_commentary",
+                    "type": "text_user",
+                    "label": "User Commentary",
+                    "description": "Precision performance and sample heterogeneity.",
+                    "key": "user_duplicates_commentary",
+                    "placeholder": "Comment on whether precision is acceptable for Au and other analytes...",
+                    "required": false,
+                    "order": 4
+                }
+            ]
+        },
+        {
+            "id": "lab_performance",
+            "label": "7. Lab Performance (Internal + Umpire)",
+            "order": 7,
+            "optional": false,
+            "blocks": [
+                {
+                    "id": "internal_lab_table",
+                    "type": "table_auto",
+                    "label": "Internal Lab Comparison Table",
+                    "description": "Summary of internal repeats.",
+                    "key": "table_internal_lab",
+                    "order": 1
+                },
+                {
+                    "id": "internal_lab_figure",
+                    "type": "figure_auto",
+                    "label": "Internal Lab Comparison Figure",
+                    "description": "Bias or scatter plot for internal repeats.",
+                    "key": "figure_internal_lab",
+                    "order": 2
+                },
+                {
+                    "id": "umpire_lab_table",
+                    "type": "table_auto",
+                    "label": "Umpire Lab Comparison Table",
+                    "description": "Comparison metrics between primary and umpire labs.",
+                    "key": "table_umpire_lab",
+                    "order": 3
+                },
+                {
+                    "id": "umpire_lab_figure",
+                    "type": "figure_auto",
+                    "label": "Umpire Lab Comparison Figure",
+                    "description": "Bias or Bland–Altman style plot for labs.",
+                    "key": "figure_umpire_lab",
+                    "order": 4
+                },
+                {
+                    "id": "lab_user_commentary",
+                    "type": "text_user",
+                    "label": "User Commentary",
+                    "description": "Comments on lab reliability and any need for lab changes.",
+                    "key": "user_lab_commentary",
+                    "placeholder": "Discuss lab performance, any systematic bias between labs, and impacts...",
+                    "required": false,
+                    "order": 5
+                }
+            ]
+        },
+        {
+            "id": "data_verification_jorc",
+            "label": "8. Data Verification & JORC Mapping",
+            "order": 8,
+            "optional": false,
+            "blocks": [
+                {
+                    "id": "data_verification_auto",
+                    "type": "text_auto",
+                    "label": "Data Verification Summary",
+                    "description": "Automated narrative summarising data checks and validation.",
+                    "key": "data_verification_summary",
+                    "order": 1
+                },
+                {
+                    "id": "jorc_mapping_auto",
+                    "type": "text_auto",
+                    "label": "JORC 2012 Mapping",
+                    "description": "Mapping of QAQC outcomes to JORC Table 1 criteria.",
+                    "key": "jorc_mapping",
+                    "order": 2
+                },
+                {
+                    "id": "jorc_user_commentary",
+                    "type": "text_user",
+                    "label": "User Commentary",
+                    "description": "Statement on whether data is fit for reporting and resource work.",
+                    "key": "user_jorc_commentary",
+                    "placeholder": "Provide your professional judgement on JORC readiness...",
+                    "required": false,
+                    "order": 3
+                }
+            ]
+        },
+        {
+            "id": "recommendations",
+            "label": "9. Recommendations",
+            "order": 9,
+            "optional": false,
+            "blocks": [
+                {
+                    "id": "auto_recommendations",
+                    "type": "text_auto",
+                    "label": "Automated Recommendations",
+                    "description": "Engine-generated recommendations (reassays, changes to QAQC, etc.).",
+                    "key": "auto_recommendations",
+                    "order": 1
+                },
+                {
+                    "id": "user_recommendations",
+                    "type": "text_user",
+                    "label": "User Recommendations",
+                    "description": "User's own recommendations and actions.",
+                    "key": "user_recommendations",
+                    "placeholder": "Document re-assay decisions, changes to sampling or QAQC protocols...",
+                    "required": false,
+                    "order": 2
+                }
+            ]
+        },
+        {
+            "id": "appendices",
+            "label": "10. Appendices",
+            "order": 10,
+            "optional": true,
+            "blocks": [
+                {
+                    "id": "appendix_crm_table",
+                    "type": "table_auto",
+                    "label": "Appendix A — Full CRM Data",
+                    "description": "Full CRM-record table.",
+                    "key": "appendix_crm",
+                    "order": 1
+                },
+                {
+                    "id": "appendix_blanks_table",
+                    "type": "table_auto",
+                    "label": "Appendix B — Full Blank Data",
+                    "description": "Full blank sample table.",
+                    "key": "appendix_blanks",
+                    "order": 2
+                },
+                {
+                    "id": "appendix_duplicates_table",
+                    "type": "table_auto",
+                    "label": "Appendix C — Full Duplicate Data",
+                    "description": "Full duplicate sample table.",
+                    "key": "appendix_duplicates",
+                    "order": 3
+                },
+                {
+                    "id": "appendix_processing_log",
+                    "type": "text_auto",
+                    "label": "Appendix D — Processing Log",
+                    "description": "Automated summary of processing steps for provenance.",
+                    "key": "processing_log",
+                    "order": 4
+                }
+            ]
+        }
+    ]
+}

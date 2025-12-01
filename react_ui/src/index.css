@@ -9,7 +9,8 @@
 
   color-scheme: dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #111827; /* Brand Dark */
+  background-color: #111827;
+  /* Brand Dark */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -18,8 +19,26 @@
 }
 
 @layer base {
+  :root {
+    @apply bg-background-dark text-slate-50;
+  }
+
+  /* Global Focus Styles */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background-dark;
+  }
+
   body {
-    @apply bg-background text-gray-900 dark:bg-background-dark dark:text-gray-100 transition-colors duration-200;
+    @apply bg-background-dark text-slate-100 antialiased selection:bg-primary/30 selection:text-primary-light;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply tracking-tight font-semibold text-white;
   }
 }
 

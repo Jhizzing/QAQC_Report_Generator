@@ -133,9 +133,9 @@ const photonQuestions: Question[] = [
 ];
 
 export const MethodologyWizard: React.FC<MethodologyWizardProps> = ({ category, onComplete }) => {
-    const questions = category === 'gold' ? goldQuestions : 
-                     category === 'photon' ? photonQuestions : 
-                     pxrfQuestions;
+    const questions = category === 'gold' ? goldQuestions :
+        category === 'photon' ? photonQuestions :
+            pxrfQuestions;
     const [currentStep, setCurrentStep] = useState(0);
     const [answers, setAnswers] = useState<any>({});
 
@@ -174,7 +174,7 @@ export const MethodologyWizard: React.FC<MethodologyWizardProps> = ({ category, 
         <div className="max-w-3xl mx-auto mt-12">
             {/* Progress Bar */}
             <div className="mb-12">
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+                <div className="flex items-center justify-between text-sm text-gray-300 mb-2">
                     <span>Question {currentStep + 1} of {questions.length}</span>
                     <span>{Math.round(progress)}% Complete</span>
                 </div>
@@ -197,7 +197,7 @@ export const MethodologyWizard: React.FC<MethodologyWizardProps> = ({ category, 
                             {currentQuestion.label}
                         </h3>
                         {currentQuestion.tooltip && (
-                            <div className="flex items-start gap-2 text-sm text-gray-500">
+                            <div className="flex items-start gap-2 text-sm text-gray-300">
                                 <HelpCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                                 <p>{currentQuestion.tooltip}</p>
                             </div>
@@ -216,8 +216,8 @@ export const MethodologyWizard: React.FC<MethodologyWizardProps> = ({ category, 
                                     className={`
                     w-full text-left p-4 rounded-xl border-2 transition-all
                     ${answers[currentQuestion.id] === option.value
-                                            ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                                            ? 'border-primary bg-primary/10 text-white shadow-lg shadow-primary/10'
+                                            : 'border-gray-700 bg-gray-800/50 text-gray-300 hover:border-primary/50 hover:bg-gray-800'
                                         }
                   `}
                                 >
@@ -225,7 +225,7 @@ export const MethodologyWizard: React.FC<MethodologyWizardProps> = ({ category, 
                                         <div>
                                             <div className="font-semibold text-gray-900 dark:text-white">{option.label}</div>
                                             {option.description && (
-                                                <div className="text-sm text-gray-500 mt-1">{option.description}</div>
+                                                <div className="text-sm text-gray-300 mt-1">{option.description}</div>
                                             )}
                                         </div>
                                         {answers[currentQuestion.id] === option.value && (
@@ -299,7 +299,7 @@ export const MethodologyWizard: React.FC<MethodologyWizardProps> = ({ category, 
                 <button
                     onClick={handleBack}
                     disabled={currentStep === 0}
-                    className="flex items-center gap-2 px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    className="flex items-center gap-2 px-6 py-3 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     Back

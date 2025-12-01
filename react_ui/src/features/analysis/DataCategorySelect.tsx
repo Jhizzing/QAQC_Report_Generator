@@ -24,7 +24,7 @@ export const DataCategorySelect: React.FC<DataCategorySelectProps> = ({ onComple
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
                     Select Analysis Category
                 </h2>
-                <p className="text-gray-500 max-w-2xl mx-auto">
+                <p className="text-gray-300 max-w-2xl mx-auto">
                     Choose the primary focus of your QAQC analysis. This will tailor the subsequent methodology questions and report templates.
                 </p>
             </div>
@@ -33,6 +33,7 @@ export const DataCategorySelect: React.FC<DataCategorySelectProps> = ({ onComple
                 {/* Gold Category */}
                 <div
                     onClick={() => handleSelect('gold')}
+                    data-tour="category-gold"
                     className={`
             relative group cursor-pointer rounded-2xl border-2 p-6 transition-all
             ${selected === 'gold'
@@ -53,7 +54,7 @@ export const DataCategorySelect: React.FC<DataCategorySelectProps> = ({ onComple
                         <Layers className="w-7 h-7" />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Gold (Au) Analysis</h3>
-                    <p className="text-gray-500 text-sm leading-relaxed">
+                    <p className="text-gray-300 text-sm leading-relaxed">
                         Fire Assay or Leachwell gold analysis with nugget effect and coarse duplicate checks.
                     </p>
                 </div>
@@ -81,7 +82,7 @@ export const DataCategorySelect: React.FC<DataCategorySelectProps> = ({ onComple
                         <Beaker className="w-7 h-7" />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">pXRF / Multi-element</h3>
-                    <p className="text-gray-500 text-sm leading-relaxed">
+                    <p className="text-gray-300 text-sm leading-relaxed">
                         Portable XRF or ICP-MS multi-element suites with elemental ratios and interference checks.
                     </p>
                 </div>
@@ -109,7 +110,7 @@ export const DataCategorySelect: React.FC<DataCategorySelectProps> = ({ onComple
                         <Zap className="w-7 h-7" />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Chrysos PhotonAssay</h3>
-                    <p className="text-gray-500 text-sm leading-relaxed">
+                    <p className="text-gray-300 text-sm leading-relaxed">
                         High-energy X-ray analysis for Au, Ag, Cu. Non-destructive, large samples (500g), rapid results.
                     </p>
                 </div>

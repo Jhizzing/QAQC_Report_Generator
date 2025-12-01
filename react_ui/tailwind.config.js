@@ -7,33 +7,33 @@ export default {
     theme: {
         extend: {
             colors: {
-                // LogiQore Brand Colors
+                // LogiQore Brand Colors (Refined Slate/Midnight Theme)
                 primary: {
-                    DEFAULT: '#FBBF24', // Brand Gold
-                    light: '#FCD34D',   // Lighter Gold
-                    dark: '#B45309',    // Darker Gold/Amber
-                    glow: 'rgba(251, 191, 36, 0.5)', // Gold Glow
-                },
-                secondary: {
-                    DEFAULT: '#1F2937', // Gray-800
-                    light: '#374151',   // Gray-700
-                    dark: '#111827',    // Brand Dark (Gray-900)
-                },
-                accent: {
-                    DEFAULT: '#F59E0B', // Amber-500
+                    DEFAULT: '#F59E0B', // Amber-500 (Vibrant Gold)
                     light: '#FBBF24',   // Amber-400
                     dark: '#D97706',    // Amber-600
+                    glow: 'rgba(245, 158, 11, 0.5)', // Amber Glow
+                },
+                secondary: {
+                    DEFAULT: '#334155', // Slate-700
+                    light: '#475569',   // Slate-600
+                    dark: '#1E293B',    // Slate-800
+                },
+                accent: {
+                    DEFAULT: '#0EA5E9', // Sky-500 (Subtle Cool Accent)
+                    light: '#38BDF8',   // Sky-400
+                    dark: '#0284C7',    // Sky-600
                 },
                 surface: {
-                    DEFAULT: '#1F2937', // Dark surface (Gray-800)
-                    light: '#374151',   // Lighter surface
-                    dark: '#111827',    // Darker surface (Brand Dark)
-                    glass: 'rgba(31, 41, 55, 0.7)', // Glassmorphism
+                    DEFAULT: '#1E293B', // Slate-800 (Card Background)
+                    light: '#334155',   // Slate-700 (Hover State)
+                    dark: '#0F172A',    // Slate-900 (Deep Surface)
+                    glass: 'rgba(30, 41, 59, 0.7)', // Glassmorphism
                 },
                 background: {
-                    DEFAULT: '#111827', // Brand Dark
-                    light: '#F3F4F6',   // Light mode bg (if needed)
-                    dark: '#030712',    // Deepest dark
+                    DEFAULT: '#0F172A', // Slate-900 (Main Background)
+                    light: '#F1F5F9',   // Slate-100 (Light Mode)
+                    dark: '#020617',    // Slate-950 (Deepest Dark)
                 },
                 status: {
                     success: '#10B981', // Emerald-500
@@ -53,4 +53,4 @@ export default {
     },
     plugins: [],
     darkMode: 'class',
-}
+};

@@ -41,16 +41,16 @@ export const ProjectEntry: React.FC = () => {
                             Secure, Intelligent <br />
                             <span className="text-primary">QAQC Analysis</span>
                         </h2>
-                        <p className="text-lg text-gray-500 dark:text-gray-400 max-w-md">
+                        <p className="text-lg text-gray-300 dark:text-gray-300 max-w-md">
                             Start a new session to analyze your assay data locally. Your data never leaves this device.
                         </p>
                     </div>
 
                     <div className="pt-8 border-t border-gray-200 dark:border-gray-800">
-                        <p className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Recent Sessions</p>
+                        <p className="text-sm font-medium text-gray-300 uppercase tracking-wider mb-4">Recent Sessions</p>
                         <div className="space-y-3">
                             {recentProjects.length === 0 ? (
-                                <p className="text-sm text-gray-400 italic">No recent projects found.</p>
+                                <p className="text-sm text-gray-300 italic">No recent projects found.</p>
                             ) : (
                                 recentProjects.slice(0, 3).map(project => (
                                     <button
@@ -62,11 +62,11 @@ export const ProjectEntry: React.FC = () => {
                                             <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-primary transition-colors">
                                                 {project.name}
                                             </h3>
-                                            <p className="text-xs text-gray-500 mt-1">
+                                            <p className="text-xs text-gray-300 mt-1">
                                                 {project.deposit} • {project.commodity}
                                             </p>
                                         </div>
-                                        <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                                        <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
                                     </button>
                                 ))
                             )}
@@ -80,7 +80,7 @@ export const ProjectEntry: React.FC = () => {
                         </div>
                         <div>
                             <p className="text-xs font-semibold text-gray-900 dark:text-white">Secure Environment</p>
-                            <p className="text-xs text-gray-500">Data processed locally on your device</p>
+                            <p className="text-xs text-gray-300">Data processed locally on your device</p>
                         </div>
                     </div>
                 </div>
@@ -107,10 +107,10 @@ export const ProjectEntry: React.FC = () => {
                                 className="group p-8 rounded-xl bg-gray-50 dark:bg-gray-800/50 border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-primary dark:hover:border-primary hover:bg-primary/5 transition-all duration-300 text-left"
                             >
                                 <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:text-primary transition-colors">
-                                    <FolderOpen className="w-6 h-6 text-gray-500 dark:text-gray-400 group-hover:text-primary" />
+                                    <FolderOpen className="w-6 h-6 text-gray-300 dark:text-gray-300 group-hover:text-primary" />
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Open Project File</h3>
-                                <p className="text-gray-500 text-sm">Load a previously saved .qaqc file</p>
+                                <p className="text-gray-300 text-sm">Load a previously saved .qaqc file</p>
                             </button>
                         </div>
                     ) : (
@@ -118,12 +118,12 @@ export const ProjectEntry: React.FC = () => {
                             <div className="mb-8">
                                 <button
                                     onClick={() => setMode('select')}
-                                    className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white mb-4 flex items-center gap-1"
+                                    className="text-sm text-gray-300 hover:text-gray-900 dark:hover:text-white mb-4 flex items-center gap-1"
                                 >
                                     ← Back
                                 </button>
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">New Session</h2>
-                                <p className="text-gray-500 text-sm mt-1">Enter project details to begin.</p>
+                                <p className="text-gray-300 text-sm mt-1">Enter project details to begin.</p>
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-5">
@@ -165,7 +165,7 @@ export const ProjectEntry: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Campaign ID <span className="text-gray-400 font-normal">(Optional)</span></label>
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Campaign ID <span className="text-gray-300 font-normal">(Optional)</span></label>
                                     <input
                                         type="text"
                                         placeholder="e.g. RC_2024_01"

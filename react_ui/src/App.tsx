@@ -6,14 +6,19 @@ import { DataCategorySelect } from './features/analysis/DataCategorySelect';
 import { MethodologyWizard, type MethodologyConfig } from './features/analysis/MethodologyWizard';
 import { QAQCRuleConfig, type QAQCConfig } from './features/analysis/QAQCRuleConfig';
 import { ResultsDashboard } from './features/analysis/ResultsDashboard';
+import { ReportWorkflow } from './features/report/ReportWorkflow';
+import { TemplateEditor } from './features/templates/TemplateEditor';
 import { ProjectEntry } from './features/projects/ProjectEntry';
+import { WelcomeModal } from './components/onboarding/WelcomeModal';
+import { OnboardingOverlay } from './components/onboarding/OnboardingOverlay';
 import { useProjectStore } from './stores/projectStore';
 import { runQAQCAnalysis, autoDetectColumnMapping, type QAQCAnalysisOutput } from './features/analysis/qaqcAnalysis';
-import { exportAll } from './utils/export';
+import { exportFiguresOnly, exportJORCReport } from './utils/export';
 import { generateMockGoldData, generateMockPhotonData } from './data/mockQAQCData';
 import type { ProcessedData } from './utils/fileProcessor';
+import type { JORCReportConfig, FiguresConfig } from './features/report/ReportConfig';
 
-type WorkflowStep = 'entry' | 'import' | 'category' | 'methodology' | 'qaqcRules' | 'dashboard';
+type WorkflowStep = 'entry' | 'import' | 'category' | 'methodology' | 'qaqcRules' | 'dashboard' | 'report' | 'template_editor';
 
 function App() {
   const { currentProject } = useProjectStore();
@@ -28,23 +33,18 @@ function App() {
     return <ProjectEntry />;
   }
 
-  // Simple state machine for workflow
-  // In a real app, this might be in a store
   const handleImportComplete = (importedData: ProcessedData) => {
     setData(importedData);
     setWorkflowStep('category');
   };
 
   const handleLoadDemoData = (demoCategory?: 'gold' | 'photon') => {
-    // Determine which category to use
     const categoryToUse = demoCategory || selectedCategory || 'gold';
 
-    // Load appropriate mock data based on category
     const mockData = categoryToUse === 'photon'
       ? generateMockPhotonData()
       : generateMockGoldData();
 
-    // Convert to ProcessedData format
     const processedData: ProcessedData = {
       fileName: categoryToUse === 'photon'
         ? 'Demo_PhotonAssay_Data.csv'
@@ -57,7 +57,6 @@ function App() {
     setData(processedData);
     setSelectedCategory(categoryToUse);
 
-    // For PhotonAssay, skip category selection and go straight to methodology
     if (categoryToUse === 'photon') {
       setWorkflowStep('methodology');
     } else {
@@ -81,16 +80,14 @@ function App() {
     console.log('QAQC Rules config:', config);
     setQaqcConfig(config);
 
-    // Auto-run analysis
     if (data && selectedCategory) {
       runAnalysis(config);
     }
   };
 
   const runAnalysis = (config: QAQCConfig) => {
-    if (!data || !qaqcConfig && !config) return;
+    if (!data || (!qaqcConfig && !config)) return;
 
-    // Convert data to format needed for analysis
     const rawData = data.data.map((row) => {
       const rowObj: any = {};
       data.headers.forEach((header, index) => {
@@ -99,10 +96,8 @@ function App() {
       return rowObj;
     });
 
-    // Auto-detect column mappings
     const columnMapping = autoDetectColumnMapping(rawData);
 
-    // Run analysis
     const results = runQAQCAnalysis({
       data: rawData,
       methodologyConfig: methodologyConfig!,
@@ -114,33 +109,36 @@ function App() {
     setWorkflowStep('dashboard');
   };
 
-  const handleExport = async () => {
-    if (analysisResults && currentProject) {
-      await exportAll(analysisResults, currentProject.name);
+  const handleProceedToReport = () => {
+    setWorkflowStep('report');
+  };
+
+  const handleGenerateReport = async (type: 'report' | 'figures', config: JORCReportConfig | FiguresConfig) => {
+    if (!analysisResults || !currentProject) return;
+
+    if (type === 'figures') {
+      await exportFiguresOnly(analysisResults, config as FiguresConfig, currentProject.name);
+    } else {
+      await exportJORCReport(analysisResults, config as JORCReportConfig, currentProject.name);
     }
   };
 
-  // Log config for debugging (will be used in dashboard later)
-  if (methodologyConfig) {
-    console.log('Current methodology:', methodologyConfig);
-  }
-  if (qaqcConfig) {
-    console.log('Current QAQC rules:', qaqcConfig);
-  }
-
   return (
     <MainLayout>
+      <WelcomeModal />
+      <OnboardingOverlay />
       <Header />
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div>
+          <div data-tour="project-header">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {workflowStep === 'dashboard' ? 'Analysis Dashboard' :
-                workflowStep === 'qaqcRules' ? 'QAQC Rules' :
-                  workflowStep === 'methodology' ? 'Methodology Setup' :
-                    workflowStep === 'category' ? 'Configuration' : 'Import Data'}
+              {workflowStep === 'report' ? 'Report Generation' :
+                workflowStep === 'dashboard' ? 'Analysis Dashboard' :
+                  workflowStep === 'qaqcRules' ? 'QAQC Rules' :
+                    workflowStep === 'methodology' ? 'Methodology Setup' :
+                      workflowStep === 'category' ? 'Configuration' : 'Import Data'}
             </h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-300 mt-1">
               {currentProject.name} • {currentProject.deposit} ({currentProject.commodity})
             </p>
           </div>
@@ -157,6 +155,22 @@ function App() {
             </button>
           )}
         </div>
+
+        {/* Demo Template Editor Button */}
+        {workflowStep === 'import' && (
+          <div className="flex justify-end">
+            <button
+              onClick={() => setWorkflowStep('template_editor')}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
+            >
+              🎨 Open Template Editor (Demo)
+            </button>
+          </div>
+        )}
+
+        {workflowStep === 'template_editor' && (
+          <TemplateEditor onBack={() => setWorkflowStep('import')} />
+        )}
 
         {workflowStep === 'import' && (
           <div className="mt-8">
@@ -189,7 +203,15 @@ function App() {
         {workflowStep === 'dashboard' && analysisResults && (
           <ResultsDashboard
             results={analysisResults}
-            onExport={handleExport}
+            onProceed={handleProceedToReport}
+          />
+        )}
+
+        {workflowStep === 'report' && analysisResults && (
+          <ReportWorkflow
+            results={analysisResults}
+            onBack={() => setWorkflowStep('dashboard')}
+            onGenerate={handleGenerateReport}
           />
         )}
       </div>

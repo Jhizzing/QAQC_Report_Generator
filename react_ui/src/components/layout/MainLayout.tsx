@@ -8,7 +8,7 @@ interface MainLayoutProps {
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     return (
-        <div className="flex h-screen bg-background dark:bg-background-dark overflow-hidden">
+        <div className="flex h-screen bg-background-dark overflow-hidden">
             <Sidebar />
 
             <div className="flex-1 flex flex-col min-w-0">

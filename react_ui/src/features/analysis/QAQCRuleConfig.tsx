@@ -104,7 +104,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                     Configure QAQC Rules
                 </h2>
-                <p className="text-gray-500">
+                <p className="text-gray-300">
                     Set acceptance criteria for standards, blanks, and duplicates
                 </p>
             </div>
@@ -119,7 +119,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
               px-6 py-3 font-semibold capitalize transition-all relative
               ${currentTab === tab
                                 ? 'text-primary border-b-2 border-primary'
-                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                : 'text-gray-300 hover:text-gray-700 dark:hover:text-gray-300'
                             }
             `}
                     >
@@ -158,28 +158,42 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                                 });
                                             }}
                                             className={`
-                        w-full text-left p-4 rounded-lg border transition-all flex items-center gap-3
-                        ${isSelected
-                                                    ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                                                    : 'border-gray-200 dark:border-gray-700 hover:border-primary/50'
+                                        w-full text-left p-4 rounded-xl border-2 transition-all flex items-center justify-between group
+                                        ${isSelected
+                                                    ? 'border-primary bg-primary/10 shadow-lg shadow-primary/10'
+                                                    : 'border-gray-700 bg-gray-800/50 hover:border-primary/50 hover:bg-gray-800'
                                                 }
-                      `}
+                                    `}
                                         >
-                                            <div className={`
-                        w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0
-                        ${isSelected ? 'bg-primary border-primary' : 'border-gray-300 dark:border-gray-600'}
-                      `}>
-                                                {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`font-bold ${isSelected
+                                                            ? 'text-primary'
+                                                            : 'text-white group-hover:text-primary transition-colors'
+                                                        }`}>
+                                                        {crm.name}
+                                                    </span>
+                                                    {isSelected && (
+                                                        <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-medium">
+                                                            Selected
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-sm text-gray-400 mt-1">
+                                                    {gradeString}
+                                                </div>
                                             </div>
-                                            <div className="flex-1">
-                                                <div className="font-semibold text-gray-900 dark:text-white">{crm.name}</div>
-                                                <div className="text-sm text-gray-500">{gradeString}</div>
+                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected
+                                                    ? 'border-primary bg-primary text-white'
+                                                    : 'border-gray-600 group-hover:border-primary'
+                                                }`}>
+                                                {isSelected && <CheckCircle2 className="w-4 h-4" />}
                                             </div>
                                         </button>
                                     );
                                 })}
                                 {availableCRMs.length === 0 && (
-                                    <div className="text-center py-8 text-gray-500">
+                                    <div className="text-center py-8 text-gray-300">
                                         No standards found for this category.
                                     </div>
                                 )}
@@ -236,7 +250,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                     min="1"
                                     max="10"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">
+                                <p className="text-xs text-gray-300 mt-1">
                                     Flag batch if this many consecutive standards fail
                                 </p>
                             </div>
@@ -300,7 +314,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                     min="1"
                                     max="10"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">
+                                <p className="text-xs text-gray-300 mt-1">
                                     Flag if blank {">"} {blanksConfig.contaminationMultiplier}× detection limit
                                 </p>
                             </div>
@@ -340,7 +354,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                     <option value="rpd">RPD (Relative Percent Difference)</option>
                                     <option value="hard">HARD (Half Absolute Relative Difference)</option>
                                 </select>
-                                <p className="text-xs text-gray-500 mt-1">
+                                <p className="text-xs text-gray-300 mt-1">
                                     {duplicatesConfig.precisionMethod === 'rpd'
                                         ? 'RPD = |A-B| / ((A+B)/2) × 100%'
                                         : 'HARD = |A-B| / MAX(A,B) × 100%'
@@ -364,7 +378,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                     min="1"
                                     max="50"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">
+                                <p className="text-xs text-gray-300 mt-1">
                                     Flag if {duplicatesConfig.precisionMethod.toUpperCase()} {">"} {duplicatesConfig.precisionTarget}%
                                 </p>
                             </div>
@@ -398,7 +412,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                             currentTab === 'blanks' ? 'standards' : 'blanks'
                     )}
                     disabled={currentTab === 'standards'}
-                    className="flex items-center gap-2 px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    className="flex items-center gap-2 px-6 py-3 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     Previous

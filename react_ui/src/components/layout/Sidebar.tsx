@@ -40,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                                 : 'hover:bg-gray-800 hover:text-white'
                             }`}
                     >
-                        <item.icon className={`w-5 h-5 ${item.active ? 'text-primary-light' : 'text-gray-500 group-hover:text-white'}`} />
+                        <item.icon className={`w-5 h-5 ${item.active ? 'text-primary-light' : 'text-gray-300 group-hover:text-white'}`} />
                         <span className="font-medium">{item.label}</span>
                     </button>
                 ))}
@@ -48,7 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
 
             <div className="p-4 border-t border-gray-800">
                 <div className="bg-gray-800/50 rounded-lg p-4">
-                    <p className="text-xs font-medium text-gray-500 uppercase mb-2">System Status</p>
+                    <p className="text-xs font-medium text-gray-300 uppercase mb-2">System Status</p>
                     <div className="flex items-center gap-2 text-sm text-green-400">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                         <span>Secure Environment</span>

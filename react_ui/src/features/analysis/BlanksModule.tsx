@@ -65,7 +65,7 @@ export const BlanksModule: React.FC<BlanksModuleProps> = ({ results }) => {
                         <Droplet className="w-6 h-6 text-blue-500" />
                         Blanks Contamination Monitor
                     </h3>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-gray-300 mt-1">
                         Track blank samples for contamination and detection limit compliance
                     </p>
                 </div>
@@ -93,7 +93,7 @@ export const BlanksModule: React.FC<BlanksModuleProps> = ({ results }) => {
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500">Total Blanks</p>
+                            <p className="text-sm text-gray-300">Total Blanks</p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalBlanks}</p>
                         </div>
                         <Info className="w-8 h-8 text-blue-500" />
@@ -103,7 +103,7 @@ export const BlanksModule: React.FC<BlanksModuleProps> = ({ results }) => {
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500">Below Detection</p>
+                            <p className="text-sm text-gray-300">Below Detection</p>
                             <p className="text-2xl font-bold text-green-600">{passedBlanks}</p>
                         </div>
                         <CheckCircle2 className="w-8 h-8 text-green-500" />
@@ -113,7 +113,7 @@ export const BlanksModule: React.FC<BlanksModuleProps> = ({ results }) => {
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500">Warning</p>
+                            <p className="text-sm text-gray-300">Warning</p>
                             <p className="text-2xl font-bold text-yellow-600">{warningBlanks}</p>
                         </div>
                         <AlertTriangle className="w-8 h-8 text-yellow-500" />
@@ -123,7 +123,7 @@ export const BlanksModule: React.FC<BlanksModuleProps> = ({ results }) => {
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500">Contaminated</p>
+                            <p className="text-sm text-gray-300">Contaminated</p>
                             <p className="text-2xl font-bold text-red-600">{contaminatedBlanks}</p>
                         </div>
                         <TrendingDown className="w-8 h-8 text-red-500" />
@@ -236,35 +236,35 @@ export const BlanksModule: React.FC<BlanksModuleProps> = ({ results }) => {
 
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-500">Maximum</p>
+                            <p className="text-sm text-gray-300">Maximum</p>
                             <p className="text-lg font-semibold text-gray-900 dark:text-white">
                                 {statistics.max.toFixed(4)}
                             </p>
                         </div>
 
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-500">Mean</p>
+                            <p className="text-sm text-gray-300">Mean</p>
                             <p className="text-lg font-semibold text-gray-900 dark:text-white">
                                 {statistics.mean.toFixed(4)}
                             </p>
                         </div>
 
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-500">Median</p>
+                            <p className="text-sm text-gray-300">Median</p>
                             <p className="text-lg font-semibold text-gray-900 dark:text-white">
                                 {statistics.median.toFixed(4)}
                             </p>
                         </div>
 
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-500">Contamination Rate</p>
+                            <p className="text-sm text-gray-300">Contamination Rate</p>
                             <p className={`text-lg font-semibold ${statistics.contaminationRate === 0 ? 'text-green-600' : statistics.contaminationRate < 5 ? 'text-yellow-600' : 'text-red-600'}`}>
                                 {statistics.contaminationRate.toFixed(1)}%
                             </p>
                         </div>
 
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-500">Count</p>
+                            <p className="text-sm text-gray-300">Count</p>
                             <p className="text-lg font-semibold text-gray-900 dark:text-white">
                                 {statistics.count}
                             </p>
