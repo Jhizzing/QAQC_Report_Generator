@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
-import { Plus, FolderOpen, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Plus, FolderOpen, ArrowRight, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore';
-// import { cn } from '../../utils/cn';
+import { selectProjectFile, loadProjectFromFile, type QAQCProjectFile } from '../../utils/projectFile';
 
-export const ProjectEntry: React.FC = () => {
-    const { createProject, recentProjects, openProject } = useProjectStore();
+interface ProjectEntryProps {
+    /** Callback when a project file is loaded - passes the full project state */
+    onProjectLoaded?: (projectFile: QAQCProjectFile) => void;
+}
+
+export const ProjectEntry: React.FC<ProjectEntryProps> = ({ onProjectLoaded }) => {
+    const { createProject, recentProjects, openProject, loadFromFile } = useProjectStore();
     const [mode, setMode] = useState<'select' | 'create'>('select');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -19,6 +26,34 @@ export const ProjectEntry: React.FC = () => {
         e.preventDefault();
         if (formData.name && formData.deposit && formData.commodity) {
             createProject(formData);
+        }
+    };
+
+    const handleOpenProjectFile = async () => {
+        setError(null);
+        
+        try {
+            // Open file picker
+            const file = await selectProjectFile();
+            if (!file) return; // User cancelled
+            
+            setIsLoading(true);
+            
+            // Parse the project file
+            const projectFile = await loadProjectFromFile(file);
+            
+            // Load metadata into store
+            loadFromFile(projectFile.metadata, file.name);
+            
+            // Notify parent (App.tsx) about the loaded project state
+            if (onProjectLoaded) {
+                onProjectLoaded(projectFile);
+            }
+            
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to open project file');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -104,14 +139,30 @@ export const ProjectEntry: React.FC = () => {
                             </button>
 
                             <button
-                                className="group p-8 rounded-xl bg-gray-50 dark:bg-gray-800/50 border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-primary dark:hover:border-primary hover:bg-primary/5 transition-all duration-300 text-left"
+                                onClick={handleOpenProjectFile}
+                                disabled={isLoading}
+                                className="group p-8 rounded-xl bg-gray-50 dark:bg-gray-800/50 border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-primary dark:hover:border-primary hover:bg-primary/5 transition-all duration-300 text-left disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 group-hover:text-primary transition-colors">
-                                    <FolderOpen className="w-6 h-6 text-gray-300 dark:text-gray-300 group-hover:text-primary" />
+                                    {isLoading ? (
+                                        <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                                    ) : (
+                                        <FolderOpen className="w-6 h-6 text-gray-300 dark:text-gray-300 group-hover:text-primary" />
+                                    )}
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Open Project File</h3>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                                    {isLoading ? 'Loading...' : 'Open Project File'}
+                                </h3>
                                 <p className="text-gray-300 text-sm">Load a previously saved .qaqc file</p>
                             </button>
+
+                            {/* Error message */}
+                            {error && (
+                                <div className="flex items-center gap-2 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
+                                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                    <p className="text-sm">{error}</p>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="flex-1 flex flex-col">

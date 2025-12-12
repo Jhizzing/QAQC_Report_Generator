@@ -1,0 +1,129 @@
+{
+  "version": "1.0.0",
+  "savedAt": "2025-12-12T10:30:00.000Z",
+  "metadata": {
+    "id": "test-project-001",
+    "name": "North Zone Q4 Drilling",
+    "deposit": "North Zone",
+    "commodity": "Au",
+    "campaign": "RC_2025_Q4",
+    "createdAt": "2025-12-10T08:00:00.000Z",
+    "lastModified": "2025-12-12T10:30:00.000Z"
+  },
+  "data": {
+    "fileName": "assay_results_q4.csv",
+    "headers": ["SampleID", "SampleType", "HoleID", "From", "To", "Au_ppm", "BatchID"],
+    "data": [
+      ["STD-001", "Standard", "RC001", "0", "1", "1.52", "BATCH001"],
+      ["STD-002", "Standard", "RC001", "1", "2", "1.48", "BATCH001"],
+      ["STD-003", "Standard", "RC002", "0", "1", "1.51", "BATCH001"],
+      ["BLK-001", "Blank", "RC001", "2", "3", "0.002", "BATCH001"],
+      ["BLK-002", "Blank", "RC002", "1", "2", "0.001", "BATCH001"],
+      ["BLK-003", "Blank", "RC003", "0", "1", "0.003", "BATCH002"],
+      ["SAMP-001", "Sample", "RC001", "3", "4", "2.45", "BATCH001"],
+      ["SAMP-001-DUP", "Duplicate", "RC001", "3", "4", "2.38", "BATCH001"],
+      ["SAMP-002", "Sample", "RC001", "4", "5", "0.85", "BATCH001"],
+      ["SAMP-002-DUP", "Duplicate", "RC001", "4", "5", "0.92", "BATCH001"],
+      ["SAMP-003", "Sample", "RC002", "2", "3", "5.21", "BATCH002"],
+      ["SAMP-003-DUP", "Duplicate", "RC002", "2", "3", "5.05", "BATCH002"],
+      ["STD-004", "Standard", "RC003", "1", "2", "1.49", "BATCH002"],
+      ["STD-005", "Standard", "RC003", "2", "3", "1.53", "BATCH002"],
+      ["BLK-004", "Blank", "RC003", "3", "4", "0.001", "BATCH002"],
+      ["SAMP-004", "Sample", "RC003", "4", "5", "3.67", "BATCH002"],
+      ["SAMP-004-DUP", "Duplicate", "RC003", "4", "5", "3.58", "BATCH002"],
+      ["SAMP-005", "Sample", "RC004", "0", "1", "1.23", "BATCH002"],
+      ["SAMP-006", "Sample", "RC004", "1", "2", "0.45", "BATCH002"],
+      ["STD-006", "Standard", "RC004", "2", "3", "1.50", "BATCH002"]
+    ],
+    "rowCount": 20
+  },
+  "category": "gold",
+  "methodologyConfig": {
+    "assayMethod": "fire_assay",
+    "duplicateType": "field",
+    "duplicateFrequency": 5,
+    "standardFrequency": 5,
+    "blankFrequency": 5,
+    "primaryLab": "ALS Geochemistry",
+    "secondaryLab": null
+  },
+  "qaqcConfig": {
+    "standards": {
+      "warningLimit": 2,
+      "failLimit": 3,
+      "consecutiveFailLimit": 2
+    },
+    "blanks": {
+      "contaminationThreshold": 0.01,
+      "actionThreshold": 0.05
+    },
+    "duplicates": {
+      "rpdLimit": 10,
+      "hardLimit": 15,
+      "correlationThreshold": 0.95
+    }
+  },
+  "analysisResults": {
+    "summary": {
+      "totalSamples": 20,
+      "totalStandards": 6,
+      "totalBlanks": 4,
+      "totalDuplicates": 4,
+      "overallPassRate": 95.0
+    },
+    "standards": {
+      "statistics": [
+        {
+          "element": "Au",
+          "mean": 1.505,
+          "sd": 0.019,
+          "rsd": 1.26,
+          "passRate": 100,
+          "count": 6
+        }
+      ],
+      "dataPoints": [
+        { "sequence": 1, "value": 1.52, "batchId": "BATCH001", "status": "PASS" },
+        { "sequence": 2, "value": 1.48, "batchId": "BATCH001", "status": "PASS" },
+        { "sequence": 3, "value": 1.51, "batchId": "BATCH001", "status": "PASS" },
+        { "sequence": 4, "value": 1.49, "batchId": "BATCH002", "status": "PASS" },
+        { "sequence": 5, "value": 1.53, "batchId": "BATCH002", "status": "PASS" },
+        { "sequence": 6, "value": 1.50, "batchId": "BATCH002", "status": "PASS" }
+      ],
+      "flaggedBatches": []
+    },
+    "blanks": {
+      "statistics": [
+        {
+          "element": "Au",
+          "max": 0.003,
+          "mean": 0.00175,
+          "median": 0.0015,
+          "contaminationRate": 0,
+          "count": 4
+        }
+      ],
+      "flaggedBlanks": []
+    },
+    "duplicates": {
+      "statistics": [
+        {
+          "element": "Au",
+          "meanRPD": 3.45,
+          "meanHARD": 0.095,
+          "withinTarget": 100,
+          "count": 4
+        }
+      ],
+      "pairs": [
+        { "sampleId": "SAMP-001", "original": 2.45, "duplicate": 2.38, "rpd": 2.9, "hard": 0.07 },
+        { "sampleId": "SAMP-002", "original": 0.85, "duplicate": 0.92, "rpd": 7.9, "hard": 0.07 },
+        { "sampleId": "SAMP-003", "original": 5.21, "duplicate": 5.05, "rpd": 3.1, "hard": 0.16 },
+        { "sampleId": "SAMP-004", "original": 3.67, "duplicate": 3.58, "rpd": 2.5, "hard": 0.09 }
+      ],
+      "flaggedPairs": []
+    }
+  },
+  "workflowStep": "dashboard"
+}
+

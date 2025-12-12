@@ -96,7 +96,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ previewMode }) => {
                             <SortableBlock
                                 key={block.id}
                                 block={block}
-                                sectionId={selectedSectionId}
+                                sectionId={selectedSectionId!}
                                 previewMode={previewMode}
                             />
                         ))}

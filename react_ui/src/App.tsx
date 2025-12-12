@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { MainLayout } from './components/layout/MainLayout';
 import { Header } from './components/Header';
 import { ImportWorkflow } from './features/import/ImportWorkflow';
@@ -15,6 +15,7 @@ import { useProjectStore } from './stores/projectStore';
 import { runQAQCAnalysis, autoDetectColumnMapping, type QAQCAnalysisOutput } from './features/analysis/qaqcAnalysis';
 import { exportFiguresOnly, exportJORCReport } from './utils/export';
 import { generateMockGoldData, generateMockPhotonData } from './data/mockQAQCData';
+import { saveProjectToFile, type QAQCProjectFile, type WorkflowStep as ProjectWorkflowStep } from './utils/projectFile';
 import type { ProcessedData } from './utils/fileProcessor';
 import type { JORCReportConfig, FiguresConfig } from './features/report/ReportConfig';
 
@@ -29,8 +30,33 @@ function App() {
   const [qaqcConfig, setQaqcConfig] = useState<QAQCConfig | null>(null);
   const [analysisResults, setAnalysisResults] = useState<QAQCAnalysisOutput | null>(null);
 
+  // Handle loading a project from file
+  const handleProjectLoaded = useCallback((projectFile: QAQCProjectFile) => {
+    // Restore all state from the loaded project
+    setData(projectFile.data);
+    setSelectedCategory(projectFile.category);
+    setMethodologyConfig(projectFile.methodologyConfig);
+    setQaqcConfig(projectFile.qaqcConfig);
+    setAnalysisResults(projectFile.analysisResults);
+    setWorkflowStep(projectFile.workflowStep as WorkflowStep);
+  }, []);
+
+  // Handle saving the current project to file
+  const handleSaveProject = useCallback(() => {
+    if (!currentProject) return;
+    
+    saveProjectToFile(currentProject, {
+      data,
+      category: selectedCategory,
+      methodologyConfig,
+      qaqcConfig,
+      analysisResults,
+      workflowStep: workflowStep as ProjectWorkflowStep,
+    });
+  }, [currentProject, data, selectedCategory, methodologyConfig, qaqcConfig, analysisResults, workflowStep]);
+
   if (!currentProject) {
-    return <ProjectEntry />;
+    return <ProjectEntry onProjectLoaded={handleProjectLoaded} />;
   }
 
   const handleImportComplete = (importedData: ProcessedData) => {
@@ -127,7 +153,7 @@ function App() {
     <MainLayout>
       <WelcomeModal />
       <OnboardingOverlay />
-      <Header />
+      <Header onSaveProject={handleSaveProject} />
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div data-tour="project-header">

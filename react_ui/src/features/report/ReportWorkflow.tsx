@@ -12,7 +12,7 @@ interface ReportWorkflowProps {
 type WorkflowStep = 'selection' | 'config';
 type ReportType = 'report' | 'figures' | null;
 
-export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({ results, onBack, onGenerate }) => {
+export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({ onBack, onGenerate }) => {
     const [step, setStep] = useState<WorkflowStep>('selection');
     const [reportType, setReportType] = useState<ReportType>(null);
 

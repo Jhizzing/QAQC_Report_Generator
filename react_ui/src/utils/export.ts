@@ -3,7 +3,6 @@
  * Supports CSV, PDF, and DOCX export formats
  */
 
-import { jsPDF } from 'jspdf';
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, HeadingLevel, WidthType } from 'docx';
 import { saveAs } from 'file-saver';
 import type { QAQCAnalysisOutput } from '../features/analysis/qaqcAnalysis';
@@ -17,23 +16,17 @@ export async function exportFiguresOnly(
     config: FiguresConfig,
     projectName: string = 'QAQC Analysis'
 ): Promise<void> {
-    const doc = new Document({
-        sections: [{
-            children: [
-                new Paragraph({
-                    text: `${projectName} - QAQC Figures`,
-                    heading: HeadingLevel.HEADING_1,
-                    spacing: { after: 400 }
-                }),
-                new Paragraph({
-                    text: `Generated on ${new Date().toLocaleDateString()}`,
-                    spacing: { after: 600 }
-                })
-            ]
-        }]
-    });
-
-    const children: any[] = doc.sections[0].children;
+    const children: (Paragraph | Table)[] = [
+        new Paragraph({
+            text: `${projectName} - QAQC Figures`,
+            heading: HeadingLevel.HEADING_1,
+            spacing: { after: 400 }
+        }),
+        new Paragraph({
+            text: `Generated on ${new Date().toLocaleDateString()}`,
+            spacing: { after: 600 }
+        })
+    ];
 
     // Add tables based on configuration
     if (config.includeTables) {
@@ -152,6 +145,13 @@ export async function exportFiguresOnly(
             })
         );
     }
+
+    // Create document
+    const doc = new Document({
+        sections: [{
+            children
+        }]
+    });
 
     // Generate and save
     const blob = await Packer.toBlob(doc);
@@ -417,7 +417,7 @@ export function exportStatisticsToCSV(results: QAQCAnalysisOutput): void {
 /**
  * Export all results in multiple formats (legacy function)
  */
-export async function exportAll(results: QAQCAnalysisOutput, projectName: string = 'QAQC Analysis'): Promise<void> {
+export async function exportAll(results: QAQCAnalysisOutput, _projectName: string = 'QAQC Analysis'): Promise<void> {
     exportFlaggedSamplesToCSV(results);
     exportStatisticsToCSV(results);
 }

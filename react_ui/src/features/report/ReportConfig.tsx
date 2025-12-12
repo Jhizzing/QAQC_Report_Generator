@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Image, CheckSquare, Square } from 'lucide-react';
+import { CheckSquare } from 'lucide-react';
 
 export interface JORCReportConfig {
     competentPerson: string;

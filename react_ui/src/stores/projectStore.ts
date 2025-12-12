@@ -9,6 +9,8 @@ export interface ProjectMetadata {
     campaign?: string;
     createdAt: string;
     lastModified: string;
+    /** Path/name of file this was loaded from (optional) */
+    sourceFile?: string;
 }
 
 interface ProjectState {
@@ -18,6 +20,8 @@ interface ProjectState {
     // Actions
     createProject: (metadata: Omit<ProjectMetadata, 'id' | 'createdAt' | 'lastModified'>) => void;
     openProject: (project: ProjectMetadata) => void;
+    /** Load project from a .qaqc file - sets metadata and adds to recent */
+    loadFromFile: (metadata: ProjectMetadata, sourceFileName: string) => void;
     closeProject: () => void;
     updateProject: (metadata: Partial<ProjectMetadata>) => void;
 }
@@ -49,6 +53,22 @@ export const useProjectStore = create<ProjectState>()(
                         { ...project, lastModified: new Date().toISOString() },
                         ...state.recentProjects.filter(p => p.id !== project.id)
                     ]
+                }));
+            },
+
+            loadFromFile: (metadata, sourceFileName) => {
+                const loadedProject: ProjectMetadata = {
+                    ...metadata,
+                    lastModified: new Date().toISOString(),
+                    sourceFile: sourceFileName,
+                };
+
+                set((state) => ({
+                    currentProject: loadedProject,
+                    recentProjects: [
+                        loadedProject,
+                        ...state.recentProjects.filter(p => p.id !== metadata.id)
+                    ].slice(0, 10) // Keep max 10 recent projects
                 }));
             },
 
