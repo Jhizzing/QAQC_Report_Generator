@@ -1,28 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileSpreadsheet, X, ArrowRight } from 'lucide-react';
+import { Upload, FileSpreadsheet, X, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, ArrowRight, Server } from 'lucide-react';
 import { useImportStore } from '../../stores/importStore';
 import { processFile } from '../../utils/fileProcessor';
 import { guessMapping } from '../../utils/smartMapper';
+import { uploadFileForAnalysis } from '../../services/analysisService';
 
 interface ImportWorkflowProps {
-    onComplete?: (data: any) => void;
+    onComplete?: (data: any, serverFileId?: string) => void;
     onLoadDemoData?: (category?: 'gold' | 'photon') => void;
+    isBackendAvailable?: boolean;
 }
 
-export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLoadDemoData }) => {
-    const { files, addFile, removeFile, updateFileStatus, updateMapping, activeStep, setStep } = useImportStore();
+export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLoadDemoData, isBackendAvailable }) => {
+    const { files, addFile, removeFile, updateFileStatus, updateMapping } = useImportStore();
+    const [expandedFileId, setExpandedFileId] = useState<string | null>(null);
+    const [serverFileIds, setServerFileIds] = useState<Record<string, string>>({});
+    const [uploadingToServer, setUploadingToServer] = useState<string | null>(null);
 
     const handleDrop = async (acceptedFiles: File[]) => {
         for (const file of acceptedFiles) {
             addFile(file, 'assays');
 
-            // Process immediately
             try {
+                // Always do client-side processing first for immediate feedback
                 const data = await processFile(file);
                 const rawMapping = guessMapping(data.headers);
 
-                // Transform raw mapping to ColumnMapping
                 const mapping = {
                     sampleId: rawMapping['sampleId'] || '',
                     sampleType: rawMapping['sampleType'] || '',
@@ -31,17 +35,32 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
                     )
                 };
 
-                // Find the file in the store to update it.
-                // Since addFile is sync, the file should be in the store now.
-                // We'll find it by name and 'pending' status.
                 const fileInStore = useImportStore.getState().files.find(f => f.file.name === file.name && f.status === 'pending');
 
                 if (fileInStore) {
                     updateFileStatus(fileInStore.id, 'mapped', {
                         headers: data.headers,
-                        data: data.data // Store the actual row data
+                        data: data.data
                     });
                     updateMapping(fileInStore.id, mapping);
+                    // Auto-expand the first uploaded file
+                    if (files.length === 0) {
+                        setExpandedFileId(fileInStore.id);
+                    }
+
+                    // If backend is available, also upload to server in background
+                    if (isBackendAvailable) {
+                        setUploadingToServer(fileInStore.id);
+                        try {
+                            const serverResponse = await uploadFileForAnalysis(file);
+                            setServerFileIds(prev => ({ ...prev, [fileInStore.id]: serverResponse.fileId }));
+                            console.log(`File uploaded to server: ${serverResponse.fileId}`);
+                        } catch (serverError) {
+                            console.warn('Server upload failed, will use client-side analysis:', serverError);
+                        } finally {
+                            setUploadingToServer(null);
+                        }
+                    }
                 }
             } catch (error) {
                 console.error("Error processing file:", error);
@@ -61,266 +80,267 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
         }
     });
 
+    const handleProceed = () => {
+        const firstFile = files[0];
+        if (firstFile && (firstFile as any).data && onComplete) {
+            // Pass server file ID if available for server-side analysis
+            const serverFileId = serverFileIds[firstFile.id];
+            onComplete({
+                fileName: firstFile.file.name,
+                headers: firstFile.headers || [],
+                data: (firstFile as any).data,
+                rowCount: (firstFile as any).data.length
+            }, serverFileId);
+        }
+    };
+
+    // Calculate mapping percentage
+    const getMappingPercentage = (file: typeof files[0]) => {
+        if (!file.mapping) return 0;
+        const hasSampleId = !!file.mapping.sampleId;
+        const hasSampleType = !!file.mapping.sampleType;
+        const elementCount = Object.keys(file.mapping.elementMap || {}).length;
+        
+        if (!hasSampleId && !hasSampleType && elementCount === 0) return 0;
+        
+        // Required fields weight: 40%, elements: 60%
+        const requiredScore = (hasSampleId ? 20 : 0) + (hasSampleType ? 20 : 0);
+        const elementScore = elementCount > 0 ? 60 : 0;
+        return requiredScore + elementScore;
+    };
+
+    const allFilesMapped = files.length > 0 && files.every(f => f.status === 'mapped' && getMappingPercentage(f) >= 40);
+
     return (
-        <div className="max-w-5xl mx-auto p-6">
-            {/* Stepper */}
-            <div className="flex items-center justify-center mb-12">
-                {['Upload Data', 'Map Columns', 'Review'].map((step, i) => (
-                    <div key={step} className="flex items-center">
-                        <div className={`
-              w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300
-              ${(i === 0 && activeStep === 'upload') || (i === 1 && activeStep === 'mapping') || (i === 2 && activeStep === 'review')
-                                ? 'bg-primary text-white shadow-[0_0_10px_rgba(245,158,11,0.4)]'
-                                : 'bg-surface-light text-slate-500'}
-            `}>
-                            {i + 1}
-                        </div>
-                        <span className={`ml-3 text-sm font-medium transition-colors duration-300 ${(i === 0 && activeStep === 'upload') || (i === 1 && activeStep === 'mapping') || (i === 2 && activeStep === 'review')
-                            ? 'text-slate-100' : 'text-slate-500'
-                            }`}>
-                            {step}
-                        </span>
-                        {i < 2 && <div className={`w-16 h-0.5 mx-4 transition-colors duration-300 ${(i === 0 && activeStep !== 'upload') || (i === 1 && activeStep === 'review')
-                            ? 'bg-primary/50'
-                            : 'bg-surface-light'
-                            }`} />}
-                    </div>
-                ))}
+        <div className="max-w-4xl mx-auto">
+            {/* Upload Zone */}
+            <div
+                {...getRootProps()}
+                data-tour="upload-area"
+                className={`
+                    border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300
+                    ${isDragActive
+                        ? 'border-primary bg-primary/10 scale-[1.01] shadow-[0_0_20px_rgba(245,158,11,0.2)]'
+                        : 'border-secondary-light hover:border-primary/50 hover:bg-surface-light'
+                    }
+                `}
+            >
+                <input {...getInputProps()} />
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-colors ${
+                    isDragActive ? 'bg-primary/20 text-primary' : 'bg-surface-light text-slate-400'
+                }`}>
+                    <Upload className={`w-7 h-7 ${isDragActive ? 'animate-bounce' : ''}`} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-50 mb-1">
+                    {isDragActive ? 'Drop files now' : 'Upload Data Files'}
+                </h3>
+                <p className="text-sm text-slate-400">Drag & drop CSV or Excel files here, or click to browse</p>
             </div>
 
-            {activeStep === 'upload' && (
-                <div className="space-y-8">
-                    <div
-                        {...getRootProps()}
-                        data-tour="upload-area"
-                        className={`
-            border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300
-            ${isDragActive
-                                ? 'border-primary bg-primary/10 scale-[1.02] shadow-[0_0_20px_rgba(245,158,11,0.2)]'
-                                : 'border-secondary-light hover:border-primary/50 hover:bg-surface-light'
-                            }
-          `}
-                    >
-                        <input {...getInputProps()} />
-                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors ${isDragActive ? 'bg-primary/20 text-primary' : 'bg-gray-800 text-gray-400 group-hover:text-primary'}`}>
-                            <Upload className={`w-8 h-8 ${isDragActive ? 'animate-bounce' : ''}`} />
-                        </div>
-                        <h3 className="text-xl font-bold text-white mb-2">
-                            {isDragActive ? 'Drop files now' : 'Upload Data Files'}
-                        </h3>
-                        <p className="text-gray-400 mt-2">Drag & drop assays, standards, or blank files here</p>
-                        <p className="text-xs text-gray-500 mt-4">Supports .csv, .xlsx, .xls</p>
-                    </div>
-
-                    {/* Demo Data Buttons */}
-                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 text-center">
-                            📊 Try with Sample Data
-                        </p>
-                        <div className="grid grid-cols-1 gap-3">
-                            <button
-                                onClick={() => {
-                                    if (onLoadDemoData) onLoadDemoData('gold');
-                                }}
-                                className="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-gray-900 rounded-xl font-semibold hover:from-primary-light hover:to-primary transition-all shadow-lg hover:shadow-xl hover:shadow-primary/20 flex items-center justify-center gap-2"
-                            >
-                                <FileSpreadsheet className="w-5 h-5" />
-                                Gold Fire Assay QAQC
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (onLoadDemoData) onLoadDemoData('photon');
-                                }}
-                                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-xl font-semibold hover:from-purple-600 hover:to-purple-800 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                            >
-                                <FileSpreadsheet className="w-5 h-5" />
-                                Chrysos PhotonAssay
-                            </button>
-                        </div>
-                        <p className="text-xs text-center text-gray-300 mt-2">
-                            Instantly load sample data to test the workflow
-                        </p>
-                    </div>
-
-                    {files.length > 0 && (
-                        <div className="bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-                            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
-                                <h4 className="font-semibold text-gray-900 dark:text-white">Uploaded Files ({files.length})</h4>
-                            </div>
-                            <div className="divide-y divide-gray-200 dark:divide-gray-800">
-                                {files.map((file) => (
-                                    <div key={file.id} className="p-4 flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                                                <FileSpreadsheet className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-gray-900 dark:text-white">{file.file.name}</p>
-                                                <p className="text-xs text-gray-300">{(file.file.size / 1024).toFixed(1)} KB</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <select
-                                                className="text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary/50"
-                                                value={file.type}
-                                                onChange={() => { /* Update type placeholder */ }}
-                                            >
-                                                <option value="assays">Assays</option>
-                                                <option value="standards">Standards</option>
-                                                <option value="blanks">Blanks</option>
-                                                <option value="duplicates">Duplicates</option>
-                                            </select>
-                                            <button
-                                                onClick={() => removeFile(file.id)}
-                                                className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-300 hover:text-red-600 rounded-lg transition-colors"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="flex justify-end">
-                        <button
-                            disabled={files.length === 0}
-                            onClick={() => setStep('mapping')}
-                            className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        >
-                            Next: Map Columns
-                            <ArrowRight className="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {activeStep === 'mapping' && (
-                <div className="space-y-8">
-                    <div className="bg-primary/10 border border-primary/20 p-4 rounded-xl flex items-start gap-3">
-                        <div className="p-2 bg-primary/20 rounded-lg">
-                            <FileSpreadsheet className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-slate-100">Smart Mapping Active</h4>
-                            <p className="text-sm text-slate-400 mt-1">
-                                We've automatically detected column headers based on common geological formats. Please review and adjust the mappings below.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-6">
-                        {files.map((file) => (
-                            <div key={file.id} className="bg-surface border border-secondary-dark rounded-xl overflow-hidden shadow-lg">
-                                <div className="p-4 bg-surface-light border-b border-secondary-dark flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <span className="px-2 py-1 text-xs font-bold uppercase tracking-wider bg-secondary-dark rounded text-slate-300">
-                                            {file.type}
-                                        </span>
-                                        <h4 className="font-bold text-slate-50">{file.file.name}</h4>
-                                    </div>
-                                    <div className="text-sm text-slate-400">
-                                        Mapped: <span className="font-bold text-emerald-400">85%</span>
-                                    </div>
-                                </div>
-
-                                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {/* Required Fields */}
-                                    <div>
-                                        <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 uppercase tracking-wider">Required Columns</h5>
-                                        <div className="space-y-4">
-                                            {['Sample ID', 'Sample Type'].map((field) => (
-                                                <div key={field} className="flex items-center justify-between group">
-                                                    <label className="text-sm text-slate-400 font-medium">{field}</label>
-                                                    <select
-                                                        className="text-sm bg-background-dark border border-secondary-light rounded-lg px-3 py-2 w-48 focus:ring-2 focus:ring-primary/50 outline-none text-slate-200"
-                                                        value={file.mapping?.[field === 'Sample ID' ? 'sampleId' : 'sampleType'] || ''}
-                                                        onChange={(e) => {
-                                                            const newMapping = { ...file.mapping } as any;
-                                                            if (field === 'Sample ID') newMapping.sampleId = e.target.value;
-                                                            else newMapping.sampleType = e.target.value;
-                                                            updateMapping(file.id, newMapping);
-                                                        }}
-                                                    >
-                                                        <option value="">Select Column...</option>
-                                                        {file.headers?.map(h => (
-                                                            <option key={h} value={h}>{h}</option>
-                                                        ))}
-                                                    </select>                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Element Mapping */}
-                                    <div>
-                                        <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 uppercase tracking-wider">Element Columns</h5>
-                                        <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 h-64 overflow-y-auto space-y-2 custom-scrollbar">
-                                            {Object.entries(file.mapping?.elementMap || {}).map(([key, value]) => (
-                                                <div key={key} className="flex items-center gap-3 p-2 hover:bg-white dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
-                                                    <div className="w-4 h-4 rounded border border-gray-300 dark:border-gray-600 bg-primary text-white flex items-center justify-center text-[10px]">
-                                                        ✓
-                                                    </div>
-                                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{key}</span>
-                                                    <ArrowRight className="w-3 h-3 text-gray-300 ml-auto" />
-                                                    <span className="text-xs font-mono text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                                                        {value}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                            {(!file.mapping?.elementMap || Object.keys(file.mapping.elementMap).length === 0) && (
-                                                <p className="text-sm text-gray-300 text-center py-4">No elements mapped yet.</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-800">
-                        <button
-                            onClick={() => setStep('upload')}
-                            className="px-6 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium"
-                        >
-                            Back
-                        </button>
-                        <button
-                            onClick={() => setStep('review')}
-                            className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition-all"
-                        >
-                            Review & Import
-                            <ArrowRight className="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {activeStep === 'review' && (
-                <div className="text-center py-12">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Ready to Import</h3>
-                    <p className="text-gray-300 mt-2 mb-8">You are about to import {files.length} files into the project.</p>
+            {/* Demo Data Section */}
+            <div className="mt-6 pt-6 border-t border-secondary-dark">
+                <p className="text-sm font-semibold text-slate-300 mb-3 text-center">
+                    Or try with sample data
+                </p>
+                <div className="grid grid-cols-2 gap-3" data-tour="demo-gold-btn">
                     <button
-                        onClick={() => {
-                            // In a real app, we would aggregate all data here
-                            // For this demo, we just pass the first file's data to the parent
-                            const firstFile = files[0];
-                            if (firstFile && (firstFile as any).data && onComplete) {
-                                // Construct ProcessedData object
-                                onComplete({
-                                    fileName: firstFile.file.name,
-                                    headers: firstFile.headers || [],
-                                    data: (firstFile as any).data,
-                                    rowCount: (firstFile as any).data.length
-                                });
-                            }
-                        }}
-                        className="px-8 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all shadow-lg shadow-green-600/20"
+                        onClick={() => onLoadDemoData?.('gold')}
+                        className="px-4 py-3 bg-gradient-to-r from-primary to-primary-dark text-slate-900 rounded-xl font-semibold hover:shadow-lg hover:shadow-primary/20 transition-all flex items-center justify-center gap-2"
                     >
-                        Confirm Import
+                        <FileSpreadsheet className="w-4 h-4" />
+                        Gold Fire Assay
+                    </button>
+                    <button
+                        onClick={() => onLoadDemoData?.('photon')}
+                        className="px-4 py-3 bg-gradient-to-r from-purple-500 to-purple-700 text-slate-50 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                    >
+                        <FileSpreadsheet className="w-4 h-4" />
+                        PhotonAssay
                     </button>
                 </div>
+            </div>
+
+            {/* Uploaded Files with Inline Mapping */}
+            {files.length > 0 && (
+                <div className="mt-8 space-y-4">
+                    <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+                        Uploaded Files ({files.length})
+                    </h4>
+                    
+                    {files.map((file) => {
+                        const mappingPct = getMappingPercentage(file);
+                        const isExpanded = expandedFileId === file.id;
+                        const isError = file.status === 'error';
+                        
+                        return (
+                            <div 
+                                key={file.id} 
+                                className={`bg-surface rounded-xl border overflow-hidden transition-all ${
+                                    isError ? 'border-status-error/50' : 'border-secondary-dark'
+                                }`}
+                            >
+                                {/* File Header */}
+                                <div className="p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                            isError ? 'bg-status-error/20' : 'bg-accent/20'
+                                        }`}>
+                                            {isError ? (
+                                                <AlertCircle className="w-5 h-5 text-status-error" />
+                                            ) : (
+                                                <FileSpreadsheet className="w-5 h-5 text-accent" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-slate-50">{file.file.name}</p>
+                                            <p className="text-xs text-slate-500">
+                                                {(file.file.size / 1024).toFixed(1)} KB
+                                                {file.headers && ` • ${file.headers.length} columns`}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-3">
+                                        {!isError && (
+                                            <>
+                                                {/* Server Upload Status */}
+                                                {isBackendAvailable && (
+                                                    <div className="flex items-center gap-1">
+                                                        {uploadingToServer === file.id ? (
+                                                            <div className="flex items-center gap-1 text-xs text-yellow-400">
+                                                                <Server className="w-3 h-3 animate-pulse" />
+                                                                <span>Uploading...</span>
+                                                            </div>
+                                                        ) : serverFileIds[file.id] ? (
+                                                            <div className="flex items-center gap-1 text-xs text-green-400">
+                                                                <Server className="w-3 h-3" />
+                                                                <span>Server</span>
+                                                            </div>
+                                                        ) : null}
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Mapping Status */}
+                                                <div className="flex items-center gap-2">
+                                                    {mappingPct >= 40 ? (
+                                                        <CheckCircle2 className="w-4 h-4 text-status-success" />
+                                                    ) : null}
+                                                    <span className={`text-sm font-medium ${
+                                                        mappingPct >= 40 ? 'text-status-success' : 'text-slate-400'
+                                                    }`}>
+                                                        {mappingPct}% mapped
+                                                    </span>
+                                                </div>
+                                                
+                                                {/* Expand Toggle */}
+                                                <button
+                                                    onClick={() => setExpandedFileId(isExpanded ? null : file.id)}
+                                                    className="p-2 hover:bg-surface-light rounded-lg transition-colors text-slate-400 hover:text-slate-200"
+                                                >
+                                                    {isExpanded ? (
+                                                        <ChevronUp className="w-4 h-4" />
+                                                    ) : (
+                                                        <ChevronDown className="w-4 h-4" />
+                                                    )}
+                                                </button>
+                                            </>
+                                        )}
+                                        
+                                        {/* Remove Button */}
+                                        <button
+                                            onClick={() => removeFile(file.id)}
+                                            className="p-2 hover:bg-status-error/20 text-slate-400 hover:text-status-error rounded-lg transition-colors"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Expanded Mapping Panel */}
+                                {isExpanded && !isError && (
+                                    <div className="px-4 pb-4 border-t border-secondary-dark pt-4 animate-fade-in">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Required Columns */}
+                                            <div>
+                                                <h5 className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">
+                                                    Required Columns
+                                                </h5>
+                                                <div className="space-y-3">
+                                                    {['Sample ID', 'Sample Type'].map((field) => (
+                                                        <div key={field} className="flex items-center justify-between gap-4">
+                                                            <label className="text-sm text-slate-300 font-medium">{field}</label>
+                                                            <select
+                                                                className="text-sm bg-surface-light border border-secondary-light rounded-lg px-3 py-2 w-40 focus:ring-2 focus:ring-primary/50 outline-none text-slate-200"
+                                                                value={file.mapping?.[field === 'Sample ID' ? 'sampleId' : 'sampleType'] || ''}
+                                                                onChange={(e) => {
+                                                                    const newMapping = { ...file.mapping } as any;
+                                                                    if (field === 'Sample ID') newMapping.sampleId = e.target.value;
+                                                                    else newMapping.sampleType = e.target.value;
+                                                                    updateMapping(file.id, newMapping);
+                                                                }}
+                                                            >
+                                                                <option value="">Select...</option>
+                                                                {file.headers?.map(h => (
+                                                                    <option key={h} value={h}>{h}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Element Columns (auto-detected) */}
+                                            <div>
+                                                <h5 className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">
+                                                    Detected Elements ({Object.keys(file.mapping?.elementMap || {}).length})
+                                                </h5>
+                                                <div className="bg-surface-light rounded-lg p-3 max-h-32 overflow-y-auto space-y-1">
+                                                    {Object.entries(file.mapping?.elementMap || {}).map(([key, value]) => (
+                                                        <div key={key} className="flex items-center justify-between text-sm">
+                                                            <span className="text-slate-300">{key}</span>
+                                                            <span className="text-xs text-slate-500 font-mono">{value}</span>
+                                                        </div>
+                                                    ))}
+                                                    {(!file.mapping?.elementMap || Object.keys(file.mapping.elementMap).length === 0) && (
+                                                        <p className="text-sm text-slate-500 text-center py-2">No elements detected</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+
+                    {/* Proceed Button */}
+                    <div className="pt-4">
+                        <button
+                            onClick={handleProceed}
+                            disabled={!allFilesMapped}
+                            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-primary to-primary-dark text-slate-900 rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            Proceed to Analysis Setup
+                            <ArrowRight className="w-5 h-5" />
+                        </button>
+                        {!allFilesMapped && files.length > 0 && (
+                            <p className="text-center text-sm text-slate-500 mt-2">
+                                Ensure all files have Sample ID and Sample Type mapped
+                            </p>
+                        )}
+                    </div>
+                </div>
             )}
+
+            <style>{`
+                @keyframes fade-in {
+                    from { opacity: 0; transform: translateY(-8px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-in {
+                    animation: fade-in 0.2s ease-out;
+                }
+            `}</style>
         </div>
     );
 };

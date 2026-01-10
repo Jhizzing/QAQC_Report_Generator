@@ -1,34 +1,53 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { MainLayout } from './components/layout/MainLayout';
 import { Header } from './components/Header';
 import { ImportWorkflow } from './features/import/ImportWorkflow';
-import { DataCategorySelect } from './features/analysis/DataCategorySelect';
-import { MethodologyWizard, type MethodologyConfig } from './features/analysis/MethodologyWizard';
-import { QAQCRuleConfig, type QAQCConfig } from './features/analysis/QAQCRuleConfig';
+import { AnalysisSetup } from './features/analysis/AnalysisSetup';
+import { type MethodologyConfig } from './features/analysis/MethodologyWizard';
+import { type QAQCConfig } from './features/analysis/QAQCRuleConfig';
 import { ResultsDashboard } from './features/analysis/ResultsDashboard';
 import { ReportWorkflow } from './features/report/ReportWorkflow';
 import { TemplateEditor } from './features/templates/TemplateEditor';
 import { ProjectEntry } from './features/projects/ProjectEntry';
+import { EducationCenter } from './features/education/EducationCenter';
+import { CRMDatabase } from './features/crm/CRMDatabase';
+import { SettingsPage } from './features/settings/SettingsPage';
 import { WelcomeModal } from './components/onboarding/WelcomeModal';
 import { OnboardingOverlay } from './components/onboarding/OnboardingOverlay';
+import { WorkflowStepper, type WorkflowStep as StepperWorkflowStep } from './components/common/WorkflowStepper';
+import { Breadcrumbs } from './components/common/Breadcrumbs';
 import { useProjectStore } from './stores/projectStore';
-import { runQAQCAnalysis, autoDetectColumnMapping, type QAQCAnalysisOutput } from './features/analysis/qaqcAnalysis';
+import { autoDetectColumnMapping, type QAQCAnalysisOutput } from './features/analysis/qaqcAnalysis';
 import { exportFiguresOnly, exportJORCReport } from './utils/export';
 import { generateMockGoldData, generateMockPhotonData } from './data/mockQAQCData';
 import { saveProjectToFile, type QAQCProjectFile, type WorkflowStep as ProjectWorkflowStep } from './utils/projectFile';
+import { useBackendService, setGlobalBackendStatus } from './hooks/useBackendService';
+import { runAnalysis } from './services/analysisService';
+import { BackendStatus } from './components/common/BackendStatus';
 import type { ProcessedData } from './utils/fileProcessor';
 import type { JORCReportConfig, FiguresConfig } from './features/report/ReportConfig';
 
-type WorkflowStep = 'entry' | 'import' | 'category' | 'methodology' | 'qaqcRules' | 'dashboard' | 'report' | 'template_editor';
+// Use the shared WorkflowStep type from WorkflowStepper
+type WorkflowStep = StepperWorkflowStep;
 
 function App() {
   const { currentProject } = useProjectStore();
   const [data, setData] = useState<ProcessedData | null>(null);
+  const [fileId, setFileId] = useState<string | null>(null); // Server file ID for backend analysis
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('import');
   const [selectedCategory, setSelectedCategory] = useState<'gold' | 'pxrf' | 'multi' | 'photon' | null>(null);
   const [methodologyConfig, setMethodologyConfig] = useState<MethodologyConfig | null>(null);
   const [qaqcConfig, setQaqcConfig] = useState<QAQCConfig | null>(null);
   const [analysisResults, setAnalysisResults] = useState<QAQCAnalysisOutput | null>(null);
+  const [analysisId, setAnalysisId] = useState<string | null>(null); // Server analysis ID for exports
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  
+  // Backend service hook
+  const backendService = useBackendService();
+  
+  // Update global backend status for non-React contexts
+  setGlobalBackendStatus(backendService.isAvailable);
 
   // Handle loading a project from file
   const handleProjectLoaded = useCallback((projectFile: QAQCProjectFile) => {
@@ -38,7 +57,15 @@ function App() {
     setMethodologyConfig(projectFile.methodologyConfig);
     setQaqcConfig(projectFile.qaqcConfig);
     setAnalysisResults(projectFile.analysisResults);
-    setWorkflowStep(projectFile.workflowStep as WorkflowStep);
+    // Map old workflow steps to new simplified steps
+    const oldStep = projectFile.workflowStep;
+    let newStep: WorkflowStep = 'import';
+    if (oldStep === 'dashboard') newStep = 'dashboard';
+    else if (oldStep === 'report') newStep = 'report';
+    else if (oldStep === 'category' || oldStep === 'methodology' || oldStep === 'qaqcRules') newStep = 'setup';
+    else if (oldStep === 'template_editor') newStep = 'template_editor';
+    else newStep = oldStep as WorkflowStep;
+    setWorkflowStep(newStep);
   }, []);
 
   // Handle saving the current project to file
@@ -59,9 +86,12 @@ function App() {
     return <ProjectEntry onProjectLoaded={handleProjectLoaded} />;
   }
 
-  const handleImportComplete = (importedData: ProcessedData) => {
+  const handleImportComplete = (importedData: ProcessedData, serverFileId?: string) => {
     setData(importedData);
-    setWorkflowStep('category');
+    if (serverFileId) {
+      setFileId(serverFileId);
+    }
+    setWorkflowStep('setup');
   };
 
   const handleLoadDemoData = (demoCategory?: 'gold' | 'photon') => {
@@ -82,57 +112,62 @@ function App() {
 
     setData(processedData);
     setSelectedCategory(categoryToUse);
+    setWorkflowStep('setup');
+  };
 
-    if (categoryToUse === 'photon') {
-      setWorkflowStep('methodology');
-    } else {
-      setWorkflowStep('category');
+  // New unified handler for the AnalysisSetup component
+  const handleAnalysisSetupComplete = async (result: {
+    category: 'gold' | 'pxrf' | 'photon';
+    methodologyConfig: MethodologyConfig;
+    qaqcConfig: QAQCConfig;
+  }) => {
+    console.log('Analysis setup complete:', result);
+    setSelectedCategory(result.category);
+    setMethodologyConfig(result.methodologyConfig);
+    setQaqcConfig(result.qaqcConfig);
+    setAnalysisError(null);
+
+    // Run analysis immediately
+    if (data) {
+      setIsAnalyzing(true);
+      
+      try {
+        const rawData = data.data.map((row) => {
+          const rowObj: Record<string, unknown> = {};
+          data.headers.forEach((header, index) => {
+            rowObj[header] = row[index];
+          });
+          return rowObj;
+        });
+
+        const columnMapping = autoDetectColumnMapping(rawData);
+
+        // Use the analysis service which routes to server or client
+        const analysisOutput = await runAnalysis(
+          {
+            data: rawData,
+            fileId: fileId || undefined,
+            methodologyConfig: result.methodologyConfig,
+            qaqcConfig: result.qaqcConfig,
+            columnMapping,
+          },
+          backendService.isAvailable
+        );
+
+        console.log(`Analysis completed using ${analysisOutput.mode} mode:`, analysisOutput.messages);
+        
+        setAnalysisResults(analysisOutput.results);
+        if (analysisOutput.analysisId) {
+          setAnalysisId(analysisOutput.analysisId);
+        }
+        setWorkflowStep('dashboard');
+      } catch (error) {
+        console.error('Analysis failed:', error);
+        setAnalysisError(error instanceof Error ? error.message : 'Analysis failed');
+      } finally {
+        setIsAnalyzing(false);
+      }
     }
-  };
-
-  const handleCategoryComplete = (category: 'gold' | 'pxrf' | 'multi' | 'photon') => {
-    console.log('Selected category:', category);
-    setSelectedCategory(category);
-    setWorkflowStep('methodology');
-  };
-
-  const handleMethodologyComplete = (config: MethodologyConfig) => {
-    console.log('Methodology config:', config);
-    setMethodologyConfig(config);
-    setWorkflowStep('qaqcRules');
-  };
-
-  const handleQAQCRulesComplete = (config: QAQCConfig) => {
-    console.log('QAQC Rules config:', config);
-    setQaqcConfig(config);
-
-    if (data && selectedCategory) {
-      runAnalysis(config);
-    }
-  };
-
-  const runAnalysis = (config: QAQCConfig) => {
-    if (!data || (!qaqcConfig && !config)) return;
-
-    const rawData = data.data.map((row) => {
-      const rowObj: any = {};
-      data.headers.forEach((header, index) => {
-        rowObj[header] = row[index];
-      });
-      return rowObj;
-    });
-
-    const columnMapping = autoDetectColumnMapping(rawData);
-
-    const results = runQAQCAnalysis({
-      data: rawData,
-      methodologyConfig: methodologyConfig!,
-      qaqcConfig: config || qaqcConfig!,
-      columnMapping
-    });
-
-    setAnalysisResults(results);
-    setWorkflowStep('dashboard');
   };
 
   const handleProceedToReport = () => {
@@ -149,37 +184,165 @@ function App() {
     }
   };
 
+  // Get title for current workflow step
+  const getStepTitle = () => {
+    switch (workflowStep) {
+      case 'report': return 'Report Generation';
+      case 'dashboard': return 'Analysis Dashboard';
+      case 'setup': return 'Analysis Setup';
+      case 'template_editor': return 'Template Editor';
+      case 'education': return 'Education Center';
+      case 'crm': return 'CRM Database';
+      case 'settings': return 'Settings';
+      default: return 'Import Data';
+    }
+  };
+
+  // Calculate completed steps based on current state
+  const completedSteps = useMemo(() => {
+    const completed: string[] = [];
+    if (data) completed.push('import');
+    if (selectedCategory && methodologyConfig) completed.push('setup');
+    if (analysisResults) completed.push('dashboard');
+    return completed;
+  }, [data, selectedCategory, methodologyConfig, analysisResults]);
+
+  // Check if navigation to a step is allowed
+  const canNavigateTo = useCallback((step: WorkflowStep): boolean => {
+    switch (step) {
+      case 'import':
+        return true; // Always can go to import
+      case 'setup':
+        return !!data; // Need data to go to setup
+      case 'dashboard':
+        return !!analysisResults; // Need analysis results
+      case 'report':
+        return !!analysisResults; // Need analysis results
+      case 'education':
+        return true; // Always accessible
+      case 'template_editor':
+        return true; // Always accessible
+      case 'crm':
+        return true; // Always accessible
+      case 'settings':
+        return true; // Always accessible
+      default:
+        return false;
+    }
+  }, [data, analysisResults]);
+
+  // Unified navigation handler
+  const navigateTo = useCallback((step: WorkflowStep | 'home') => {
+    if (step === 'home') {
+      setWorkflowStep('import');
+      return;
+    }
+    if (canNavigateTo(step)) {
+      setWorkflowStep(step);
+    }
+  }, [canNavigateTo]);
+
+  // Handle navigation from sidebar
+  const handleSidebarNavigate = (section: string) => {
+    const stepMap: Record<string, WorkflowStep> = {
+      'dashboard': 'dashboard',
+      'import': 'import',
+      'setup': 'setup',
+      'education': 'education',
+      'crm': 'crm',
+      'settings': 'settings',
+    };
+    const step = stepMap[section];
+    if (step) {
+      navigateTo(step);
+    }
+  };
+
+  // Navigate to education topic from help tooltip
+  const handleNavigateToEducation = (topicId?: string) => {
+    setWorkflowStep('education');
+    // Topic ID can be used later to scroll to specific topic
+    console.log('Navigate to education topic:', topicId);
+  };
+
+  // Get active section for sidebar
+  const getActiveSection = () => {
+    switch (workflowStep) {
+      case 'import': return 'import';
+      case 'setup': return 'setup';
+      case 'dashboard': return 'dashboard';
+      case 'report': return 'dashboard'; // Report is part of dashboard flow
+      case 'education': return 'education';
+      case 'crm': return 'crm';
+      case 'settings': return 'settings';
+      default: return 'import';
+    }
+  };
+
   return (
-    <MainLayout>
+    <MainLayout 
+      onSidebarNavigate={handleSidebarNavigate} 
+      activeSection={getActiveSection()}
+      hasData={!!data}
+      hasAnalysis={!!analysisResults}
+      completedSteps={completedSteps}
+    >
       <WelcomeModal />
       <OnboardingOverlay />
       <Header onSaveProject={handleSaveProject} />
-      <div className="space-y-6">
+      
+      {/* Workflow Stepper - shows progress through main workflow */}
+      <WorkflowStepper
+        currentStep={workflowStep}
+        onNavigate={navigateTo}
+        canNavigateTo={canNavigateTo}
+        completedSteps={completedSteps as WorkflowStep[]}
+      />
+
+      <div className="space-y-6 mt-4">
+        {/* Breadcrumbs */}
+        <Breadcrumbs
+          currentStep={workflowStep}
+          projectName={currentProject.name}
+          onNavigate={navigateTo}
+          canNavigateTo={canNavigateTo}
+        />
+
         <div className="flex items-center justify-between">
           <div data-tour="project-header">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {workflowStep === 'report' ? 'Report Generation' :
-                workflowStep === 'dashboard' ? 'Analysis Dashboard' :
-                  workflowStep === 'qaqcRules' ? 'QAQC Rules' :
-                    workflowStep === 'methodology' ? 'Methodology Setup' :
-                      workflowStep === 'category' ? 'Configuration' : 'Import Data'}
+            <h2 className="text-2xl font-bold text-slate-50">
+              {getStepTitle()}
             </h2>
-            <p className="text-sm text-gray-300 mt-1">
-              {currentProject.name} • {currentProject.deposit} ({currentProject.commodity})
+            <p className="text-sm text-slate-400 mt-1">
+              {currentProject.deposit} ({currentProject.commodity})
             </p>
           </div>
 
-          {data && workflowStep === 'dashboard' && (
-            <button
-              onClick={() => {
-                setData(null);
-                setWorkflowStep('import');
-              }}
-              className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-            >
-              Reset Data
-            </button>
-          )}
+          <div className="flex items-center gap-4">
+            <BackendStatus 
+              isAvailable={backendService.isAvailable}
+              isChecking={backendService.isChecking}
+              onRetry={backendService.retry}
+            />
+            {data && workflowStep === 'dashboard' && (
+              <button
+                onClick={() => {
+                  setData(null);
+                  setFileId(null);
+                  setAnalysisId(null);
+                  setSelectedCategory(null);
+                  setMethodologyConfig(null);
+                  setQaqcConfig(null);
+                  setAnalysisResults(null);
+                  setAnalysisError(null);
+                  setWorkflowStep('import');
+                }}
+                className="px-4 py-2 text-sm text-status-error hover:bg-status-error/10 rounded-lg transition-colors"
+              >
+                Reset Data
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Demo Template Editor Button */}
@@ -187,9 +350,9 @@ function App() {
           <div className="flex justify-end">
             <button
               onClick={() => setWorkflowStep('template_editor')}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
+              className="px-4 py-2 bg-purple-600 text-slate-50 rounded-lg font-medium hover:bg-purple-700 transition-colors"
             >
-              🎨 Open Template Editor (Demo)
+              Open Template Editor (Demo)
             </button>
           </div>
         )}
@@ -203,27 +366,35 @@ function App() {
             <ImportWorkflow
               onComplete={handleImportComplete}
               onLoadDemoData={handleLoadDemoData}
+              isBackendAvailable={backendService.isAvailable}
             />
           </div>
         )}
 
-        {workflowStep === 'category' && (
-          <DataCategorySelect onComplete={handleCategoryComplete} />
-        )}
-
-        {workflowStep === 'methodology' && selectedCategory && (
-          <MethodologyWizard
-            category={selectedCategory}
-            onComplete={handleMethodologyComplete}
-          />
-        )}
-
-        {workflowStep === 'qaqcRules' && selectedCategory && methodologyConfig && (
-          <QAQCRuleConfig
-            category={selectedCategory}
-            methodologyConfig={methodologyConfig}
-            onComplete={handleQAQCRulesComplete}
-          />
+        {workflowStep === 'setup' && (
+          <div className="relative">
+            {isAnalyzing && (
+              <div className="absolute inset-0 bg-background-dark/80 z-10 flex items-center justify-center rounded-lg">
+                <div className="text-center">
+                  <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-slate-300">
+                    Running analysis{backendService.isAvailable ? ' on server...' : '...'}
+                  </p>
+                </div>
+              </div>
+            )}
+            {analysisError && (
+              <div className="mb-4 p-4 bg-status-error/10 border border-status-error rounded-lg">
+                <p className="text-status-error font-medium">Analysis Error</p>
+                <p className="text-slate-400 text-sm mt-1">{analysisError}</p>
+              </div>
+            )}
+            <AnalysisSetup 
+              initialCategory={selectedCategory as 'gold' | 'pxrf' | 'photon' | null} 
+              onComplete={handleAnalysisSetupComplete}
+              onNavigateToEducation={handleNavigateToEducation}
+            />
+          </div>
         )}
 
         {workflowStep === 'dashboard' && analysisResults && (
@@ -238,6 +409,26 @@ function App() {
             results={analysisResults}
             onBack={() => setWorkflowStep('dashboard')}
             onGenerate={handleGenerateReport}
+            isBackendAvailable={backendService.isAvailable}
+            analysisId={analysisId}
+          />
+        )}
+
+        {workflowStep === 'education' && (
+          <EducationCenter onClose={() => setWorkflowStep('import')} />
+        )}
+
+        {workflowStep === 'crm' && (
+          <CRMDatabase 
+            onClose={() => setWorkflowStep('import')} 
+            onNavigateToEducation={handleNavigateToEducation}
+          />
+        )}
+
+        {workflowStep === 'settings' && (
+          <SettingsPage 
+            onClose={() => setWorkflowStep('import')}
+            isBackendAvailable={backendService.isAvailable}
           />
         )}
       </div>

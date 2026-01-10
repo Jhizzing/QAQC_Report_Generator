@@ -33,8 +33,6 @@ interface DuplicatesConfig {
     failureThreshold: number;
 }
 
-// Removed hardcoded commonCRMs in favor of dynamic loading from database
-
 export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, methodologyConfig, onComplete }) => {
     const [currentTab, setCurrentTab] = useState<'standards' | 'blanks' | 'duplicates'>('standards');
     const [availableCRMs, setAvailableCRMs] = useState<CRMValue[]>([]);
@@ -52,8 +50,6 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
 
         const crms = getCRMsByCategory(dbCategory);
 
-        // Note: PhotonAssay uses 'gold' category CRMs for now, but we should filter for PhotonAssay specific ones if needed
-        // Actually, let's filter specifically for PhotonAssay methods if category is photon
         if (category === 'photon') {
             const photonCRMs = crms.filter(crm =>
                 Object.values(crm.elements).some(el => el.method === 'PhotonAssay')
@@ -101,16 +97,16 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
         <div className="max-w-5xl mx-auto mt-8">
             {/* Header */}
             <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                <h2 className="text-3xl font-bold text-slate-50 mb-2">
                     Configure QAQC Rules
                 </h2>
-                <p className="text-gray-300">
+                <p className="text-slate-400">
                     Set acceptance criteria for standards, blanks, and duplicates
                 </p>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex gap-2 mb-6 border-b border-secondary-dark">
                 {(['standards', 'blanks', 'duplicates'] as const).map((tab) => (
                     <button
                         key={tab}
@@ -119,24 +115,24 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
               px-6 py-3 font-semibold capitalize transition-all relative
               ${currentTab === tab
                                 ? 'text-primary border-b-2 border-primary'
-                                : 'text-gray-300 hover:text-gray-700 dark:hover:text-gray-300'
+                                : 'text-slate-400 hover:text-slate-200'
                             }
             `}
                     >
                         {tab}
                         {tab === 'standards' && standardsConfig.selectedCRMs.length > 0 && (
-                            <CheckCircle2 className="w-4 h-4 text-green-600 absolute -top-1 -right-1" />
+                            <CheckCircle2 className="w-4 h-4 text-status-success absolute -top-1 -right-1" />
                         )}
                     </button>
                 ))}
             </div>
 
             {/* Tab Content */}
-            <div className="bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-800 p-8 min-h-[400px]">
+            <div className="bg-surface rounded-xl border border-secondary-dark p-8 min-h-[400px]">
                 {currentTab === 'standards' && (
                     <div className="space-y-6">
                         <div>
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                            <h3 className="text-lg font-bold text-slate-50 mb-4">
                                 Select Certified Reference Materials (CRMs)
                             </h3>
                             <div className="space-y-2">
@@ -161,7 +157,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                         w-full text-left p-4 rounded-xl border-2 transition-all flex items-center justify-between group
                                         ${isSelected
                                                     ? 'border-primary bg-primary/10 shadow-lg shadow-primary/10'
-                                                    : 'border-gray-700 bg-gray-800/50 hover:border-primary/50 hover:bg-gray-800'
+                                                    : 'border-secondary-light bg-surface-light hover:border-primary/50 hover:bg-surface'
                                                 }
                                     `}
                                         >
@@ -169,7 +165,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                                 <div className="flex items-center gap-2">
                                                     <span className={`font-bold ${isSelected
                                                             ? 'text-primary'
-                                                            : 'text-white group-hover:text-primary transition-colors'
+                                                            : 'text-slate-50 group-hover:text-primary transition-colors'
                                                         }`}>
                                                         {crm.name}
                                                     </span>
@@ -179,13 +175,13 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="text-sm text-gray-400 mt-1">
+                                                <div className="text-sm text-slate-400 mt-1">
                                                     {gradeString}
                                                 </div>
                                             </div>
                                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected
-                                                    ? 'border-primary bg-primary text-white'
-                                                    : 'border-gray-600 group-hover:border-primary'
+                                                    ? 'border-primary bg-primary text-slate-50'
+                                                    : 'border-secondary-light group-hover:border-primary'
                                                 }`}>
                                                 {isSelected && <CheckCircle2 className="w-4 h-4" />}
                                             </div>
@@ -193,16 +189,16 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                     );
                                 })}
                                 {availableCRMs.length === 0 && (
-                                    <div className="text-center py-8 text-gray-300">
+                                    <div className="text-center py-8 text-slate-500">
                                         No standards found for this category.
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-secondary-dark">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
                                     Tolerance Type
                                 </label>
                                 <select
@@ -211,7 +207,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                         ...standardsConfig,
                                         toleranceType: e.target.value as 'percentage' | 'absolute' | 'sd'
                                     })}
-                                    className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none"
+                                    className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
                                 >
                                     <option value="percentage">Percentage (±%)</option>
                                     <option value="absolute">Absolute Value</option>
@@ -220,7 +216,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
                                     Tolerance Value
                                 </label>
                                 <input
@@ -230,13 +226,13 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                         ...standardsConfig,
                                         toleranceValue: parseFloat(e.target.value)
                                     })}
-                                    className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none"
+                                    className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
                                     step="0.1"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
                                     Consecutive Failures to Flag
                                 </label>
                                 <input
@@ -246,11 +242,11 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                         ...standardsConfig,
                                         failureThreshold: parseInt(e.target.value)
                                     })}
-                                    className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none"
+                                    className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
                                     min="1"
                                     max="10"
                                 />
-                                <p className="text-xs text-gray-300 mt-1">
+                                <p className="text-xs text-slate-500 mt-1">
                                     Flag batch if this many consecutive standards fail
                                 </p>
                             </div>
@@ -260,16 +256,16 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
 
                 {currentTab === 'blanks' && (
                     <div className="space-y-6">
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg flex gap-3">
-                            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                            <div className="text-sm text-blue-900 dark:text-blue-100">
+                        <div className="bg-accent/10 border border-accent/30 p-4 rounded-lg flex gap-3">
+                            <Info className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                            <div className="text-sm text-accent/90">
                                 Blanks are used to monitor contamination. Set the detection limit and contamination threshold.
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
                                     Detection Limit
                                 </label>
                                 <div className="flex gap-2">
@@ -280,7 +276,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                             ...blanksConfig,
                                             detectionLimit: parseFloat(e.target.value)
                                         })}
-                                        className="flex-1 px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none"
+                                        className="flex-1 px-4 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
                                         step="0.001"
                                     />
                                     <select
@@ -289,7 +285,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                             ...blanksConfig,
                                             detectionLimitUnit: e.target.value as 'ppm' | 'ppb' | 'pct'
                                         })}
-                                        className="px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none"
+                                        className="px-4 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
                                     >
                                         <option value="ppm">ppm</option>
                                         <option value="ppb">ppb</option>
@@ -299,7 +295,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
                                     Contamination Multiplier
                                 </label>
                                 <input
@@ -309,20 +305,20 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                         ...blanksConfig,
                                         contaminationMultiplier: parseFloat(e.target.value)
                                     })}
-                                    className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none"
+                                    className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
                                     step="0.5"
                                     min="1"
                                     max="10"
                                 />
-                                <p className="text-xs text-gray-300 mt-1">
+                                <p className="text-xs text-slate-500 mt-1">
                                     Flag if blank {">"} {blanksConfig.contaminationMultiplier}× detection limit
                                 </p>
                             </div>
                         </div>
 
-                        <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg flex gap-3">
-                            <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
-                            <div className="text-sm text-yellow-900 dark:text-yellow-100">
+                        <div className="bg-status-warning/10 border border-status-warning/30 p-4 rounded-lg flex gap-3">
+                            <AlertTriangle className="w-5 h-5 text-status-warning flex-shrink-0 mt-0.5" />
+                            <div className="text-sm text-status-warning">
                                 Current threshold: Blanks exceeding <strong>{(blanksConfig.detectionLimit * blanksConfig.contaminationMultiplier).toFixed(3)} {blanksConfig.detectionLimitUnit}</strong> will be flagged
                             </div>
                         </div>
@@ -331,16 +327,16 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
 
                 {currentTab === 'duplicates' && (
                     <div className="space-y-6">
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg flex gap-3">
-                            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                            <div className="text-sm text-blue-900 dark:text-blue-100">
+                        <div className="bg-accent/10 border border-accent/30 p-4 rounded-lg flex gap-3">
+                            <Info className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                            <div className="text-sm text-accent/90">
                                 Duplicates measure analytical precision. Choose your precision calculation method and target.
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
                                     Precision Method
                                 </label>
                                 <select
@@ -349,12 +345,12 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                         ...duplicatesConfig,
                                         precisionMethod: e.target.value as 'rpd' | 'hard'
                                     })}
-                                    className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none"
+                                    className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
                                 >
                                     <option value="rpd">RPD (Relative Percent Difference)</option>
                                     <option value="hard">HARD (Half Absolute Relative Difference)</option>
                                 </select>
-                                <p className="text-xs text-gray-300 mt-1">
+                                <p className="text-xs text-slate-500 mt-1">
                                     {duplicatesConfig.precisionMethod === 'rpd'
                                         ? 'RPD = |A-B| / ((A+B)/2) × 100%'
                                         : 'HARD = |A-B| / MAX(A,B) × 100%'
@@ -363,7 +359,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
                                     Target Precision (%)
                                 </label>
                                 <input
@@ -373,18 +369,18 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                         ...duplicatesConfig,
                                         precisionTarget: parseFloat(e.target.value)
                                     })}
-                                    className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none"
+                                    className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
                                     step="1"
                                     min="1"
                                     max="50"
                                 />
-                                <p className="text-xs text-gray-300 mt-1">
+                                <p className="text-xs text-slate-500 mt-1">
                                     Flag if {duplicatesConfig.precisionMethod.toUpperCase()} {">"} {duplicatesConfig.precisionTarget}%
                                 </p>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
                                     Consecutive Failures to Flag
                                 </label>
                                 <input
@@ -394,7 +390,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                         ...duplicatesConfig,
                                         failureThreshold: parseInt(e.target.value)
                                     })}
-                                    className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none"
+                                    className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
                                     min="1"
                                     max="10"
                                 />
@@ -412,7 +408,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                             currentTab === 'blanks' ? 'standards' : 'blanks'
                     )}
                     disabled={currentTab === 'standards'}
-                    className="flex items-center gap-2 px-6 py-3 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    className="flex items-center gap-2 px-6 py-3 text-slate-400 hover:text-slate-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     Previous
@@ -422,7 +418,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                     <button
                         onClick={handleComplete}
                         disabled={!isValid}
-                        className="flex items-center gap-2 px-8 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
+                        className="flex items-center gap-2 px-8 py-3 bg-status-success text-slate-50 rounded-xl font-bold hover:bg-status-success/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
                     >
                         <CheckCircle2 className="w-5 h-5" />
                         Complete Configuration
@@ -432,7 +428,7 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                         onClick={() => setCurrentTab(
                             currentTab === 'standards' ? 'blanks' : 'duplicates'
                         )}
-                        className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition-all"
+                        className="flex items-center gap-2 px-6 py-3 bg-primary text-slate-50 rounded-xl font-semibold hover:bg-primary-dark transition-all"
                     >
                         Next
                         <ArrowRight className="w-4 h-4" />

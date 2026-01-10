@@ -35,7 +35,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ results, onP
                     {onProceed && (
                         <button
                             onClick={onProceed}
-                            className="px-6 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary-dark transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] hover:scale-105"
+                            className="px-6 py-3 bg-primary text-slate-50 rounded-xl font-bold hover:bg-primary-dark transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] hover:scale-105"
                         >
                             Create Report
                         </button>
@@ -62,7 +62,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ results, onP
 
                 <div className="bg-surface border border-secondary-dark rounded-xl p-4 shadow-lg">
                     <p className="text-sm text-slate-400 font-medium">Blanks</p>
-                    <p className="text-2xl font-bold text-blue-400">{summary.totalBlanks}</p>
+                    <p className="text-2xl font-bold text-accent">{summary.totalBlanks}</p>
                 </div>
 
                 <div className="bg-surface border border-secondary-dark rounded-xl p-4 shadow-lg">
@@ -72,7 +72,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ results, onP
 
                 <div className="bg-surface border border-secondary-dark rounded-xl p-4 shadow-lg">
                     <p className="text-sm text-slate-400 font-medium">Overall Pass Rate</p>
-                    <p className={`text-2xl font-bold ${summary.overallPassRate >= 90 ? 'text-emerald-400' : summary.overallPassRate >= 75 ? 'text-amber-400' : 'text-red-400'}`}>
+                    <p className={`text-2xl font-bold ${summary.overallPassRate >= 90 ? 'text-status-success' : summary.overallPassRate >= 75 ? 'text-status-warning' : 'text-status-error'}`}>
                         {summary.overallPassRate.toFixed(1)}%
                     </p>
                 </div>
@@ -101,9 +101,9 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ results, onP
                     </button>
                     <button
                         onClick={() => setActiveTab('duplicates')}
-                        className={`flex-1 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${activeTab === 'duplicates'
+                        className={`flex-1 px-6 py-4 text-sm font-bold transition-all border-b-2 ${activeTab === 'duplicates'
                             ? 'border-primary text-primary bg-primary/5'
-                            : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                            : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-surface-light'
                             }`}
                     >
                         Duplicates ({summary.totalDuplicates})

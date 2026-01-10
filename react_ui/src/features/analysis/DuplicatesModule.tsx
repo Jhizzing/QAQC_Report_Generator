@@ -1,15 +1,14 @@
-import React, { useState, useMemo } from 'react';
-import {
-    ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip,
-    ReferenceLine, ResponsiveContainer, BarChart, Bar
-} from 'recharts';
-import { Copy, AlertTriangle, CheckCircle2, Info, TrendingUp } from 'lucide-react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Copy, AlertTriangle, CheckCircle2, Info, TrendingUp, Table, BarChart3 } from 'lucide-react';
+import { PlotlyScatterPlot, PlotlyHistogram, type ScatterDataPoint, type HistogramDataPoint, type ChartSelection } from '../../components/charts';
+import { SyncedDataTable, type TableColumn } from '../../components/common/SyncedDataTable';
 import type { DuplicatesAnalysisResults } from './duplicatesEngine';
-import { generatePrecisionHistogram } from './duplicatesEngine';
 
 interface DuplicatesModuleProps {
     results: DuplicatesAnalysisResults;
 }
+
+type ViewMode = 'chart' | 'table' | 'both';
 
 export const DuplicatesModule: React.FC<DuplicatesModuleProps> = ({ results }) => {
     // Get unique elements
@@ -19,6 +18,8 @@ export const DuplicatesModule: React.FC<DuplicatesModuleProps> = ({ results }) =
     }, [results]);
 
     const [selectedElement, setSelectedElement] = useState(elements[0] || '');
+    const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
+    const [viewMode, setViewMode] = useState<ViewMode>('both');
 
     // Filter data for selected element
     const filteredResults = useMemo(() => {
@@ -31,27 +32,57 @@ export const DuplicatesModule: React.FC<DuplicatesModuleProps> = ({ results }) =
         return results.statistics.find(s => s.element === selectedElement);
     }, [selectedElement, results]);
 
-    // Prepare scatter plot data (Original vs Duplicate)
-    const scatterData = useMemo(() => {
+    // Prepare scatter plot data
+    const scatterData: ScatterDataPoint[] = useMemo(() => {
         return filteredResults.map(r => ({
-            original: r.originalValue,
-            duplicate: r.duplicateValue,
-            pass: r.pass,
+            pairNumber: r.pairNumber,
+            originalSampleId: r.originalSampleId,
+            duplicateSampleId: r.duplicateSampleId,
+            originalValue: r.originalValue,
+            duplicateValue: r.duplicateValue,
             rpd: r.rpd,
             hard: r.hard,
-            originalId: r.originalSampleId,
-            duplicateId: r.duplicateSampleId
+            pass: r.pass,
+            element: r.element,
         }));
     }, [filteredResults]);
 
-    // Prepare precision histogram data
+    // Prepare histogram data for RPD distribution
     const precisionMethod = filteredResults[0]?.precisionMethod || 'rpd';
-    const histogramData = useMemo(() => {
-        const values = filteredResults.map(r => precisionMethod === 'rpd' ? r.rpd : r.hard);
-        return generatePrecisionHistogram(values, 10);
+    const targetPrecision = filteredResults[0]?.targetPrecision || 20;
+    
+    const histogramData: HistogramDataPoint[] = useMemo(() => {
+        return filteredResults.map((r, index) => ({
+            index,
+            value: precisionMethod === 'rpd' ? r.rpd : r.hard,
+            sampleId: `${r.originalSampleId}/${r.duplicateSampleId}`,
+            pass: r.pass,
+        }));
     }, [filteredResults, precisionMethod]);
 
-    const targetPrecision = filteredResults[0]?.targetPrecision || 20;
+    // Table columns for scatter data
+    const tableColumns: TableColumn<ScatterDataPoint>[] = useMemo(() => [
+        { key: 'pairNumber', header: '#', width: '50px', align: 'center' },
+        { key: 'originalSampleId', header: 'Original ID', width: '130px' },
+        { key: 'originalValue', header: 'Orig. Value', align: 'right', format: (v) => (v as number).toFixed(4) },
+        { key: 'duplicateSampleId', header: 'Duplicate ID', width: '130px' },
+        { key: 'duplicateValue', header: 'Dup. Value', align: 'right', format: (v) => (v as number).toFixed(4) },
+        { key: 'rpd', header: 'RPD (%)', align: 'right', format: (v) => (v as number).toFixed(2) },
+        { 
+            key: 'pass', 
+            header: 'Status', 
+            align: 'center',
+            render: (v) => v ? (
+                <span className="inline-flex items-center gap-1 text-status-success text-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Pass
+                </span>
+            ) : (
+                <span className="inline-flex items-center gap-1 text-status-error text-xs">
+                    <AlertTriangle className="w-3.5 h-3.5" /> Fail
+                </span>
+            )
+        },
+    ], []);
 
     // Calculate summary metrics
     const totalPairs = filteredResults.length;
@@ -59,110 +90,158 @@ export const DuplicatesModule: React.FC<DuplicatesModuleProps> = ({ results }) =
     const failedPairs = totalPairs - passedPairs;
     const passRate = totalPairs > 0 ? (passedPairs / totalPairs) * 100 : 0;
 
-    // Calculate max value for 1:1 line
-    const maxValue = Math.max(
-        ...scatterData.map(d => Math.max(d.original, d.duplicate)),
-        1
-    );
+    // Handle chart selection
+    const handleChartSelection = useCallback((selection: ChartSelection) => {
+        setSelectedIndices(selection.indices);
+    }, []);
+
+    // Handle point click
+    const handlePointClick = useCallback((index: number) => {
+        setSelectedIndices(prev => 
+            prev.includes(index) 
+                ? prev.filter(i => i !== index) 
+                : [...prev, index]
+        );
+    }, []);
+
+    // Handle table row click
+    const handleRowClick = useCallback((index: number) => {
+        setSelectedIndices(prev => 
+            prev.includes(index) 
+                ? prev.filter(i => i !== index) 
+                : [...prev, index]
+        );
+    }, []);
 
     return (
         <div className="space-y-6">
-            {/* Header & Element Selector */}
-            <div className="flex items-center justify-between">
+            {/* Header & Controls */}
+            <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Copy className="w-6 h-6 text-purple-500" />
+                    <h3 className="text-2xl font-bold text-slate-50 flex items-center gap-2">
+                        <Copy className="w-6 h-6 text-purple-400" />
                         Duplicates Precision Analysis
                     </h3>
-                    <p className="text-sm text-gray-300 mt-1">
+                    <p className="text-sm text-slate-400 mt-1">
                         Monitor analytical precision through duplicate sample pairs
                     </p>
                 </div>
 
-                <div className="w-64">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Select Element
-                    </label>
-                    <select
-                        value={selectedElement}
-                        onChange={(e) => setSelectedElement(e.target.value)}
-                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none"
-                    >
-                        {elements.map(element => (
-                            <option key={element} value={element}>
-                                {element}
-                            </option>
-                        ))}
-                    </select>
+                <div className="flex items-center gap-4">
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center bg-surface-dark rounded-lg p-1 border border-secondary-dark">
+                        <button
+                            onClick={() => setViewMode('chart')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                                viewMode === 'chart' ? 'bg-purple-500 text-white' : 'text-slate-400 hover:text-slate-200'
+                            }`}
+                        >
+                            <BarChart3 className="w-3.5 h-3.5" />
+                            Charts
+                        </button>
+                        <button
+                            onClick={() => setViewMode('table')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                                viewMode === 'table' ? 'bg-purple-500 text-white' : 'text-slate-400 hover:text-slate-200'
+                            }`}
+                        >
+                            <Table className="w-3.5 h-3.5" />
+                            Table
+                        </button>
+                        <button
+                            onClick={() => setViewMode('both')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                                viewMode === 'both' ? 'bg-purple-500 text-white' : 'text-slate-400 hover:text-slate-200'
+                            }`}
+                        >
+                            Both
+                        </button>
+                    </div>
+
+                    {/* Element Selector */}
+                    <div className="w-48">
+                        <select
+                            value={selectedElement}
+                            onChange={(e) => {
+                                setSelectedElement(e.target.value);
+                                setSelectedIndices([]);
+                            }}
+                            className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 focus:ring-2 focus:ring-purple-500/50 outline-none"
+                        >
+                            {elements.map(element => (
+                                <option key={element} value={element}>
+                                    {element}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
+                <div className="bg-surface border border-secondary-dark rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-300">Total Pairs</p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalPairs}</p>
+                            <p className="text-sm text-slate-400">Total Pairs</p>
+                            <p className="text-2xl font-bold text-slate-50">{totalPairs}</p>
                         </div>
-                        <Info className="w-8 h-8 text-blue-500" />
+                        <Info className="w-8 h-8 text-accent" />
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
+                <div className="bg-surface border border-secondary-dark rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-300">Within Target</p>
-                            <p className="text-2xl font-bold text-green-600">{passedPairs}</p>
+                            <p className="text-sm text-slate-400">Within Target</p>
+                            <p className="text-2xl font-bold text-status-success">{passedPairs}</p>
                         </div>
-                        <CheckCircle2 className="w-8 h-8 text-green-500" />
+                        <CheckCircle2 className="w-8 h-8 text-status-success" />
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
+                <div className="bg-surface border border-secondary-dark rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-300">Poor Precision</p>
-                            <p className="text-2xl font-bold text-red-600">{failedPairs}</p>
+                            <p className="text-sm text-slate-400">Poor Precision</p>
+                            <p className="text-2xl font-bold text-status-error">{failedPairs}</p>
                         </div>
-                        <AlertTriangle className="w-8 h-8 text-red-500" />
+                        <AlertTriangle className="w-8 h-8 text-status-error" />
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
+                <div className="bg-surface border border-secondary-dark rounded-lg p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-300">Pass Rate</p>
-                            <p className={`text-2xl font-bold ${passRate >= 90 ? 'text-green-600' : passRate >= 75 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            <p className="text-sm text-slate-400">Pass Rate</p>
+                            <p className={`text-2xl font-bold ${passRate >= 90 ? 'text-status-success' : passRate >= 75 ? 'text-status-warning' : 'text-status-error'}`}>
                                 {passRate.toFixed(1)}%
                             </p>
                         </div>
-                        <TrendingUp className={`w-8 h-8 ${passRate >= 90 ? 'text-green-500' : passRate >= 75 ? 'text-yellow-500' : 'text-red-500'}`} />
+                        <TrendingUp className={`w-8 h-8 ${passRate >= 90 ? 'text-status-success' : passRate >= 75 ? 'text-status-warning' : 'text-status-error'}`} />
                     </div>
                 </div>
             </div>
 
             {/* Precision Method Info */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
                 <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                    <Info className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
                     <div>
-                        <h4 className="font-semibold text-blue-900 dark:text-blue-100">
+                        <h4 className="font-semibold text-purple-300">
                             Precision Method: {precisionMethod.toUpperCase()}
                         </h4>
-                        <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
+                        <p className="text-sm text-purple-200/80 mt-1">
                             {precisionMethod === 'rpd' && (
                                 <>
-                                    <strong>RPD (Relative Percent Difference)</strong>: RPD = |Original - Duplicate| / ((Original + Duplicate) / 2) × 100%
-                                    <br />
-                                    Target: ≤{targetPrecision}%
+                                    <strong>RPD (Relative Percent Difference)</strong>: |Original - Duplicate| / ((Original + Duplicate) / 2) × 100%
+                                    <span className="ml-2 text-purple-300">Target: ≤{targetPrecision}%</span>
                                 </>
                             )}
                             {precisionMethod === 'hard' && (
                                 <>
-                                    <strong>HARD (Half Absolute Relative Difference)</strong>: HARD = |Original - Duplicate| / MAX(Original, Duplicate) × 100%
-                                    <br />
-                                    Target: ≤{targetPrecision}%
+                                    <strong>HARD (Half Absolute Relative Difference)</strong>: |Original - Duplicate| / MAX(Original, Duplicate) × 100%
+                                    <span className="ml-2 text-purple-300">Target: ≤{targetPrecision}%</span>
                                 </>
                             )}
                         </p>
@@ -170,135 +249,93 @@ export const DuplicatesModule: React.FC<DuplicatesModuleProps> = ({ results }) =
                 </div>
             </div>
 
-            {/* Original vs Duplicate Scatter Plot */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Original vs Duplicate Values
-                </h4>
-
-                <ResponsiveContainer width="100%" height={400}>
-                    <ScatterChart>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                        <XAxis
-                            dataKey="original"
-                            label={{ value: `Original (${filteredResults[0]?.unit || ''})`, position: 'insideBottom', offset: -5 }}
-                            stroke="#6b7280"
-                        />
-                        <YAxis
-                            label={{ value: `Duplicate (${filteredResults[0]?.unit || ''})`, angle: -90, position: 'insideLeft' }}
-                            stroke="#6b7280"
-                        />
-                        <Tooltip
-                            contentStyle={{ backgroundColor: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px' }}
-                            formatter={(value: any, name: string) => {
-                                if (name === 'original' || name === 'duplicate') {
-                                    return [value.toFixed(4), name.charAt(0).toUpperCase() + name.slice(1)];
-                                }
-                                return [value, name];
-                            }}
-                            labelFormatter={(_, payload) => {
-                                if (payload && payload[0]) {
-                                    const data = payload[0].payload;
-                                    return `Pair: ${data.originalId} / ${data.duplicateId}`;
-                                }
-                                return 'Duplicate Pair';
-                            }}
-                        />
-
-                        {/* 1:1 Perfect agreement line */}
-                        <ReferenceLine
-                            segment={[{ x: 0, y: 0 }, { x: maxValue, y: maxValue }]}
-                            stroke="#3b82f6"
-                            strokeDasharray="5 5"
-                            label={{ value: '1:1 Perfect Agreement', fill: '#3b82f6', fontSize: 12, position: 'insideTopRight' }}
-                        />
-
-                        <Scatter
-                            name="Duplicate Pairs"
+            {/* Charts & Table Layout */}
+            {(viewMode === 'chart' || viewMode === 'both') && (
+                <div className="grid gap-6 lg:grid-cols-2">
+                    {/* Scatter Plot */}
+                    <div className="bg-surface border border-secondary-dark rounded-lg p-6">
+                        <h4 className="text-lg font-semibold text-slate-50 mb-2">
+                            Original vs Duplicate Values
+                        </h4>
+                        <PlotlyScatterPlot
                             data={scatterData}
-                            fill="#8b5cf6"
-                            shape={(props: any) => {
-                                const { cx, cy, payload } = props;
-                                const color = payload.pass ? '#10b981' : '#ef4444'; // green or red
+                            element={selectedElement}
+                            selectedIndices={selectedIndices}
+                            onSelectionChange={handleChartSelection}
+                            onPointClick={handlePointClick}
+                            height={380}
+                        />
+                    </div>
 
-                                return (
-                                    <circle
-                                        cx={cx}
-                                        cy={cy}
-                                        r={5}
-                                        fill={color}
-                                        stroke="#fff"
-                                        strokeWidth={2}
-                                    />
-                                );
-                            }}
+                    {/* RPD Distribution */}
+                    <div className="bg-surface border border-secondary-dark rounded-lg p-6">
+                        <h4 className="text-lg font-semibold text-slate-50 mb-2">
+                            {precisionMethod.toUpperCase()} Distribution
+                        </h4>
+                        <PlotlyHistogram
+                            data={histogramData}
+                            title=""
+                            xAxisLabel={`${precisionMethod.toUpperCase()} (%)`}
+                            threshold={targetPrecision}
+                            thresholdLabel="Target"
+                            binCount={15}
+                            height={380}
                         />
-                    </ScatterChart>
-                </ResponsiveContainer>
-            </div>
+                    </div>
+                </div>
+            )}
 
-            {/* Precision Distribution Histogram */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    {precisionMethod.toUpperCase()} Distribution
-                </h4>
-
-                <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={histogramData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                        <XAxis
-                            dataKey="bin"
-                            label={{ value: `${precisionMethod.toUpperCase()} Range`, position: 'insideBottom', offset: -5 }}
-                            stroke="#6b7280"
-                        />
-                        <YAxis
-                            label={{ value: 'Frequency', angle: -90, position: 'insideLeft' }}
-                            stroke="#6b7280"
-                        />
-                        <Tooltip />
-                        <ReferenceLine
-                            x={`${targetPrecision.toFixed(1)}`}
-                            stroke="#ef4444"
-                            strokeDasharray="3 3"
-                            label={{ value: 'Target', fill: '#ef4444', fontSize: 12 }}
-                        />
-                        <Bar dataKey="count" fill="#8b5cf6" />
-                    </BarChart>
-                </ResponsiveContainer>
-            </div>
+            {/* Data Table */}
+            {(viewMode === 'table' || viewMode === 'both') && (
+                <div className="bg-surface border border-secondary-dark rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-slate-50 mb-4 flex items-center gap-2">
+                        <Table className="w-5 h-5 text-purple-400" />
+                        Duplicate Pairs Data
+                    </h4>
+                    <SyncedDataTable
+                        data={scatterData}
+                        columns={tableColumns}
+                        selectedIndices={selectedIndices}
+                        onRowClick={handleRowClick}
+                        pageSize={15}
+                        maxHeight="400px"
+                        exportFilename={`duplicates_${selectedElement}`}
+                    />
+                </div>
+            )}
 
             {/* Statistics Table */}
             {statistics && (
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <div className="bg-surface border border-secondary-dark rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-slate-50 mb-4">
                         Statistical Summary
                     </h4>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-300">Mean RPD</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                        <div className="p-4 bg-surface-light rounded-lg">
+                            <p className="text-sm text-slate-400">Mean RPD</p>
+                            <p className="text-lg font-semibold text-slate-50">
                                 {statistics.meanRPD.toFixed(2)}%
                             </p>
                         </div>
 
-                        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-300">Mean HARD</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                        <div className="p-4 bg-surface-light rounded-lg">
+                            <p className="text-sm text-slate-400">Mean HARD</p>
+                            <p className="text-lg font-semibold text-slate-50">
                                 {statistics.meanHARD.toFixed(2)}%
                             </p>
                         </div>
 
-                        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-300">Within Target</p>
-                            <p className={`text-lg font-semibold ${statistics.withinTarget >= 90 ? 'text-green-600' : statistics.withinTarget >= 75 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        <div className="p-4 bg-surface-light rounded-lg">
+                            <p className="text-sm text-slate-400">Within Target</p>
+                            <p className={`text-lg font-semibold ${statistics.withinTarget >= 90 ? 'text-status-success' : statistics.withinTarget >= 75 ? 'text-status-warning' : 'text-status-error'}`}>
                                 {statistics.withinTarget.toFixed(1)}%
                             </p>
                         </div>
 
-                        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-300">Pair Count</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                        <div className="p-4 bg-surface-light rounded-lg">
+                            <p className="text-sm text-slate-400">Pair Count</p>
+                            <p className="text-lg font-semibold text-slate-50">
                                 {statistics.count}
                             </p>
                         </div>
@@ -308,37 +345,37 @@ export const DuplicatesModule: React.FC<DuplicatesModuleProps> = ({ results }) =
 
             {/* Flagged Pairs Alert */}
             {results.flaggedPairs.length > 0 && (
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <div className="bg-status-error/10 border border-status-error/30 rounded-lg p-4">
                     <div className="flex gap-3">
-                        <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                        <AlertTriangle className="w-5 h-5 text-status-error flex-shrink-0 mt-0.5" />
                         <div>
-                            <h4 className="font-semibold text-red-900 dark:text-red-100">
+                            <h4 className="font-semibold text-status-error">
                                 Poor Precision Pairs ({results.flaggedPairs.length})
                             </h4>
-                            <p className="text-sm text-red-800 dark:text-red-200 mt-1">
+                            <p className="text-sm text-status-error/80 mt-1">
                                 The following duplicate pairs exceed the target precision ({targetPrecision}% {precisionMethod.toUpperCase()}):
                             </p>
                             <div className="mt-3 max-h-40 overflow-y-auto">
                                 <table className="min-w-full text-sm">
-                                    <thead className="bg-red-100 dark:bg-red-900/30">
+                                    <thead className="bg-status-error/20">
                                         <tr>
-                                            <th className="px-3 py-2 text-left text-red-900 dark:text-red-100">Original</th>
-                                            <th className="px-3 py-2 text-left text-red-900 dark:text-red-100">Duplicate</th>
-                                            <th className="px-3 py-2 text-left text-red-900 dark:text-red-100">Element</th>
-                                            <th className="px-3 py-2 text-right text-red-900 dark:text-red-100">RPD</th>
-                                            <th className="px-3 py-2 text-right text-red-900 dark:text-red-100">HARD</th>
+                                            <th className="px-3 py-2 text-left text-status-error">Original</th>
+                                            <th className="px-3 py-2 text-left text-status-error">Duplicate</th>
+                                            <th className="px-3 py-2 text-left text-status-error">Element</th>
+                                            <th className="px-3 py-2 text-right text-status-error">RPD</th>
+                                            <th className="px-3 py-2 text-right text-status-error">HARD</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {results.flaggedPairs.map((pair, idx) => (
-                                            <tr key={idx} className="border-t border-red-200 dark:border-red-800">
-                                                <td className="px-3 py-2 text-red-800 dark:text-red-200">{pair.originalSampleId}</td>
-                                                <td className="px-3 py-2 text-red-800 dark:text-red-200">{pair.duplicateSampleId}</td>
-                                                <td className="px-3 py-2 text-red-800 dark:text-red-200">{pair.element}</td>
-                                                <td className="px-3 py-2 text-right text-red-800 dark:text-red-200 font-mono">
+                                            <tr key={idx} className="border-t border-status-error/30">
+                                                <td className="px-3 py-2 text-status-error/80">{pair.originalSampleId}</td>
+                                                <td className="px-3 py-2 text-status-error/80">{pair.duplicateSampleId}</td>
+                                                <td className="px-3 py-2 text-status-error/80">{pair.element}</td>
+                                                <td className="px-3 py-2 text-right text-status-error/80 font-mono">
                                                     {pair.rpd.toFixed(2)}%
                                                 </td>
-                                                <td className="px-3 py-2 text-right text-red-800 dark:text-red-200 font-mono">
+                                                <td className="px-3 py-2 text-right text-status-error/80 font-mono">
                                                     {pair.hard.toFixed(2)}%
                                                 </td>
                                             </tr>

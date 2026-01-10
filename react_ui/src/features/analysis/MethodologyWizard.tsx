@@ -174,11 +174,11 @@ export const MethodologyWizard: React.FC<MethodologyWizardProps> = ({ category, 
         <div className="max-w-3xl mx-auto mt-12">
             {/* Progress Bar */}
             <div className="mb-12">
-                <div className="flex items-center justify-between text-sm text-gray-300 mb-2">
+                <div className="flex items-center justify-between text-sm text-slate-400 mb-2">
                     <span>Question {currentStep + 1} of {questions.length}</span>
                     <span>{Math.round(progress)}% Complete</span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
+                <div className="w-full bg-secondary-dark rounded-full h-2">
                     <div
                         className="bg-primary h-2 rounded-full transition-all duration-300"
                         style={{ width: `${progress}%` }}
@@ -187,17 +187,17 @@ export const MethodologyWizard: React.FC<MethodologyWizardProps> = ({ category, 
             </div>
 
             {/* Question Card */}
-            <div className="bg-surface dark:bg-surface-dark rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 p-8">
+            <div className="bg-surface rounded-2xl shadow-xl border border-secondary-dark p-8">
                 <div className="flex items-start gap-3 mb-6">
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                         <span className="text-xl font-bold text-primary">{currentStep + 1}</span>
                     </div>
                     <div className="flex-1">
-                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                        <h3 className="text-2xl font-bold text-slate-50 mb-2">
                             {currentQuestion.label}
                         </h3>
                         {currentQuestion.tooltip && (
-                            <div className="flex items-start gap-2 text-sm text-gray-300">
+                            <div className="flex items-start gap-2 text-sm text-slate-400">
                                 <HelpCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                                 <p>{currentQuestion.tooltip}</p>
                             </div>
@@ -216,16 +216,16 @@ export const MethodologyWizard: React.FC<MethodologyWizardProps> = ({ category, 
                                     className={`
                     w-full text-left p-4 rounded-xl border-2 transition-all
                     ${answers[currentQuestion.id] === option.value
-                                            ? 'border-primary bg-primary/10 text-white shadow-lg shadow-primary/10'
-                                            : 'border-gray-700 bg-gray-800/50 text-gray-300 hover:border-primary/50 hover:bg-gray-800'
+                                            ? 'border-primary bg-primary/10 shadow-lg shadow-primary/10'
+                                            : 'border-secondary-light bg-surface-light hover:border-primary/50 hover:bg-surface'
                                         }
                   `}
                                 >
                                     <div className="flex items-start justify-between">
                                         <div>
-                                            <div className="font-semibold text-gray-900 dark:text-white">{option.label}</div>
+                                            <div className="font-semibold text-slate-50">{option.label}</div>
                                             {option.description && (
-                                                <div className="text-sm text-gray-300 mt-1">{option.description}</div>
+                                                <div className="text-sm text-slate-400 mt-1">{option.description}</div>
                                             )}
                                         </div>
                                         {answers[currentQuestion.id] === option.value && (
@@ -256,17 +256,17 @@ export const MethodologyWizard: React.FC<MethodologyWizardProps> = ({ category, 
                       w-full text-left p-3 rounded-lg border transition-all flex items-center gap-3
                       ${selected
                                                 ? 'border-primary bg-primary/5'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-primary/50'
+                                                : 'border-secondary-light hover:border-primary/50'
                                             }
                     `}
                                     >
                                         <div className={`
                       w-5 h-5 rounded border-2 flex items-center justify-center
-                      ${selected ? 'bg-primary border-primary' : 'border-gray-300 dark:border-gray-600'}
+                      ${selected ? 'bg-primary border-primary' : 'border-secondary-light'}
                     `}>
-                                            {selected && <CheckCircle className="w-4 h-4 text-white" />}
+                                            {selected && <CheckCircle className="w-4 h-4 text-slate-50" />}
                                         </div>
-                                        <span className="font-medium text-gray-900 dark:text-white">{option.label}</span>
+                                        <span className="font-medium text-slate-50">{option.label}</span>
                                     </button>
                                 );
                             })}
@@ -275,17 +275,17 @@ export const MethodologyWizard: React.FC<MethodologyWizardProps> = ({ category, 
 
                     {/* Toggle Input */}
                     {currentQuestion.type === 'toggle' && (
-                        <div className="flex items-center justify-between p-6 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
-                            <span className="text-gray-700 dark:text-gray-300">Enable this feature?</span>
+                        <div className="flex items-center justify-between p-6 bg-surface-light rounded-xl">
+                            <span className="text-slate-300">Enable this feature?</span>
                             <button
                                 onClick={() => handleAnswer(currentQuestion.id, !answers[currentQuestion.id])}
                                 className={`
                   relative w-14 h-8 rounded-full transition-colors
-                  ${answers[currentQuestion.id] ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-700'}
+                  ${answers[currentQuestion.id] ? 'bg-primary' : 'bg-secondary'}
                 `}
                             >
                                 <div className={`
-                  absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform
+                  absolute top-1 left-1 w-6 h-6 bg-slate-50 rounded-full transition-transform
                   ${answers[currentQuestion.id] ? 'translate-x-6' : 'translate-x-0'}
                 `} />
                             </button>
@@ -299,7 +299,7 @@ export const MethodologyWizard: React.FC<MethodologyWizardProps> = ({ category, 
                 <button
                     onClick={handleBack}
                     disabled={currentStep === 0}
-                    className="flex items-center gap-2 px-6 py-3 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    className="flex items-center gap-2 px-6 py-3 text-slate-400 hover:text-slate-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     Back
@@ -307,7 +307,7 @@ export const MethodologyWizard: React.FC<MethodologyWizardProps> = ({ category, 
                 <button
                     onClick={handleNext}
                     disabled={!answers[currentQuestion.id] && currentQuestion.type !== 'toggle'}
-                    className="flex items-center gap-2 px-8 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
+                    className="flex items-center gap-2 px-8 py-3 bg-primary text-slate-50 rounded-xl font-bold hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
                 >
                     {currentStep === questions.length - 1 ? 'Complete Setup' : 'Next Question'}
                     <ArrowRight className="w-4 h-4" />

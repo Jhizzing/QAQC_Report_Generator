@@ -45,40 +45,20 @@ You can switch projects or create new ones from the project menu.`,
             nextOnClick: true,
         },
         {
-            id: 'data-category',
+            id: 'analysis-setup',
             type: 'spotlight',
             target: '[data-tour="category-gold"]',
-            title: 'Select Gold Analysis',
-            content: `For this demo, we'll use the Gold Analysis workflow. Click the card to proceed.`,
+            title: 'One-Step Analysis Setup',
+            content: `Configure your entire analysis on a single page:
+
+🎯 Select analysis type (Gold, pXRF, PhotonAssay)
+⚙️ Quick settings appear inline
+📋 Select your CRMs
+🚀 Click "Run Analysis"
+
+No more multi-step wizards - just pick your options and go!`,
             placement: 'right',
             nextOnClick: true,
-        },
-        {
-            id: 'methodology',
-            type: 'modal',
-            title: 'Methodology Configuration',
-            content: `Configure your analysis methodology:
-
-• Sample types and classification
-• Detection limits and thresholds
-• Standard reference materials (CRMs)
-• Analysis method details
-
-These settings ensure JORC compliance and accurate QAQC reporting.`,
-            placement: 'center',
-        },
-        {
-            id: 'qaqc-rules',
-            type: 'modal',
-            title: 'QAQC Rules Setup',
-            content: `Define quality control rules:
-
-✅ Standards (CRM) - Accuracy checks
-🔍 Blanks - Contamination detection
-👥 Duplicates - Precision analysis
-
-Set insertion rates, acceptance criteria, and Westgard rules for sophisticated QAQC analysis.`,
-            placement: 'center',
         },
         {
             id: 'results-dashboard',

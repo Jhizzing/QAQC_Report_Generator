@@ -1,0 +1,272 @@
+/**
+ * Analysis Service
+ * 
+ * Unified interface for running QAQC analysis that routes to either:
+ * - Server-side (FastAPI/Python) when backend is available
+ * - Client-side (TypeScript) as fallback when offline
+ */
+
+import { apiClient, type AnalysisRequest, type AnalysisResult } from '../api/client';
+import { 
+    runQAQCAnalysis as runClientAnalysis, 
+    autoDetectColumnMapping,
+    type QAQCAnalysisInput, 
+    type QAQCAnalysisOutput 
+} from '../features/analysis/qaqcAnalysis';
+import type { MethodologyConfig } from '../features/analysis/MethodologyWizard';
+import type { QAQCConfig } from '../features/analysis/QAQCRuleConfig';
+
+export interface AnalysisServiceInput {
+    /** Raw data array (for client-side analysis) */
+    data: any[];
+    /** File ID from upload (for server-side analysis) */
+    fileId?: string;
+    /** Methodology configuration */
+    methodologyConfig: MethodologyConfig;
+    /** QAQC rules configuration */
+    qaqcConfig: QAQCConfig;
+    /** Column mapping (auto-detected if not provided) */
+    columnMapping?: QAQCAnalysisInput['columnMapping'];
+}
+
+export interface AnalysisServiceOutput {
+    /** Analysis results in unified format */
+    results: QAQCAnalysisOutput;
+    /** Which mode was used */
+    mode: 'server' | 'client';
+    /** Analysis ID (server-side only) */
+    analysisId?: string;
+    /** Any warnings or info messages */
+    messages: string[];
+}
+
+/**
+ * Run QAQC analysis using the appropriate mode
+ */
+export async function runAnalysis(
+    input: AnalysisServiceInput,
+    useBackend: boolean
+): Promise<AnalysisServiceOutput> {
+    if (useBackend && input.fileId) {
+        return runServerAnalysis(input);
+    }
+    return runLocalAnalysis(input);
+}
+
+/**
+ * Run analysis on the server via FastAPI
+ */
+async function runServerAnalysis(input: AnalysisServiceInput): Promise<AnalysisServiceOutput> {
+    const messages: string[] = [];
+    
+    try {
+        // Build API request
+        const columnMapping = input.columnMapping || autoDetectColumnMapping(input.data);
+        
+        const request: AnalysisRequest = {
+            file_id: input.fileId!,
+            column_mapping: {
+                sample_id: columnMapping.sampleId,
+                sample_type: columnMapping.sampleType,
+                result: Object.values(columnMapping.elements)[0] || 'result',
+                elements: columnMapping.elements,
+            },
+            methodology: {
+                assay_method: input.methodologyConfig.assayMethod || 'fire_assay',
+                duplicate_strategy: input.methodologyConfig.duplicateType || 'field_duplicate',
+                insertion_rate: 5.0,
+            },
+            qaqc_rules: {
+                standards_tolerance: input.qaqcConfig.standards.toleranceValue,
+                blanks_threshold: input.qaqcConfig.blanks.detectionLimit,
+                duplicates_rpd_limit: input.qaqcConfig.duplicates.precisionTarget,
+                duplicates_hard_limit: input.qaqcConfig.duplicates.precisionTarget * 1.5,
+            },
+        };
+        
+        // Call API
+        const apiResult = await apiClient.runAnalysis(request);
+        
+        // Map API response to UI format
+        const results = mapApiResultToOutput(apiResult);
+        
+        messages.push('Analysis completed using Python backend');
+        
+        return {
+            results,
+            mode: 'server',
+            analysisId: apiResult.analysis_id,
+            messages,
+        };
+    } catch (error) {
+        // Fall back to client-side on error
+        console.warn('Server analysis failed, falling back to client-side:', error);
+        messages.push(`Server analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        messages.push('Falling back to client-side analysis');
+        
+        const fallback = await runLocalAnalysis(input);
+        return {
+            ...fallback,
+            messages: [...messages, ...fallback.messages],
+        };
+    }
+}
+
+/**
+ * Run analysis locally using TypeScript engines
+ */
+async function runLocalAnalysis(input: AnalysisServiceInput): Promise<AnalysisServiceOutput> {
+    const messages: string[] = [];
+    
+    try {
+        const columnMapping = input.columnMapping || autoDetectColumnMapping(input.data);
+        
+        const analysisInput: QAQCAnalysisInput = {
+            data: input.data,
+            methodologyConfig: input.methodologyConfig,
+            qaqcConfig: input.qaqcConfig,
+            columnMapping,
+        };
+        
+        const results = runClientAnalysis(analysisInput);
+        
+        messages.push('Analysis completed using client-side engine');
+        
+        return {
+            results,
+            mode: 'client',
+            messages,
+        };
+    } catch (error) {
+        throw new Error(`Client-side analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+}
+
+/**
+ * Map API response format to UI component format
+ */
+function mapApiResultToOutput(apiResult: AnalysisResult): QAQCAnalysisOutput {
+    return {
+        standards: {
+            results: apiResult.standards.data_points.map((dp, index) => ({
+                sampleId: `STD-${index}`,
+                crmId: 'CRM',
+                element: 'Au',
+                measuredValue: dp.value,
+                unit: 'ppm',
+                sampleNumber: dp.sequence,
+                certifiedValue: 1.0,
+                uncertainty: 0.05,
+                deviation: dp.value - 1.0,
+                percentDeviation: ((dp.value - 1.0) / 1.0) * 100,
+                pass: dp.status === 'PASS',
+                upperLimit: 1.1,
+                lowerLimit: 0.9,
+            })),
+            statistics: apiResult.standards.statistics.map(s => ({
+                crm: 'CRM',
+                element: s.element,
+                mean: s.mean,
+                sd: s.sd,
+                rsd: s.rsd,
+                passRate: s.pass_rate,
+                count: s.count,
+            })),
+            flaggedBatches: apiResult.standards.flagged_batches,
+        },
+        blanks: {
+            results: [],
+            statistics: apiResult.blanks.statistics.map(s => ({
+                element: s.element,
+                count: s.count,
+                max: s.max,
+                mean: s.mean,
+                median: s.median,
+                contaminationRate: s.contamination_rate,
+            })),
+            flaggedBlanks: [],
+        },
+        duplicates: {
+            results: apiResult.duplicates.pairs.map((p, index) => ({
+                originalSampleId: p.sample_id,
+                duplicateSampleId: `${p.sample_id}-DUP`,
+                element: 'Au',
+                originalValue: p.original,
+                duplicateValue: p.duplicate,
+                unit: 'ppm',
+                pairNumber: index,
+                rpd: p.rpd,
+                hard: (Math.abs(p.original - p.duplicate) / Math.max(p.original, p.duplicate)) * 100,
+                pass: p.rpd <= 20,
+                targetPrecision: 20,
+                precisionMethod: 'rpd' as const,
+            })),
+            statistics: apiResult.duplicates.statistics.map(s => ({
+                element: s.element,
+                count: s.count,
+                meanRPD: s.mean_rpd,
+                meanHARD: s.mean_hard,
+                withinTarget: s.within_target,
+            })),
+            flaggedPairs: apiResult.duplicates.flagged_pairs.map((fp, index) => ({
+                originalSampleId: fp.sample_id,
+                duplicateSampleId: `${fp.sample_id}-DUP`,
+                element: 'Au',
+                originalValue: fp.original,
+                duplicateValue: fp.duplicate,
+                unit: 'ppm',
+                pairNumber: index,
+                rpd: fp.rpd,
+                hard: (Math.abs(fp.original - fp.duplicate) / Math.max(fp.original, fp.duplicate)) * 100,
+                pass: false,
+                targetPrecision: 20,
+                precisionMethod: 'rpd' as const,
+            })),
+        },
+        summary: {
+            totalSamples: apiResult.summary.total_samples,
+            totalStandards: apiResult.summary.total_standards,
+            totalBlanks: apiResult.summary.total_blanks,
+            totalDuplicates: apiResult.summary.total_duplicates,
+            overallPassRate: apiResult.summary.overall_pass_rate,
+        },
+    };
+}
+
+/**
+ * Upload a file to the server for analysis
+ */
+export async function uploadFileForAnalysis(file: File): Promise<{
+    fileId: string;
+    columns: string[];
+    rowCount: number;
+    mappingSuggestions: Record<string, { column: string; confidence: number }>;
+}> {
+    const response = await apiClient.uploadFile(file);
+    
+    return {
+        fileId: response.file_id,
+        columns: response.columns,
+        rowCount: response.row_count,
+        mappingSuggestions: response.mapping_suggestions,
+    };
+}
+
+/**
+ * Export analysis results
+ */
+export async function exportResults(
+    analysisId: string,
+    format: 'excel' | 'pdf'
+): Promise<void> {
+    try {
+        const blob = format === 'excel'
+            ? await apiClient.exportExcel(analysisId)
+            : await apiClient.exportPDF(analysisId);
+        
+        const filename = `qaqc_report_${new Date().toISOString().slice(0, 10)}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
+        apiClient.downloadBlob(blob, filename);
+    } catch (error) {
+        throw new Error(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+}

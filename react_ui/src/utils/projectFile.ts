@@ -14,8 +14,8 @@ import type { QAQCAnalysisOutput } from '../features/analysis/qaqcAnalysis';
 // Current file format version
 export const PROJECT_FILE_VERSION = '1.0.0';
 
-// Workflow steps type
-export type WorkflowStep = 'entry' | 'import' | 'category' | 'methodology' | 'qaqcRules' | 'dashboard' | 'report' | 'template_editor';
+// Workflow steps type (includes legacy steps for backwards compatibility)
+export type WorkflowStep = 'entry' | 'import' | 'setup' | 'category' | 'methodology' | 'qaqcRules' | 'dashboard' | 'report' | 'template_editor';
 
 // Data category type
 export type DataCategory = 'gold' | 'pxrf' | 'multi' | 'photon' | null;
