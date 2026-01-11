@@ -20,17 +20,25 @@ The program automates the validation and reporting of QAQC results from drilling
 - **✅ Project Persistence**: Save and load projects (.qaqc) to resume work later
 
 ### 🌟 Recent Updates (Oct 2025)
-- **Enhanced UI/UX**: Significant improvements to button visibility and contrast (White text on colored backgrounds).
-- **Robust Data Validation**: Fixed issues where plots could be generated without valid data; improved error handling for file imports.
-- **Reliable Launcher**: New `launch_gui_simple.py` script for a guaranteed stable start.
+- **Element-Specific QAQC**: Industry-aligned element-specific tolerances, precision targets, and detection limits based on analytical method
+- **Method-Specific Presets**: Automatic configuration for ICP-MS, ICP-OES, pXRF, Fire Assay, and AAS methods
+- **Major vs Trace Classification**: Intelligent element classification with appropriate QAQC thresholds
+- **Enhanced CRM Database**: Expanded with USGS AGV-1 and BCR-1 standards for comprehensive geochemistry support
+- **Research Documentation**: Comprehensive research on pXRF and multi-element QAQC best practices
+- **Enhanced UI/UX**: Significant improvements to button visibility and contrast (White text on colored backgrounds)
+- **Robust Data Validation**: Fixed issues where plots could be generated without valid data; improved error handling for file imports
+- **Reliable Launcher**: New `launch_gui_simple.py` script for a guaranteed stable start
 
 ### Key Achievements
 - **Data Processing**: Robust CSV/XLSX import with intelligent column mapping
 - **QAQC Analysis**: Standards, blanks, and duplicates analysis with CRM integration
+- **Element-Specific QAQC**: Industry-standard tolerances and precision targets by element and method
+- **Method Presets**: Automatic configuration for common analytical methods (ICP-MS, ICP-OES, pXRF, Fire Assay)
 - **Visualization**: Professional plots (control charts, scatter plots, histograms)
 - **Reporting**: Excel and PDF reports with executive summaries
 - **Persistence**: Full save/load functionality for project state
 - **Quality Assurance**: Comprehensive error handling and data validation
+- **Research-Based**: Aligned with industry best practices for pXRF and multi-element geochemistry
 
 ---
 
@@ -60,15 +68,22 @@ The program automates the validation and reporting of QAQC results from drilling
 ### Step 3: Calculations
 #### Standards (CRMs)
 - Compute Z-scores and bias.
+- Apply element-specific tolerances based on analytical method (ICP-MS, ICP-OES, pXRF, Fire Assay).
+- Major elements (Cu, Pb, Zn, Fe, S): Stricter tolerances (5-10%).
+- Trace elements (Au, As, Ni, Co): Appropriate tolerances (10-20%).
 - Apply Shewhart or Westgard rules.
 - Summarize pass/fail statistics per CRM, batch, and lab.
 
 #### Blanks
 - Check absolute and threshold-based exceedances (e.g., >3×DL).
+- Element-specific detection limits (e.g., Fe and S use %, not ppm).
 - Flag carry-over (elevated blanks after high-grade samples).
 
 #### Duplicates
 - Calculate mean, absolute difference, % difference (RPD), and % variance.
+- Element-specific precision targets based on analytical method.
+- Major elements: 5-10% RPD target.
+- Trace elements: 10-20% RPD target.
 - Compute correlation (Pearson r) and regression slope/intercept.
 - Estimate nugget variance ratio:
   \( Nugget\ Ratio = 0.5 * Var(CK - OR) / Var(OR) \)
@@ -187,9 +202,31 @@ See [react_ui/README.md](react_ui/README.md) for full documentation.
 ## 7. Analysis Metrics
 | QAQC Type | Key Calculations | Output Metrics |
 |------------|------------------|----------------|
-| Standards | Z-score, Bias | % within ±2SD, drift trend, batch pass/fail |
-| Blanks | Threshold exceedance | % below DL, carry-over flag |
-| Duplicates | RPD, % variance, regression, nugget ratio | Precision plots, correlation, nugget ratio |
+| Standards | Z-score, Bias, Element-specific tolerances | % within ±2SD, drift trend, batch pass/fail, element-specific pass rates |
+| Blanks | Threshold exceedance, Element-specific detection limits | % below DL, carry-over flag, element-specific contamination rates |
+| Duplicates | RPD, % variance, regression, nugget ratio, Element-specific precision | Precision plots, correlation, nugget ratio, element-specific precision metrics |
+
+### 7.1 Element-Specific QAQC Features
+
+The application now supports industry-standard element-specific QAQC thresholds:
+
+**Element Classification:**
+- **Major Elements** (>1% typical): Cu, Pb, Zn, Fe, S, Al, Ca, Mg, K, Na, Ti
+- **Trace Elements** (<0.1% typical): Au, Ag, As, Ni, Co, Mo, W, Sb, Bi, Te, Se, and others
+
+**Method-Specific Defaults:**
+- **ICP-MS**: Optimized for trace elements (10-20% tolerances)
+- **ICP-OES**: Optimized for major elements (3-10% tolerances)
+- **pXRF**: Field analysis with matrix effects (12-20% tolerances)
+- **Fire Assay**: Gold-specific (10-15% tolerances)
+
+**Example Element-Specific Thresholds:**
+- Cu (ICP-MS): 8% tolerance, 1 ppm detection limit, 6% HARD precision
+- Fe (ICP-OES): 4% tolerance, 0.01% detection limit, 3% HARD precision
+- As (ICP-MS): 18% tolerance, 2 ppm detection limit, 15% HARD precision
+- Au (Fire Assay): 12% tolerance, 0.01 g/t detection limit, 12% HARD precision
+
+See [docs/research/PXRF_MULTIELEMENT_QAQC_RESEARCH.md](docs/research/PXRF_MULTIELEMENT_QAQC_RESEARCH.md) for detailed research and recommendations.
 
 ---
 
@@ -201,19 +238,23 @@ See [react_ui/README.md](react_ui/README.md) for full documentation.
 ---
 
 ## 9. Development Roadmap
-1. **Phase 1:** Core calculations + Excel reporting (desktop prototype)
-2. **Phase 2:** GUI interface + PDF reports
-3. **Phase 3:** Web-based deployment (multi-user, dashboards)
+1. **Phase 1:** Core calculations + Excel reporting (desktop prototype) ✅
+2. **Phase 2:** GUI interface + PDF reports ✅
+3. **Phase 3:** Web-based deployment (multi-user, dashboards) ✅
 4. **Phase 4:** Integrations (acQuire API, automated notifications, lab imports)
+5. **Phase 5:** Element-specific QAQC and method presets ✅
+6. **Phase 6:** pXRF spectral interference detection (in progress)
 
 ---
 
 ## 10. Suggested Enhancements
+- pXRF spectral interference detection and matrix correction
 - Top-cut recommender (MAD or log-QQ method)
 - Batch rerun suggestions
 - Multi-lab comparison (Youden plots)
 - Geology integration (compare QAQC by lithology/alteration)
 - Configurable thresholds and project templates
+- Advanced element-specific configuration UI
 
 ---
 
