@@ -8,6 +8,14 @@ export interface ExportSettings {
   includeJORCTable: boolean;
 }
 
+export interface ReportSettings {
+  defaultTitle: string;
+  defaultColorScheme: 'default' | 'corporate' | 'minimal';
+  defaultFontSize: 'small' | 'medium' | 'large';
+  defaultPageLayout: 'portrait' | 'landscape';
+  defaultLogoUrl?: string;
+}
+
 export interface AnalysisSettings {
   defaultTolerancePercent: number;
   defaultPrecisionTarget: number;
@@ -25,6 +33,7 @@ export interface AppSettings {
   export: ExportSettings;
   analysis: AnalysisSettings;
   api: APISettings;
+  report: ReportSettings;
 }
 
 interface SettingsState {
@@ -32,6 +41,7 @@ interface SettingsState {
   updateExportSettings: (settings: Partial<ExportSettings>) => void;
   updateAnalysisSettings: (settings: Partial<AnalysisSettings>) => void;
   updateAPISettings: (settings: Partial<APISettings>) => void;
+  updateReportSettings: (settings: Partial<ReportSettings>) => void;
   resetToDefaults: () => void;
 }
 
@@ -52,6 +62,12 @@ const DEFAULT_SETTINGS: AppSettings = {
     backendUrl: 'http://localhost:8000',
     autoConnect: true,
     healthCheckInterval: 30,
+  },
+  report: {
+    defaultTitle: 'QAQC Analysis Report',
+    defaultColorScheme: 'default',
+    defaultFontSize: 'medium',
+    defaultPageLayout: 'portrait',
   },
 };
 
@@ -78,6 +94,13 @@ export const useSettingsStore = create<SettingsState>()(
         settings: {
           ...state.settings,
           api: { ...state.settings.api, ...newSettings },
+        },
+      })),
+      
+      updateReportSettings: (newSettings) => set((state) => ({
+        settings: {
+          ...state.settings,
+          report: { ...state.settings.report, ...newSettings },
         },
       })),
       

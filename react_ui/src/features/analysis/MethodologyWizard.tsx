@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowRight, ArrowLeft, CheckCircle, HelpCircle } from 'lucide-react';
+import { type AnalyticalMethod } from '../../data/elementDefaults';
 
 interface MethodologyWizardProps {
     category: 'gold' | 'pxrf' | 'multi' | 'photon';
@@ -8,6 +9,7 @@ interface MethodologyWizardProps {
 
 export interface MethodologyConfig {
     category: 'gold' | 'pxrf' | 'multi';
+    analyticalMethod?: AnalyticalMethod;  // Method for element-specific defaults
     // Gold-specific
     assayMethod?: 'fire_assay' | 'leachwell' | 'screen_fire_assay';
     duplicateType?: 'coarse' | 'pulp' | 'both';

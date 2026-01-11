@@ -5,6 +5,8 @@
  * Calculates RPD (Relative Percent Difference) and HARD (Half Absolute Relative Difference)
  */
 
+import { getDefaultPrecisionTarget, type AnalyticalMethod } from '../../data/elementDefaults';
+
 export interface DuplicatePair {
     originalSampleId: string;
     duplicateSampleId: string;
@@ -20,12 +22,14 @@ export interface DuplicateResult extends DuplicatePair {
     rpd: number;  // Relative Percent Difference
     hard: number;  // Half Absolute Relative Difference
     pass: boolean;
-    targetPrecision: number;
+    targetPrecision: number;  // The precision target actually used for this element
     precisionMethod: 'rpd' | 'hard';
 }
 
 export interface DuplicatesAnalysisConfig {
-    precisionTarget: number;      // e.g., 20%
+    precisionTarget: number;      // Default precision target (e.g., 20%)
+    elementSpecificPrecision?: Record<string, number>;  // Element-specific precision overrides
+    analyticalMethod?: AnalyticalMethod;  // Method for determining defaults
     precisionMethod: 'rpd' | 'hard';
     failureThreshold: number;  // Consecutive failures to review
 }
@@ -53,7 +57,7 @@ export function analyzeDuplicates(
 
     // Process each pair
     for (const pair of pairs) {
-        const { originalValue, duplicateValue } = pair;
+        const { originalValue, duplicateValue, element } = pair;
 
         // Calculate RPD: |A - B| / ((A + B) / 2) × 100
         const average = (originalValue + duplicateValue) / 2;
@@ -63,16 +67,25 @@ export function analyzeDuplicates(
         const max = Math.max(originalValue, duplicateValue);
         const hard = max !== 0 ? (Math.abs(originalValue - duplicateValue) / max) * 100 : 0;
 
+        // Get element-specific precision target if available, otherwise use default
+        let precisionTarget = config.precisionTarget;
+        if (config.elementSpecificPrecision && config.elementSpecificPrecision[element]) {
+            precisionTarget = config.elementSpecificPrecision[element];
+        } else if (config.analyticalMethod) {
+            // Use element-specific default based on method
+            precisionTarget = getDefaultPrecisionTarget(element, config.analyticalMethod, config.precisionMethod);
+        }
+
         // Determine if within target
         const precision = config.precisionMethod === 'rpd' ? rpd : hard;
-        const pass = precision <= config.precisionTarget;
+        const pass = precision <= precisionTarget;
 
         results.push({
             ...pair,
             rpd,
             hard,
             pass,
-            targetPrecision: config.precisionTarget,
+            targetPrecision: precisionTarget,
             precisionMethod: config.precisionMethod
         });
     }

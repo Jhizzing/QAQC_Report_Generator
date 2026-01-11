@@ -14,9 +14,10 @@ import json
 import tempfile
 import shutil
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
 import pandas as pd
 
@@ -24,6 +25,16 @@ import pandas as pd
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
+
+# Import exceptions after path setup
+from api.exceptions import (
+    FileProcessingError,
+    FileNotFoundError,
+    AnalysisNotFoundError,
+    AnalysisExecutionError,
+    ReportGenerationError,
+    ValidationError
+)
 
 from data import DataImporter
 from data.crm_manager import CRMManager
@@ -37,6 +48,48 @@ app = FastAPI(
     description="Backend API for QAQC Report Generator",
     version="2.0.0"
 )
+
+# Global exception handlers
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle validation errors with detailed messages"""
+    errors = []
+    for error in exc.errors():
+        field = " -> ".join(str(loc) for loc in error["loc"])
+        errors.append(f"{field}: {error['msg']}")
+    
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": "Validation error",
+            "errors": errors,
+            "error_code": "VALIDATION_ERROR"
+        }
+    )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Handle HTTP exceptions with consistent format"""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": exc.detail,
+            "error_code": getattr(exc, "error_code", f"HTTP_{exc.status_code}")
+        }
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """Handle unexpected exceptions"""
+    import traceback
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": f"Internal server error: {str(exc)}",
+            "error_code": "INTERNAL_SERVER_ERROR",
+            "traceback": traceback.format_exc() if app.debug else None
+        }
+    )
 
 # Configure CORS for React dev server
 app.add_middleware(
@@ -171,9 +224,35 @@ async def get_project(project_id: str):
 
 # ============== Data Import ==============
 
+# Maximum file size: 50MB
+MAX_FILE_SIZE = 50 * 1024 * 1024
+
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
     """Upload a data file (CSV or Excel)"""
+    # Validate file size
+    if file.size and file.size > MAX_FILE_SIZE:
+        raise ValidationError(
+            f"File size ({file.size / 1024 / 1024:.2f}MB) exceeds maximum allowed size of 50MB"
+        )
+    
+    # Validate file type
+    valid_extensions = ['.csv', '.xlsx', '.xls']
+    valid_types = [
+        'text/csv',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ]
+    
+    has_valid_extension = any(file.filename.lower().endswith(ext) for ext in valid_extensions)
+    has_valid_type = file.content_type in valid_types if file.content_type else False
+    
+    if not has_valid_extension and not has_valid_type:
+        raise ValidationError(
+            f"Invalid file type. Expected CSV or Excel file (.csv, .xlsx, .xls), "
+            f"but received: {file.content_type or 'unknown'}"
+        )
+    
     # Generate file ID
     file_id = f"file_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     
@@ -184,11 +263,28 @@ async def upload_file(file: UploadFile = File(...)):
     file_path = temp_dir / f"{file_id}_{file.filename}"
     
     try:
+        # Read file content in chunks to handle large files
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
+        # Validate file was written
+        if not file_path.exists() or file_path.stat().st_size == 0:
+            raise FileProcessingError("File upload failed: file is empty or could not be saved")
+        
         # Read and preview the file
-        df = data_importer.read_table(file_path)
+        try:
+            df = data_importer.read_table(file_path)
+        except Exception as e:
+            raise FileProcessingError(f"Failed to read file: {str(e)}. File may be corrupted or in an unsupported format.")
+        
+        if df.empty:
+            raise FileProcessingError("File contains no data rows")
+        
+        if len(df) > 100000:
+            raise ValidationError(
+                f"File contains too many rows ({len(df)}). Maximum allowed is 100,000 rows. "
+                "Please split your data into smaller files."
+            )
         
         # Store metadata
         temp_storage[file_id] = {
@@ -201,7 +297,11 @@ async def upload_file(file: UploadFile = File(...)):
         }
         
         # Auto-detect column mapping
-        suggestions = data_importer.suggest_mapping(list(df.columns))
+        try:
+            suggestions = data_importer.suggest_mapping(list(df.columns))
+        except Exception as e:
+            # Non-fatal error, continue without suggestions
+            suggestions = {}
         
         return {
             "file_id": file_id,
@@ -214,30 +314,54 @@ async def upload_file(file: UploadFile = File(...)):
             }
         }
         
+    except (FileProcessingError, ValidationError):
+        # Re-raise custom exceptions
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to process file: {str(e)}")
+        # Clean up on error
+        if file_path.exists():
+            try:
+                file_path.unlink()
+            except:
+                pass
+        raise FileProcessingError(f"Failed to process file: {str(e)}")
 
 
 @app.get("/api/preview/{file_id}")
 async def preview_file(file_id: str, offset: int = 0, limit: int = 50):
     """Get paginated preview of uploaded data"""
     if file_id not in temp_storage:
-        raise HTTPException(status_code=404, detail="File not found")
+        raise FileNotFoundError(file_id)
+    
+    # Validate pagination parameters
+    if offset < 0:
+        raise ValidationError("Offset must be non-negative")
+    if limit < 1 or limit > 1000:
+        raise ValidationError("Limit must be between 1 and 1000")
     
     file_info = temp_storage[file_id]
-    df = data_importer.read_table(file_info["path"])
     
-    # Get slice of data
-    preview_df = df.iloc[offset:offset + limit]
-    
-    return {
-        "file_id": file_id,
-        "total_rows": len(df),
-        "offset": offset,
-        "limit": limit,
-        "columns": list(df.columns),
-        "data": preview_df.fillna("").to_dict(orient="records")
-    }
+    try:
+        if not Path(file_info["path"]).exists():
+            raise FileNotFoundError(file_id)
+        
+        df = data_importer.read_table(file_info["path"])
+        
+        # Get slice of data
+        preview_df = df.iloc[offset:offset + limit]
+        
+        return {
+            "file_id": file_id,
+            "total_rows": len(df),
+            "offset": offset,
+            "limit": limit,
+            "columns": list(df.columns),
+            "data": preview_df.fillna("").to_dict(orient="records")
+        }
+    except FileNotFoundError:
+        raise
+    except Exception as e:
+        raise FileProcessingError(f"Failed to preview file: {str(e)}")
 
 
 # ============== CRM Database ==============
@@ -274,9 +398,23 @@ async def get_crm(crm_name: str):
 async def run_analysis(request: AnalysisRequest):
     """Run QAQC analysis on uploaded data"""
     if request.file_id not in temp_storage:
-        raise HTTPException(status_code=404, detail="File not found")
+        raise FileNotFoundError(request.file_id)
     
     file_info = temp_storage[request.file_id]
+    
+    # Validate file still exists
+    if not Path(file_info["path"]).exists():
+        raise FileNotFoundError(request.file_id)
+    
+    # Validate request parameters
+    if not request.column_mapping.sample_id or not request.column_mapping.sample_type:
+        raise ValidationError("Column mapping must include sample_id and sample_type")
+    
+    if request.qaqc_rules.standards_tolerance <= 0:
+        raise ValidationError("Standards tolerance must be positive")
+    
+    if request.qaqc_rules.blanks_threshold < 0:
+        raise ValidationError("Blanks threshold must be non-negative")
     
     try:
         # Load data
@@ -416,16 +554,21 @@ async def run_analysis(request: AnalysisRequest):
         
         return results
         
+    except AnalysisExecutionError:
+        raise
     except Exception as e:
         import traceback
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}\n{traceback.format_exc()}")
+        raise AnalysisExecutionError(
+            f"Analysis failed: {str(e)}",
+            error_code="ANALYSIS_EXECUTION_ERROR"
+        )
 
 
 @app.get("/api/results/{analysis_id}")
 async def get_results(analysis_id: str):
     """Get analysis results"""
     if analysis_id not in temp_storage:
-        raise HTTPException(status_code=404, detail="Analysis not found")
+        raise AnalysisNotFoundError(analysis_id)
     return temp_storage[analysis_id]
 
 
@@ -435,7 +578,7 @@ async def get_results(analysis_id: str):
 async def plot_control_chart(analysis_id: str, crm: str = "OREAS-101", element: str = "Au"):
     """Generate a control chart PNG for standards analysis"""
     if analysis_id not in temp_storage:
-        raise HTTPException(status_code=404, detail="Analysis not found")
+        raise AnalysisNotFoundError(analysis_id)
     
     results = temp_storage[analysis_id]
     
@@ -481,7 +624,7 @@ async def plot_control_chart(analysis_id: str, crm: str = "OREAS-101", element: 
 async def plot_scatter(analysis_id: str, element: str = "Au"):
     """Generate a scatter plot PNG for duplicates analysis"""
     if analysis_id not in temp_storage:
-        raise HTTPException(status_code=404, detail="Analysis not found")
+        raise AnalysisNotFoundError(analysis_id)
     
     results = temp_storage[analysis_id]
     
@@ -524,7 +667,7 @@ async def plot_scatter(analysis_id: str, element: str = "Au"):
 async def plot_bland_altman(analysis_id: str, element: str = "Au"):
     """Generate a Bland-Altman plot PNG for duplicates analysis"""
     if analysis_id not in temp_storage:
-        raise HTTPException(status_code=404, detail="Analysis not found")
+        raise AnalysisNotFoundError(analysis_id)
     
     results = temp_storage[analysis_id]
     
@@ -565,7 +708,7 @@ async def plot_bland_altman(analysis_id: str, element: str = "Au"):
 async def plot_cusum(analysis_id: str, crm: str = "OREAS-101", element: str = "Au"):
     """Generate a CUSUM chart PNG for standards trend analysis"""
     if analysis_id not in temp_storage:
-        raise HTTPException(status_code=404, detail="Analysis not found")
+        raise AnalysisNotFoundError(analysis_id)
     
     results = temp_storage[analysis_id]
     
@@ -607,7 +750,7 @@ async def plot_cusum(analysis_id: str, crm: str = "OREAS-101", element: str = "A
 async def plot_rpd_scatter(analysis_id: str, element: str = "Au"):
     """Generate an RPD scatter plot with hyperbolic limits for duplicates"""
     if analysis_id not in temp_storage:
-        raise HTTPException(status_code=404, detail="Analysis not found")
+        raise AnalysisNotFoundError(analysis_id)
     
     results = temp_storage[analysis_id]
     
@@ -653,7 +796,7 @@ async def plot_rpd_scatter(analysis_id: str, element: str = "Au"):
 async def export_excel(analysis_id: str, background_tasks: BackgroundTasks, with_charts: bool = True):
     """Generate and download Excel report with optional embedded charts"""
     if analysis_id not in temp_storage:
-        raise HTTPException(status_code=404, detail="Analysis not found")
+        raise AnalysisNotFoundError(analysis_id)
     
     results = temp_storage[analysis_id]
     
@@ -688,16 +831,21 @@ async def export_excel(analysis_id: str, background_tasks: BackgroundTasks, with
             filename=filename.name,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+    except ReportGenerationError:
+        raise
     except Exception as e:
         import traceback
-        raise HTTPException(status_code=500, detail=f"Failed to generate Excel report: {str(e)}\n{traceback.format_exc()}")
+        raise ReportGenerationError(
+            f"Failed to generate Excel report: {str(e)}",
+            error_code="EXCEL_GENERATION_ERROR"
+        )
 
 
 @app.post("/api/export/pdf")
 async def export_pdf(analysis_id: str):
     """Generate and download PDF report using ReportLab"""
     if analysis_id not in temp_storage:
-        raise HTTPException(status_code=404, detail="Analysis not found")
+        raise AnalysisNotFoundError(analysis_id)
     
     results = temp_storage[analysis_id]
     
@@ -755,16 +903,21 @@ async def export_pdf(analysis_id: str):
             filename=filename.name,
             media_type="application/pdf"
         )
+    except ReportGenerationError:
+        raise
     except Exception as e:
         import traceback
-        raise HTTPException(status_code=500, detail=f"Failed to generate PDF report: {str(e)}\n{traceback.format_exc()}")
+        raise ReportGenerationError(
+            f"Failed to generate PDF report: {str(e)}",
+            error_code="PDF_GENERATION_ERROR"
+        )
 
 
 @app.post("/api/export/docx")
 async def export_docx(analysis_id: str):
     """Generate and download editable Word document report"""
     if analysis_id not in temp_storage:
-        raise HTTPException(status_code=404, detail="Analysis not found")
+        raise AnalysisNotFoundError(analysis_id)
     
     results = temp_storage[analysis_id]
     
@@ -819,9 +972,14 @@ async def export_docx(analysis_id: str):
             filename=filename.name,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
+    except ReportGenerationError:
+        raise
     except Exception as e:
         import traceback
-        raise HTTPException(status_code=500, detail=f"Failed to generate DOCX report: {str(e)}\n{traceback.format_exc()}")
+        raise ReportGenerationError(
+            f"Failed to generate DOCX report: {str(e)}",
+            error_code="DOCX_GENERATION_ERROR"
+        )
 
 
 # ============== Run Server ==============

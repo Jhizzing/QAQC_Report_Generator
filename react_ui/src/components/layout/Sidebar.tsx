@@ -168,30 +168,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 })}
             </nav>
 
-            {/* Workflow Progress Summary */}
-            <div className="px-4 py-3 border-t border-secondary-dark">
-                <div className="bg-surface-light/30 rounded-lg p-3">
-                    <p className="text-xs font-medium text-slate-500 uppercase mb-2">Progress</p>
-                    <div className="flex items-center gap-2">
-                        {['import', 'setup', 'dashboard', 'report'].map((step, index) => (
-                            <div
-                                key={step}
-                                className={`
-                                    w-2 h-2 rounded-full transition-colors
-                                    ${completedSteps.includes(step)
-                                        ? 'bg-status-success'
-                                        : activeSection === step
-                                            ? 'bg-primary'
-                                            : 'bg-slate-700'
-                                    }
-                                `}
-                                title={`Step ${index + 1}: ${step}`}
-                            />
-                        ))}
-                    </div>
-                </div>
-            </div>
-
             <div className="p-4 border-t border-secondary-dark">
                 <div className="bg-surface-light/50 rounded-lg p-4">
                     <p className="text-xs font-medium text-slate-400 uppercase mb-2">System Status</p>

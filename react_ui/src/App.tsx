@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { MainLayout } from './components/layout/MainLayout';
 import { Header } from './components/Header';
 import { ImportWorkflow } from './features/import/ImportWorkflow';
@@ -24,6 +24,8 @@ import { saveProjectToFile, type QAQCProjectFile, type WorkflowStep as ProjectWo
 import { useBackendService, setGlobalBackendStatus } from './hooks/useBackendService';
 import { runAnalysis } from './services/analysisService';
 import { BackendStatus } from './components/common/BackendStatus';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { useNotificationStore } from './stores/notificationStore';
 import type { ProcessedData } from './utils/fileProcessor';
 import type { JORCReportConfig, FiguresConfig } from './features/report/ReportConfig';
 
@@ -32,6 +34,7 @@ type WorkflowStep = StepperWorkflowStep;
 
 function App() {
   const { currentProject } = useProjectStore();
+  const { addNotification } = useNotificationStore();
   const [data, setData] = useState<ProcessedData | null>(null);
   const [fileId, setFileId] = useState<string | null>(null); // Server file ID for backend analysis
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('import');
@@ -48,6 +51,19 @@ function App() {
   
   // Update global backend status for non-React contexts
   setGlobalBackendStatus(backendService.isAvailable);
+  
+  // Notify on backend status changes (only when it becomes available)
+  const prevBackendAvailable = React.useRef(backendService.isAvailable);
+  React.useEffect(() => {
+    if (backendService.isAvailable && !prevBackendAvailable.current) {
+      addNotification({
+        type: 'success',
+        title: 'Backend Connected',
+        message: 'Python backend is now available. Server-side analysis enabled.',
+      });
+    }
+    prevBackendAvailable.current = backendService.isAvailable;
+  }, [backendService.isAvailable, addNotification]);
 
   // Handle loading a project from file
   const handleProjectLoaded = useCallback((projectFile: QAQCProjectFile) => {
@@ -161,9 +177,29 @@ function App() {
           setAnalysisId(analysisOutput.analysisId);
         }
         setWorkflowStep('dashboard');
+        
+        // Notification for successful analysis
+        const passRate = analysisOutput.results.summary.overallPassRate;
+        addNotification({
+          type: passRate >= 95 ? 'success' : passRate >= 85 ? 'warning' : 'error',
+          title: 'Analysis Complete',
+          message: `QAQC analysis completed. Pass rate: ${passRate.toFixed(1)}%`,
+          action: {
+            label: 'View Results',
+            onClick: () => setWorkflowStep('dashboard'),
+          },
+        });
       } catch (error) {
         console.error('Analysis failed:', error);
-        setAnalysisError(error instanceof Error ? error.message : 'Analysis failed');
+        const errorMessage = error instanceof Error ? error.message : 'Analysis failed';
+        setAnalysisError(errorMessage);
+        
+        // Notification for analysis failure
+        addNotification({
+          type: 'error',
+          title: 'Analysis Failed',
+          message: errorMessage,
+        });
       } finally {
         setIsAnalyzing(false);
       }
@@ -177,10 +213,28 @@ function App() {
   const handleGenerateReport = async (type: 'report' | 'figures', config: JORCReportConfig | FiguresConfig) => {
     if (!analysisResults || !currentProject) return;
 
-    if (type === 'figures') {
-      await exportFiguresOnly(analysisResults, config as FiguresConfig, currentProject.name);
-    } else {
-      await exportJORCReport(analysisResults, config as JORCReportConfig, currentProject.name);
+    try {
+      if (type === 'figures') {
+        await exportFiguresOnly(analysisResults, config as FiguresConfig, currentProject.name);
+        addNotification({
+          type: 'success',
+          title: 'Report Exported',
+          message: 'Figures report has been exported successfully.',
+        });
+      } else {
+        await exportJORCReport(analysisResults, config as JORCReportConfig, currentProject.name);
+        addNotification({
+          type: 'success',
+          title: 'Report Exported',
+          message: 'JORC report has been exported successfully.',
+        });
+      }
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        title: 'Export Failed',
+        message: error instanceof Error ? error.message : 'Failed to export report',
+      });
     }
   };
 
@@ -280,16 +334,17 @@ function App() {
   };
 
   return (
-    <MainLayout 
-      onSidebarNavigate={handleSidebarNavigate} 
-      activeSection={getActiveSection()}
-      hasData={!!data}
-      hasAnalysis={!!analysisResults}
-      completedSteps={completedSteps}
-    >
-      <WelcomeModal />
-      <OnboardingOverlay />
-      <Header onSaveProject={handleSaveProject} />
+    <ErrorBoundary>
+      <MainLayout 
+        onSidebarNavigate={handleSidebarNavigate} 
+        activeSection={getActiveSection()}
+        hasData={!!data}
+        hasAnalysis={!!analysisResults}
+        completedSteps={completedSteps}
+      >
+        <WelcomeModal />
+        <OnboardingOverlay />
+        <Header onSaveProject={handleSaveProject} />
       
       {/* Workflow Stepper - shows progress through main workflow */}
       <WorkflowStepper
@@ -432,7 +487,8 @@ function App() {
           />
         )}
       </div>
-    </MainLayout>
+      </MainLayout>
+    </ErrorBoundary>
   );
 }
 

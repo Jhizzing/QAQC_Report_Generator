@@ -42,7 +42,7 @@ export const useProjectStore = create<ProjectState>()(
 
                 set((state) => ({
                     currentProject: newProject,
-                    recentProjects: [newProject, ...state.recentProjects]
+                    recentProjects: [newProject, ...state.recentProjects].slice(0, 10) // Keep max 10 recent projects
                 }));
             },
 
@@ -52,7 +52,7 @@ export const useProjectStore = create<ProjectState>()(
                     recentProjects: [
                         { ...project, lastModified: new Date().toISOString() },
                         ...state.recentProjects.filter(p => p.id !== project.id)
-                    ]
+                    ].slice(0, 10) // Keep max 10 recent projects
                 }));
             },
 

@@ -99,16 +99,59 @@ async function runServerAnalysis(input: AnalysisServiceInput): Promise<AnalysisS
             messages,
         };
     } catch (error) {
-        // Fall back to client-side on error
-        console.warn('Server analysis failed, falling back to client-side:', error);
-        messages.push(`Server analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        messages.push('Falling back to client-side analysis');
+        // Determine error type and provide appropriate message
+        let errorMessage = 'Unknown error';
+        let shouldFallback = true;
+
+        if (error instanceof Error) {
+            errorMessage = error.message;
+            
+            // Network errors - should fallback
+            if (errorMessage.includes('Network error') || 
+                errorMessage.includes('Failed to fetch') ||
+                errorMessage.includes('timeout')) {
+                messages.push(`Server unavailable: ${errorMessage}`);
+                messages.push('Falling back to client-side analysis');
+            }
+            // 404 errors - file not found, don't fallback
+            else if ((error as any).status === 404) {
+                messages.push(`File not found on server: ${errorMessage}`);
+                shouldFallback = false;
+                throw new Error(`Server analysis failed: ${errorMessage}. Please re-upload your file.`);
+            }
+            // 400 errors - bad request, don't fallback
+            else if ((error as any).status === 400) {
+                messages.push(`Invalid request: ${errorMessage}`);
+                shouldFallback = false;
+                throw new Error(`Server analysis failed: ${errorMessage}. Please check your configuration.`);
+            }
+            // Other server errors - try fallback
+            else {
+                messages.push(`Server analysis error: ${errorMessage}`);
+                messages.push('Falling back to client-side analysis');
+            }
+        } else {
+            messages.push('Server analysis failed with unknown error');
+            messages.push('Falling back to client-side analysis');
+        }
+
+        if (shouldFallback) {
+            try {
+                const fallback = await runLocalAnalysis(input);
+                return {
+                    ...fallback,
+                    messages: [...messages, ...fallback.messages],
+                };
+            } catch (fallbackError) {
+                throw new Error(
+                    `Both server and client-side analysis failed. ` +
+                    `Server error: ${errorMessage}. ` +
+                    `Client error: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`
+                );
+            }
+        }
         
-        const fallback = await runLocalAnalysis(input);
-        return {
-            ...fallback,
-            messages: [...messages, ...fallback.messages],
-        };
+        throw error;
     }
 }
 
@@ -138,7 +181,24 @@ async function runLocalAnalysis(input: AnalysisServiceInput): Promise<AnalysisSe
             messages,
         };
     } catch (error) {
-        throw new Error(`Client-side analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        // Provide more specific error messages
+        if (errorMessage.includes('data') || errorMessage.includes('column')) {
+            throw new Error(
+                `Data processing failed: ${errorMessage}. ` +
+                `Please check that your file contains the required columns (SampleID, Type, Result).`
+            );
+        }
+        
+        if (errorMessage.includes('mapping')) {
+            throw new Error(
+                `Column mapping failed: ${errorMessage}. ` +
+                `Please verify your column mapping configuration.`
+            );
+        }
+        
+        throw new Error(`Client-side analysis failed: ${errorMessage}`);
     }
 }
 
@@ -257,16 +317,46 @@ export async function uploadFileForAnalysis(file: File): Promise<{
  */
 export async function exportResults(
     analysisId: string,
-    format: 'excel' | 'pdf'
+    format: 'excel' | 'pdf',
+    timeout: number = 120000 // 2 minutes for report generation
 ): Promise<void> {
+    if (!analysisId) {
+        throw new Error('Analysis ID is required for export');
+    }
+
     try {
         const blob = format === 'excel'
             ? await apiClient.exportExcel(analysisId)
             : await apiClient.exportPDF(analysisId);
         
+        if (!blob || blob.size === 0) {
+            throw new Error(`Export generated an empty file. Please try again or contact support.`);
+        }
+        
         const filename = `qaqc_report_${new Date().toISOString().slice(0, 10)}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
         apiClient.downloadBlob(blob, filename);
     } catch (error) {
+        if (error instanceof Error) {
+            if (error.message.includes('timeout')) {
+                throw new Error(
+                    `Export timeout: Report generation took too long. ` +
+                    `This may happen with very large datasets. Please try again or contact support.`
+                );
+            }
+            if (error.message.includes('Network error') || error.message.includes('Failed to fetch')) {
+                throw new Error(
+                    `Network error during export: Unable to connect to server. ` +
+                    `Please check your connection and try again.`
+                );
+            }
+            if ((error as any).status === 404) {
+                throw new Error(
+                    `Analysis not found: The analysis results may have expired. ` +
+                    `Please run the analysis again.`
+                );
+            }
+        }
+        
         throw new Error(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }

@@ -38,6 +38,7 @@ export const PLOTLY_COLORS = {
   pass: '#22c55e',
   fail: '#ef4444',
   neutral: '#64748b',
+  highlight: '#fbbf24', // Bright yellow/amber for selected points
   
   // Reference lines
   certified: '#4a90d9',
@@ -255,6 +256,21 @@ export const PlotlyWrapper: React.FC<PlotlyWrapperProps> = ({
  */
 export const getStatusColors = (passArray: boolean[]): string[] => {
   return passArray.map(pass => pass ? PLOTLY_COLORS.pass : PLOTLY_COLORS.fail);
+};
+
+/**
+ * Generate marker colors with highlights for selected points
+ * Selected points get a bright highlight color (yellow/cyan) while maintaining pass/fail indication
+ */
+export const getMarkerColors = (
+  passArray: boolean[],
+  selectedIndices: number[] = [],
+  highlightColor: string = '#fbbf24' // Bright yellow/amber for selection
+): string[] => {
+  const baseColors = getStatusColors(passArray);
+  return baseColors.map((color, i) => 
+    selectedIndices.includes(i) ? highlightColor : color
+  );
 };
 
 /**

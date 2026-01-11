@@ -120,6 +120,15 @@ export const BlanksModule: React.FC<BlanksModuleProps> = ({ results }) => {
     const warningBlanks = filteredResults.filter(r => r.status === 'warning').length;
     const contaminatedBlanks = filteredResults.filter(r => r.contaminated).length;
 
+    // Handle point click (from histogram)
+    const handlePointClick = useCallback((index: number, _data?: Record<string, unknown>) => {
+        setSelectedIndices(prev => 
+            prev.includes(index) 
+                ? prev.filter(i => i !== index) 
+                : [...prev, index]
+        );
+    }, []);
+
     // Handle table row click
     const handleRowClick = useCallback((index: number) => {
         setSelectedIndices(prev => 
@@ -269,6 +278,8 @@ export const BlanksModule: React.FC<BlanksModuleProps> = ({ results }) => {
                             threshold={contaminationThreshold}
                             thresholdLabel="Contamination"
                             binCount={15}
+                            selectedIndices={selectedIndices}
+                            onPointClick={handlePointClick}
                             height={viewMode === 'both' ? 380 : 450}
                         />
                     </div>

@@ -5,6 +5,8 @@
  * Flags blanks exceeding detection limits and contamination thresholds
  */
 
+import { getDefaultDetectionLimit, type AnalyticalMethod } from '../../data/elementDefaults';
+
 export interface BlankSample {
     sampleId: string;
     element: string;
@@ -16,6 +18,7 @@ export interface BlankSample {
 
 export interface BlankResult extends BlankSample {
     detectionLimit: number;
+    detectionLimitUnit: 'ppm' | 'ppb' | 'pct' | 'g/t';
     contaminationThreshold: number;
     pass: boolean;
     contaminated: boolean;
@@ -23,8 +26,10 @@ export interface BlankResult extends BlankSample {
 }
 
 export interface BlanksAnalysisConfig {
-    detectionLimit: number;
-    detectionLimitUnit: 'ppm' | 'ppb' | 'pct';
+    detectionLimit: number;  // Default detection limit
+    detectionLimitUnit: 'ppm' | 'ppb' | 'pct' | 'g/t';
+    elementSpecificDetectionLimits?: Record<string, { value: number; unit: 'ppm' | 'ppb' | 'pct' | 'g/t' }>;  // Element-specific overrides
+    analyticalMethod?: AnalyticalMethod;  // Method for determining defaults
     contaminationMultiplier: number;  // e.g., 3x detection limit
 }
 
@@ -44,26 +49,66 @@ export interface BlanksAnalysisResults {
 /**
  * Analyze blanks data for contamination
  */
+/**
+ * Convert value between units (simplified - assumes same base unit type)
+ */
+function convertUnit(value: number, fromUnit: string, toUnit: string): number {
+    if (fromUnit === toUnit) return value;
+    
+    // Convert percentage to ppm (1% = 10000 ppm)
+    if (fromUnit === 'pct' && toUnit === 'ppm') return value * 10000;
+    if (fromUnit === 'ppm' && toUnit === 'pct') return value / 10000;
+    
+    // Convert g/t to ppm (1 g/t = 1 ppm for Au)
+    if (fromUnit === 'g/t' && toUnit === 'ppm') return value;
+    if (fromUnit === 'ppm' && toUnit === 'g/t') return value;
+    
+    // Convert ppb to ppm (1 ppm = 1000 ppb)
+    if (fromUnit === 'ppb' && toUnit === 'ppm') return value / 1000;
+    if (fromUnit === 'ppm' && toUnit === 'ppb') return value * 1000;
+    
+    // Default: no conversion (may cause issues, but better than crashing)
+    return value;
+}
+
 export function analyzeBlanks(
     samples: BlankSample[],
     config: BlanksAnalysisConfig
 ): BlanksAnalysisResults {
     const results: BlankResult[] = [];
 
-    // Calculate contamination threshold
-    const contaminationThreshold = config.detectionLimit * config.contaminationMultiplier;
-
     // Process each sample
     for (const sample of samples) {
         const measuredValue = sample.measuredValue;
-        const detectionLimit = config.detectionLimit;
+        const sampleUnit = sample.unit;
+        
+        // Get element-specific detection limit if available
+        let detectionLimit = config.detectionLimit;
+        let detectionLimitUnit = config.detectionLimitUnit;
+        
+        if (config.elementSpecificDetectionLimits && config.elementSpecificDetectionLimits[sample.element]) {
+            const elementLimit = config.elementSpecificDetectionLimits[sample.element];
+            detectionLimit = elementLimit.value;
+            detectionLimitUnit = elementLimit.unit;
+        } else if (config.analyticalMethod) {
+            // Use element-specific default based on method
+            const elementDefault = getDefaultDetectionLimit(sample.element, config.analyticalMethod);
+            detectionLimit = elementDefault.value;
+            detectionLimitUnit = elementDefault.unit;
+        }
+        
+        // Convert detection limit to sample unit if needed
+        const detectionLimitInSampleUnit = convertUnit(detectionLimit, detectionLimitUnit, sampleUnit);
+        
+        // Calculate contamination threshold
+        const contaminationThreshold = detectionLimitInSampleUnit * config.contaminationMultiplier;
 
         // Determine status
         let status: 'pass' | 'warning' | 'fail';
         let pass: boolean;
         let contaminated: boolean;
 
-        if (measuredValue <= detectionLimit) {
+        if (measuredValue <= detectionLimitInSampleUnit) {
             status = 'pass';
             pass = true;
             contaminated = false;
@@ -79,7 +124,8 @@ export function analyzeBlanks(
 
         results.push({
             ...sample,
-            detectionLimit,
+            detectionLimit: detectionLimitInSampleUnit,
+            detectionLimitUnit: sampleUnit as 'ppm' | 'ppb' | 'pct' | 'g/t',
             contaminationThreshold,
             pass,
             contaminated,

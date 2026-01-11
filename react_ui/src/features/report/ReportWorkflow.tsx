@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { FileText, Image, ArrowLeft, Download, CheckSquare, Server, FileOutput } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { FileText, Image, ArrowLeft, Download, CheckSquare, Server, FileOutput, Save } from 'lucide-react';
 import type { JORCReportConfig, FiguresConfig } from './ReportConfig';
 import type { QAQCAnalysisOutput } from '../analysis/qaqcAnalysis';
 import { exportResults } from '../../services/analysisService';
+import { useSettingsStore } from '../../stores/settingsStore';
 
 interface ReportWorkflowProps {
     results: QAQCAnalysisOutput;
@@ -21,6 +22,7 @@ export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({
     isBackendAvailable,
     analysisId
 }) => {
+    const { settings, updateReportSettings } = useSettingsStore();
     const [reportType, setReportType] = useState<ReportType>('figures');
     const [isExporting, setIsExporting] = useState(false);
     const [exportError, setExportError] = useState<string | null>(null);
@@ -33,15 +35,45 @@ export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({
         includeTables: true
     });
 
-    // Report config
+    // Report config - initialize with settings defaults
     const [jorcConfig, setJorcConfig] = useState<JORCReportConfig>({
         competentPerson: '',
         companyName: '',
         laboratory: '',
         drillingCompany: '',
         sampleType: '',
-        comments: ''
+        comments: '',
+        reportTitle: settings.report.defaultTitle,
+        colorScheme: settings.report.defaultColorScheme,
+        fontSize: settings.report.defaultFontSize,
+        pageLayout: settings.report.defaultPageLayout,
+        logoUrl: settings.report.defaultLogoUrl,
     });
+
+    // Update config when settings change
+    useEffect(() => {
+        setJorcConfig(prev => ({
+            ...prev,
+            reportTitle: settings.report.defaultTitle,
+            colorScheme: settings.report.defaultColorScheme,
+            fontSize: settings.report.defaultFontSize,
+            pageLayout: settings.report.defaultPageLayout,
+            logoUrl: settings.report.defaultLogoUrl,
+        }));
+    }, [settings.report]);
+
+    const handleSaveAsDefault = () => {
+        if (reportType === 'report') {
+            updateReportSettings({
+                defaultTitle: jorcConfig.reportTitle || settings.report.defaultTitle,
+                defaultColorScheme: jorcConfig.colorScheme || settings.report.defaultColorScheme,
+                defaultFontSize: jorcConfig.fontSize || settings.report.defaultFontSize,
+                defaultPageLayout: jorcConfig.pageLayout || settings.report.defaultPageLayout,
+                defaultLogoUrl: jorcConfig.logoUrl || settings.report.defaultLogoUrl,
+            });
+            alert('Report preferences saved as defaults!');
+        }
+    };
 
     const toggleFigureOption = (key: keyof FiguresConfig) => {
         setFiguresConfig(prev => ({ ...prev, [key]: !prev[key] }));
@@ -239,6 +271,61 @@ export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({
                                 />
                             </div>
                             <div className="col-span-2 space-y-1">
+                                <label className="text-xs font-medium text-slate-400">Report Title</label>
+                                <input
+                                    type="text"
+                                    value={jorcConfig.reportTitle || ''}
+                                    onChange={(e) => setJorcConfig(prev => ({ ...prev, reportTitle: e.target.value }))}
+                                    className="w-full px-3 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 text-sm focus:ring-2 focus:ring-primary/50 outline-none"
+                                    placeholder="QAQC Analysis Report"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-slate-400">Color Scheme</label>
+                                <select
+                                    value={jorcConfig.colorScheme || 'default'}
+                                    onChange={(e) => setJorcConfig(prev => ({ ...prev, colorScheme: e.target.value as any }))}
+                                    className="w-full px-3 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 text-sm focus:ring-2 focus:ring-primary/50 outline-none"
+                                >
+                                    <option value="default">Default</option>
+                                    <option value="corporate">Corporate</option>
+                                    <option value="minimal">Minimal</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-slate-400">Font Size</label>
+                                <select
+                                    value={jorcConfig.fontSize || 'medium'}
+                                    onChange={(e) => setJorcConfig(prev => ({ ...prev, fontSize: e.target.value as any }))}
+                                    className="w-full px-3 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 text-sm focus:ring-2 focus:ring-primary/50 outline-none"
+                                >
+                                    <option value="small">Small</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="large">Large</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-slate-400">Page Layout</label>
+                                <select
+                                    value={jorcConfig.pageLayout || 'portrait'}
+                                    onChange={(e) => setJorcConfig(prev => ({ ...prev, pageLayout: e.target.value as any }))}
+                                    className="w-full px-3 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 text-sm focus:ring-2 focus:ring-primary/50 outline-none"
+                                >
+                                    <option value="portrait">Portrait</option>
+                                    <option value="landscape">Landscape</option>
+                                </select>
+                            </div>
+                            <div className="col-span-2 space-y-1">
+                                <label className="text-xs font-medium text-slate-400">Logo URL (optional)</label>
+                                <input
+                                    type="text"
+                                    value={jorcConfig.logoUrl || ''}
+                                    onChange={(e) => setJorcConfig(prev => ({ ...prev, logoUrl: e.target.value }))}
+                                    className="w-full px-3 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 text-sm focus:ring-2 focus:ring-primary/50 outline-none"
+                                    placeholder="https://example.com/logo.png"
+                                />
+                            </div>
+                            <div className="col-span-2 space-y-1">
                                 <label className="text-xs font-medium text-slate-400">Comments (optional)</label>
                                 <textarea
                                     value={jorcConfig.comments}
@@ -261,6 +348,17 @@ export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({
 
             {/* Export Buttons */}
             <div className="space-y-3">
+                {/* Save as Default Button (only for report type) */}
+                {reportType === 'report' && (
+                    <button
+                        onClick={handleSaveAsDefault}
+                        className="w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 bg-surface-light border border-secondary-dark hover:border-primary/50 text-slate-300 hover:text-slate-50"
+                    >
+                        <Save className="w-4 h-4" />
+                        Save Report Preferences as Defaults
+                    </button>
+                )}
+
                 {/* Primary Export - Client Side */}
                 <button
                     onClick={handleGenerate}

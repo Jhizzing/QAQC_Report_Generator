@@ -18,6 +18,7 @@ import {
   PLOTLY_COLORS,
   getBaseLayout,
   getStatusColors,
+  getMarkerColors,
   getMarkerSizes,
   createHorizontalLine,
   createLineAnnotation,
@@ -72,7 +73,7 @@ export const PlotlyControlChart: React.FC<PlotlyControlChartProps> = ({
   const traceData = useMemo(() => {
     const x = data.map(d => d.sampleNumber);
     const y = data.map(d => d.measuredValue);
-    const colors = getStatusColors(data.map(d => d.pass));
+    const colors = getMarkerColors(data.map(d => d.pass), selectedIndices, PLOTLY_COLORS.highlight);
     const sizes = getMarkerSizes(data.length, selectedIndices, 10, 16);
 
     // Custom hover text
@@ -93,7 +94,14 @@ export const PlotlyControlChart: React.FC<PlotlyControlChartProps> = ({
       marker: {
         color: colors,
         size: sizes,
-        line: { color: PLOTLY_COLORS.paper, width: 1 },
+        line: { 
+          color: selectedIndices.length > 0 
+            ? data.map((_, i) => selectedIndices.includes(i) ? '#ffffff' : PLOTLY_COLORS.paper)
+            : PLOTLY_COLORS.paper, 
+          width: selectedIndices.length > 0
+            ? data.map((_, i) => selectedIndices.includes(i) ? 2 : 1)
+            : 1
+        },
       },
       line: {
         color: PLOTLY_COLORS.primary,

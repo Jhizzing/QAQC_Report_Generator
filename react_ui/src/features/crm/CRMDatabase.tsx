@@ -38,14 +38,9 @@ export const CRMDatabase: React.FC<CRMDatabaseProps> = ({ onClose, onNavigateToE
     return [...elements].sort();
   }, []);
 
-  // Filter CRMs
-  const filteredCRMs = useMemo(() => {
+  // Filter CRMs (without category filter for tab counts)
+  const filteredCRMsAllCategories = useMemo(() => {
     return CRM_DATABASE.filter(crm => {
-      // Category filter
-      if (categoryFilter !== 'all' && crm.category !== categoryFilter) {
-        return false;
-      }
-
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -70,7 +65,15 @@ export const CRMDatabase: React.FC<CRMDatabaseProps> = ({ onClose, onNavigateToE
 
       return true;
     });
-  }, [categoryFilter, searchQuery, elementFilter, supplierFilter]);
+  }, [searchQuery, elementFilter, supplierFilter]);
+
+  // Filter CRMs with category filter applied
+  const filteredCRMs = useMemo(() => {
+    if (categoryFilter === 'all') {
+      return filteredCRMsAllCategories;
+    }
+    return filteredCRMsAllCategories.filter(crm => crm.category === categoryFilter);
+  }, [categoryFilter, filteredCRMsAllCategories]);
 
   // Group by category for display
   const groupedCRMs = useMemo(() => {
@@ -215,9 +218,10 @@ export const CRMDatabase: React.FC<CRMDatabaseProps> = ({ onClose, onNavigateToE
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex gap-1 border-b border-transparent overflow-x-auto">
             {CATEGORY_TABS.map((tab) => {
+              // Calculate count from all filtered CRMs (not affected by category filter)
               const count = tab.id === 'all' 
-                ? filteredCRMs.length 
-                : filteredCRMs.filter(c => c.category === tab.id).length;
+                ? filteredCRMsAllCategories.length 
+                : filteredCRMsAllCategories.filter(c => c.category === tab.id).length;
               
               return (
                 <button

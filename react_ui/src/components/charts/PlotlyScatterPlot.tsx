@@ -17,6 +17,7 @@ import {
   PLOTLY_COLORS,
   getBaseLayout,
   getStatusColors,
+  getMarkerColors,
   getMarkerSizes,
   type PlotlyChartProps,
   type ChartSelection,
@@ -80,7 +81,7 @@ export const PlotlyScatterPlot: React.FC<PlotlyScatterPlotProps> = ({
   const traceData = useMemo(() => {
     const x = data.map(d => d.originalValue);
     const y = data.map(d => d.duplicateValue);
-    const colors = getStatusColors(data.map(d => d.pass));
+    const colors = getMarkerColors(data.map(d => d.pass), selectedIndices, PLOTLY_COLORS.highlight);
     const sizes = getMarkerSizes(data.length, selectedIndices, 10, 16);
 
     // Custom hover text
@@ -102,7 +103,14 @@ export const PlotlyScatterPlot: React.FC<PlotlyScatterPlotProps> = ({
         marker: {
           color: colors,
           size: sizes,
-          line: { color: PLOTLY_COLORS.paper, width: 1 },
+          line: { 
+            color: selectedIndices.length > 0 
+              ? data.map((_, i) => selectedIndices.includes(i) ? '#ffffff' : PLOTLY_COLORS.paper)
+              : PLOTLY_COLORS.paper, 
+            width: selectedIndices.length > 0
+              ? data.map((_, i) => selectedIndices.includes(i) ? 2 : 1)
+              : 1
+          },
           opacity: 0.85,
         },
         hovertemplate: '%{customdata}<extra></extra>',

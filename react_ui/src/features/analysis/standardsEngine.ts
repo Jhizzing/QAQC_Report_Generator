@@ -6,6 +6,7 @@
  */
 
 import { getCertifiedValue } from '../../data/crmDatabase';
+import { getDefaultTolerance, type AnalyticalMethod } from '../../data/elementDefaults';
 
 export interface StandardSample {
     sampleId: string;
@@ -25,11 +26,14 @@ export interface StandardResult extends StandardSample {
     pass: boolean;
     upperLimit: number;
     lowerLimit: number;
+    toleranceUsed: number;  // The tolerance value actually used for this element
 }
 
 export interface StandardsAnalysisConfig {
     toleranceType: 'percentage' | 'absolute' | 'sd';
-    toleranceValue: number;
+    toleranceValue: number;  // Default tolerance (used if element-specific not provided)
+    elementSpecificTolerances?: Record<string, number>;  // Element-specific tolerance overrides
+    analyticalMethod?: AnalyticalMethod;  // Method for determining defaults
     failureThreshold: number;  // Consecutive failures to flag batch
 }
 
@@ -68,37 +72,51 @@ export function analyzeStandards(
         const certifiedValue = certifiedData.value;
         const uncertainty = certifiedData.uncertainty;
 
+        // Get element-specific tolerance if available, otherwise use default
+        let toleranceValue = config.toleranceValue;
+        if (config.elementSpecificTolerances && config.elementSpecificTolerances[sample.element]) {
+            toleranceValue = config.elementSpecificTolerances[sample.element];
+        } else if (config.analyticalMethod) {
+            // Use element-specific default based on method
+            const elementDefault = getDefaultTolerance(sample.element, config.analyticalMethod);
+            toleranceValue = elementDefault;
+        }
+
         // Calculate limits based on tolerance type
         let upperLimit: number;
         let lowerLimit: number;
+        let toleranceUsed = toleranceValue;
 
         switch (config.toleranceType) {
             case 'percentage':
-                const tolerance = certifiedValue * (config.toleranceValue / 100);
+                const tolerance = certifiedValue * (toleranceValue / 100);
                 upperLimit = certifiedValue + tolerance;
                 lowerLimit = certifiedValue - tolerance;
                 break;
 
             case 'absolute':
-                upperLimit = certifiedValue + config.toleranceValue;
-                lowerLimit = certifiedValue - config.toleranceValue;
+                upperLimit = certifiedValue + toleranceValue;
+                lowerLimit = certifiedValue - toleranceValue;
                 break;
 
             case 'sd':
                 if (!uncertainty) {
                     // Fall back to percentage if no uncertainty available
-                    const fallbackTolerance = certifiedValue * 0.1; // 10%
+                    const fallbackTolerance = certifiedValue * (toleranceValue / 100);
                     upperLimit = certifiedValue + fallbackTolerance;
                     lowerLimit = certifiedValue - fallbackTolerance;
+                    toleranceUsed = toleranceValue; // Store percentage tolerance used
                 } else {
                     upperLimit = certifiedValue + (uncertainty * config.toleranceValue);
                     lowerLimit = certifiedValue - (uncertainty * config.toleranceValue);
+                    toleranceUsed = config.toleranceValue; // Store SD multiplier used
                 }
                 break;
 
             default:
-                upperLimit = certifiedValue * 1.1;
-                lowerLimit = certifiedValue * 0.9;
+                const defaultTolerance = certifiedValue * (toleranceValue / 100);
+                upperLimit = certifiedValue + defaultTolerance;
+                lowerLimit = certifiedValue - defaultTolerance;
         }
 
         const deviation = sample.measuredValue - certifiedValue;
@@ -113,7 +131,8 @@ export function analyzeStandards(
             percentDeviation,
             pass,
             upperLimit,
-            lowerLimit
+            lowerLimit,
+            toleranceUsed
         });
     }
 

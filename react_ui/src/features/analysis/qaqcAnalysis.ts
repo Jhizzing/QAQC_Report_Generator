@@ -65,6 +65,8 @@ export function runQAQCAnalysis(input: QAQCAnalysisInput): QAQCAnalysisOutput {
     const standardsResults = analyzeStandards(standardsSamples, {
         toleranceType: qaqcConfig.standards.toleranceType,
         toleranceValue: qaqcConfig.standards.toleranceValue,
+        elementSpecificTolerances: qaqcConfig.standards.elementSpecificTolerances,
+        analyticalMethod: qaqcConfig.analyticalMethod,
         failureThreshold: qaqcConfig.standards.failureThreshold
     });
 
@@ -80,6 +82,8 @@ export function runQAQCAnalysis(input: QAQCAnalysisInput): QAQCAnalysisOutput {
     const blanksResults = analyzeBlanks(blanksSamples, {
         detectionLimit: qaqcConfig.blanks.detectionLimit,
         detectionLimitUnit: qaqcConfig.blanks.detectionLimitUnit,
+        elementSpecificDetectionLimits: qaqcConfig.blanks.elementSpecificDetectionLimits,
+        analyticalMethod: qaqcConfig.analyticalMethod,
         contaminationMultiplier: qaqcConfig.blanks.contaminationMultiplier
     });
 
@@ -94,6 +98,8 @@ export function runQAQCAnalysis(input: QAQCAnalysisInput): QAQCAnalysisOutput {
     // Analyze Duplicates
     const duplicatesResults = analyzeDuplicates(duplicatePairs, {
         precisionTarget: qaqcConfig.duplicates.precisionTarget,
+        elementSpecificPrecision: qaqcConfig.duplicates.elementSpecificPrecision,
+        analyticalMethod: qaqcConfig.analyticalMethod,
         precisionMethod: qaqcConfig.duplicates.precisionMethod,
         failureThreshold: qaqcConfig.duplicates.failureThreshold
     });

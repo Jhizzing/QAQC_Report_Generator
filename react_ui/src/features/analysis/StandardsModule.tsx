@@ -93,7 +93,7 @@ export const StandardsModule: React.FC<StandardsModuleProps> = ({ results }) => 
     }, []);
 
     // Handle point click
-    const handlePointClick = useCallback((index: number) => {
+    const handlePointClick = useCallback((index: number, _data?: Record<string, unknown>) => {
         setSelectedIndices(prev => 
             prev.includes(index) 
                 ? prev.filter(i => i !== index) 

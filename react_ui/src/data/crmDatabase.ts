@@ -559,7 +559,46 @@ export const CRM_DATABASE: CRMValue[] = [
             Rb: { certified: 170, unit: 'ppm', uncertainty: 9 },
             Sr: { certified: 255, unit: 'ppm', uncertainty: 13 }
         },
-        notes: 'USGS geochemical reference standard'
+        notes: 'USGS geochemical reference standard - widely used international standard for silicate rocks'
+    },
+    {
+        id: 'USGS-AGV-1',
+        name: 'USGS AGV-1',
+        supplier: 'USGS',
+        matrix: 'Andesite',
+        category: 'multi-element',
+        elements: {
+            Cu: { certified: 60, unit: 'ppm', uncertainty: 3 },
+            Pb: { certified: 35, unit: 'ppm', uncertainty: 2 },
+            Zn: { certified: 88, unit: 'ppm', uncertainty: 5 },
+            Fe: { certified: 5.24, unit: '%', uncertainty: 0.15 },
+            Rb: { certified: 67, unit: 'ppm', uncertainty: 4 },
+            Sr: { certified: 661, unit: 'ppm', uncertainty: 20 },
+            Ba: { certified: 1235, unit: 'ppm', uncertainty: 40 },
+            Ni: { certified: 15, unit: 'ppm', uncertainty: 1 },
+            Cr: { certified: 12, unit: 'ppm', uncertainty: 1 }
+        },
+        notes: 'USGS andesite reference standard - widely used international standard for intermediate composition rocks'
+    },
+    {
+        id: 'USGS-BCR-1',
+        name: 'USGS BCR-1',
+        supplier: 'USGS',
+        matrix: 'Basalt',
+        category: 'multi-element',
+        elements: {
+            Cu: { certified: 18, unit: 'ppm', uncertainty: 1 },
+            Pb: { certified: 15, unit: 'ppm', uncertainty: 1 },
+            Zn: { certified: 127, unit: 'ppm', uncertainty: 7 },
+            Fe: { certified: 11.8, unit: '%', uncertainty: 0.3 },
+            Rb: { certified: 47, unit: 'ppm', uncertainty: 3 },
+            Sr: { certified: 330, unit: 'ppm', uncertainty: 10 },
+            Ba: { certified: 677, unit: 'ppm', uncertainty: 20 },
+            Ni: { certified: 13, unit: 'ppm', uncertainty: 1 },
+            Cr: { certified: 19, unit: 'ppm', uncertainty: 1 },
+            Co: { certified: 37, unit: 'ppm', uncertainty: 2 }
+        },
+        notes: 'USGS basalt reference standard - widely used international standard for mafic rocks'
     }
 ];
 

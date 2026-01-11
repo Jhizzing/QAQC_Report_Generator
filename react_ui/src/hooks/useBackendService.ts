@@ -57,11 +57,22 @@ export function useBackendService(options: UseBackendServiceOptions = {}) {
         } catch (error) {
             if (!isMountedRef.current) return;
             
+            let errorMessage = 'Connection failed';
+            if (error instanceof Error) {
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMessage = 'Network error: Unable to reach server';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage = 'Connection timeout: Server is not responding';
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+            
             setStatus({
                 isAvailable: false,
                 isChecking: false,
                 lastChecked: new Date(),
-                error: error instanceof Error ? error.message : 'Connection failed',
+                error: errorMessage,
                 version: null,
             });
         }

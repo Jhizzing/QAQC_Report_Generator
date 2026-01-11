@@ -2,6 +2,7 @@ import React from 'react';
 import { 
   Settings, 
   FileOutput, 
+  FileText,
   Beaker, 
   Server, 
   Info, 
@@ -18,7 +19,7 @@ interface SettingsPageProps {
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, isBackendAvailable }) => {
-  const { settings, updateExportSettings, updateAnalysisSettings, updateAPISettings, resetToDefaults } = useSettingsStore();
+  const { settings, updateExportSettings, updateAnalysisSettings, updateAPISettings, updateReportSettings, resetToDefaults } = useSettingsStore();
 
   return (
     <div className="min-h-screen bg-background-dark">
@@ -238,6 +239,115 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, isBackendAv
                 max={120}
                 step={10}
               />
+            </div>
+          </div>
+        </section>
+
+        {/* Report Settings */}
+        <section className="bg-surface rounded-xl border border-secondary-dark overflow-hidden">
+          <div className="px-6 py-4 border-b border-secondary-dark flex items-center gap-3">
+            <FileText className="w-5 h-5 text-purple-400" />
+            <h2 className="text-lg font-semibold text-slate-50">Report Defaults</h2>
+          </div>
+          <div className="p-6 space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Default Report Title
+              </label>
+              <input
+                type="text"
+                value={settings.report.defaultTitle}
+                onChange={(e) => updateReportSettings({ defaultTitle: e.target.value })}
+                className="
+                  w-full px-4 py-2.5 rounded-lg
+                  bg-surface-light border border-secondary-dark
+                  text-slate-50 placeholder-slate-500
+                  focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
+                "
+                placeholder="QAQC Analysis Report"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Color Scheme
+                </label>
+                <select
+                  value={settings.report.defaultColorScheme}
+                  onChange={(e) => updateReportSettings({ defaultColorScheme: e.target.value as 'default' | 'corporate' | 'minimal' })}
+                  className="
+                    w-full px-4 py-2.5 rounded-lg
+                    bg-surface-light border border-secondary-dark
+                    text-slate-50
+                    focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
+                  "
+                >
+                  <option value="default">Default</option>
+                  <option value="corporate">Corporate</option>
+                  <option value="minimal">Minimal</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Font Size
+                </label>
+                <select
+                  value={settings.report.defaultFontSize}
+                  onChange={(e) => updateReportSettings({ defaultFontSize: e.target.value as 'small' | 'medium' | 'large' })}
+                  className="
+                    w-full px-4 py-2.5 rounded-lg
+                    bg-surface-light border border-secondary-dark
+                    text-slate-50
+                    focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
+                  "
+                >
+                  <option value="small">Small</option>
+                  <option value="medium">Medium</option>
+                  <option value="large">Large</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Page Layout
+                </label>
+                <select
+                  value={settings.report.defaultPageLayout}
+                  onChange={(e) => updateReportSettings({ defaultPageLayout: e.target.value as 'portrait' | 'landscape' })}
+                  className="
+                    w-full px-4 py-2.5 rounded-lg
+                    bg-surface-light border border-secondary-dark
+                    text-slate-50
+                    focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
+                  "
+                >
+                  <option value="portrait">Portrait</option>
+                  <option value="landscape">Landscape</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Default Logo URL (optional)
+              </label>
+              <input
+                type="text"
+                value={settings.report.defaultLogoUrl || ''}
+                onChange={(e) => updateReportSettings({ defaultLogoUrl: e.target.value || undefined })}
+                className="
+                  w-full px-4 py-2.5 rounded-lg
+                  bg-surface-light border border-secondary-dark
+                  text-slate-50 placeholder-slate-500
+                  focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
+                "
+                placeholder="https://example.com/logo.png"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                URL or path to company logo for report headers
+              </p>
             </div>
           </div>
         </section>

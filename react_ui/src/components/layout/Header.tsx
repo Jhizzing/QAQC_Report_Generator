@@ -1,7 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Bell, Search } from 'lucide-react';
+import { NotificationDropdown } from '../common/NotificationDropdown';
+import { useNotificationStore } from '../../stores/notificationStore';
 
 export const Header: React.FC = () => {
+    const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+    const { getUnreadCount } = useNotificationStore();
+    const unreadCount = getUnreadCount();
+
     return (
         <header className="h-16 bg-surface border-b border-secondary-dark flex items-center justify-between px-6">
             <div className="flex items-center gap-4 flex-1">
@@ -16,10 +22,22 @@ export const Header: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-4">
-                <button className="p-2 text-slate-400 hover:text-primary transition-colors relative">
-                    <Bell className="w-5 h-5" />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-status-error rounded-full border-2 border-surface" />
-                </button>
+                <div className="relative z-[60]">
+                    <button 
+                        onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                        className="p-2 text-slate-400 hover:text-primary transition-colors relative"
+                        title="Notifications"
+                    >
+                        <Bell className="w-5 h-5" />
+                        {unreadCount > 0 && (
+                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-status-error rounded-full border-2 border-surface" />
+                        )}
+                    </button>
+                    <NotificationDropdown 
+                        isOpen={isNotificationOpen} 
+                        onClose={() => setIsNotificationOpen(false)} 
+                    />
+                </div>
 
                 <div className="h-8 w-px bg-secondary-dark" />
 

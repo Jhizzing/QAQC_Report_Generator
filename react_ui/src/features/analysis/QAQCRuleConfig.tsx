@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, ArrowLeft, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 import { getCRMsByCategory, type CRMValue } from '../../data/crmDatabase';
+import { useSettingsStore } from '../../stores/settingsStore';
 
 interface QAQCRuleConfigProps {
     category: 'gold' | 'pxrf' | 'multi' | 'photon';
@@ -8,32 +9,39 @@ interface QAQCRuleConfigProps {
     onComplete: (config: QAQCConfig) => void;
 }
 
+import { type AnalyticalMethod } from '../../data/elementDefaults';
+
 export interface QAQCConfig {
     standards: StandardsConfig;
     blanks: BlanksConfig;
     duplicates: DuplicatesConfig;
+    analyticalMethod?: AnalyticalMethod;  // Method for element-specific defaults
 }
 
 interface StandardsConfig {
     selectedCRMs: string[];
     toleranceType: 'percentage' | 'absolute' | 'sd';
-    toleranceValue: number;
+    toleranceValue: number;  // Default tolerance
+    elementSpecificTolerances?: Record<string, number>;  // Element-specific overrides
     failureThreshold: number; // consecutive failures to flag
 }
 
 interface BlanksConfig {
-    detectionLimit: number;
-    detectionLimitUnit: 'ppm' | 'ppb' | 'pct';
+    detectionLimit: number;  // Default detection limit
+    detectionLimitUnit: 'ppm' | 'ppb' | 'pct' | 'g/t';
+    elementSpecificDetectionLimits?: Record<string, { value: number; unit: 'ppm' | 'ppb' | 'pct' | 'g/t' }>;  // Element-specific overrides
     contaminationMultiplier: number; // e.g., 3x detection limit
 }
 
 interface DuplicatesConfig {
-    precisionTarget: number; // RPD% or HARD%
+    precisionTarget: number;  // Default precision target (RPD% or HARD%)
+    elementSpecificPrecision?: Record<string, number>;  // Element-specific overrides
     precisionMethod: 'rpd' | 'hard';
     failureThreshold: number;
 }
 
 export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, methodologyConfig, onComplete }) => {
+    const { settings } = useSettingsStore();
     const [currentTab, setCurrentTab] = useState<'standards' | 'blanks' | 'duplicates'>('standards');
     const [availableCRMs, setAvailableCRMs] = useState<CRMValue[]>([]);
 
@@ -60,33 +68,56 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
         }
     }, [category]);
 
-    // Log methodology config for future integration
-    console.log('Methodology config:', methodologyConfig);
+    // Extract analytical method from methodology config
+    const analyticalMethod = methodologyConfig?.analyticalMethod || 
+        (category === 'gold' ? 'Fire Assay' as AnalyticalMethod :
+         category === 'pxrf' ? 'pXRF' as AnalyticalMethod :
+         'ICP-MS' as AnalyticalMethod);
 
+    // Initialize configs with settings defaults
     const [standardsConfig, setStandardsConfig] = useState<StandardsConfig>({
         selectedCRMs: [],
         toleranceType: 'percentage',
-        toleranceValue: 10,
-        failureThreshold: 3
+        toleranceValue: settings.analysis.defaultTolerancePercent,
+        failureThreshold: settings.analysis.defaultFailureThreshold
     });
 
     const [blanksConfig, setBlanksConfig] = useState<BlanksConfig>({
         detectionLimit: category === 'gold' ? 0.01 : 1,
-        detectionLimitUnit: category === 'gold' ? 'ppm' : 'ppm',
-        contaminationMultiplier: 3
+        detectionLimitUnit: category === 'gold' ? 'g/t' : 'ppm',
+        contaminationMultiplier: settings.analysis.defaultContaminationMultiplier
     });
 
     const [duplicatesConfig, setDuplicatesConfig] = useState<DuplicatesConfig>({
-        precisionTarget: 20,
+        precisionTarget: settings.analysis.defaultPrecisionTarget,
         precisionMethod: 'hard',
-        failureThreshold: 3
+        failureThreshold: settings.analysis.defaultFailureThreshold
     });
+
+    // Update configs when settings change
+    useEffect(() => {
+        setStandardsConfig(prev => ({
+            ...prev,
+            toleranceValue: settings.analysis.defaultTolerancePercent,
+            failureThreshold: settings.analysis.defaultFailureThreshold
+        }));
+        setBlanksConfig(prev => ({
+            ...prev,
+            contaminationMultiplier: settings.analysis.defaultContaminationMultiplier
+        }));
+        setDuplicatesConfig(prev => ({
+            ...prev,
+            precisionTarget: settings.analysis.defaultPrecisionTarget,
+            failureThreshold: settings.analysis.defaultFailureThreshold
+        }));
+    }, [settings.analysis]);
 
     const handleComplete = () => {
         const config: QAQCConfig = {
             standards: standardsConfig,
             blanks: blanksConfig,
-            duplicates: duplicatesConfig
+            duplicates: duplicatesConfig,
+            analyticalMethod: analyticalMethod
         };
         onComplete(config);
     };

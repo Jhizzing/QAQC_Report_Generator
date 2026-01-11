@@ -40,18 +40,7 @@ export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
   return (
     <div className="w-full py-4 px-6 bg-surface border-b border-secondary-dark">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between relative">
-          {/* Progress line background */}
-          <div className="absolute top-5 left-0 right-0 h-0.5 bg-secondary-dark" />
-          
-          {/* Progress line filled */}
-          <div 
-            className="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-500"
-            style={{ 
-              width: `${(currentIndex / (WORKFLOW_STEPS.length - 1)) * 100}%` 
-            }}
-          />
-
+        <div className="flex items-center relative">
           {WORKFLOW_STEPS.map((step, index) => {
             const isCompleted = completedSteps.includes(step.id);
             const isCurrent = currentStep === step.id;
@@ -60,29 +49,29 @@ export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
             const isFuture = index > currentIndex;
 
             return (
-              <button
-                key={step.id}
-                onClick={() => isNavigable && onNavigate(step.id)}
-                disabled={!isNavigable}
-                className={`
-                  relative z-10 flex flex-col items-center gap-2 group
-                  transition-all duration-200
-                  ${isNavigable ? 'cursor-pointer' : 'cursor-not-allowed'}
-                `}
-                title={!isNavigable ? 'Complete previous steps first' : step.label}
-              >
-                {/* Step circle */}
+              <React.Fragment key={step.id}>
+                <button
+                  onClick={() => isNavigable && onNavigate(step.id)}
+                  disabled={!isNavigable}
+                  className={`
+                    relative z-10 flex flex-col items-center gap-2 group
+                    transition-all duration-200 flex-shrink-0
+                    ${isNavigable ? 'cursor-pointer' : 'cursor-not-allowed'}
+                  `}
+                  title={!isNavigable ? 'Complete previous steps first' : step.label}
+                >
+                {/* Step circle - z-10 ensures it's above the line */}
                 <div
                   className={`
-                    w-10 h-10 rounded-full flex items-center justify-center
+                    relative z-10 w-10 h-10 rounded-full flex items-center justify-center
                     border-2 transition-all duration-300
                     ${isCurrent
                       ? 'bg-primary border-primary text-slate-900 scale-110 shadow-lg shadow-primary/30'
                       : isCompleted || isPast
                         ? 'bg-primary/20 border-primary text-primary'
                         : isNavigable
-                          ? 'bg-surface-light border-secondary-light text-slate-400 hover:border-primary/50 hover:text-slate-300'
-                          : 'bg-surface-dark border-secondary-dark text-slate-600'
+                          ? 'bg-surface border-secondary-light text-slate-400 hover:border-primary/50 hover:text-slate-300'
+                          : 'bg-surface border-secondary-dark text-slate-600'
                     }
                   `}
                 >
@@ -111,23 +100,20 @@ export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
                 >
                   {step.shortLabel}
                 </span>
-
-                {/* Step number badge */}
-                <span
-                  className={`
-                    absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold
-                    flex items-center justify-center
-                    ${isCurrent
-                      ? 'bg-slate-900 text-primary'
-                      : isCompleted
-                        ? 'bg-primary text-slate-900'
-                        : 'bg-surface-dark text-slate-500 border border-secondary-dark'
-                    }
-                  `}
-                >
-                  {index + 1}
-                </span>
-              </button>
+                </button>
+                
+                {/* Line segment between steps */}
+                {index < WORKFLOW_STEPS.length - 1 && (
+                  <div className="flex-1 h-0.5 mx-2 relative">
+                    {/* Background line */}
+                    <div className="absolute top-0 left-0 right-0 h-full bg-secondary-dark" />
+                    {/* Filled line if step is completed */}
+                    {(isCompleted || isPast) && (
+                      <div className="absolute top-0 left-0 right-0 h-full bg-primary transition-all duration-500" />
+                    )}
+                  </div>
+                )}
+              </React.Fragment>
             );
           })}
         </div>

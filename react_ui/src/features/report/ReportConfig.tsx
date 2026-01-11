@@ -8,6 +8,12 @@ export interface JORCReportConfig {
     drillingCompany: string;
     sampleType: string;
     comments: string;
+    // Enhanced customization options
+    reportTitle?: string;
+    logoUrl?: string;
+    colorScheme?: 'default' | 'corporate' | 'minimal';
+    fontSize?: 'small' | 'medium' | 'large';
+    pageLayout?: 'portrait' | 'landscape';
 }
 
 export interface FiguresConfig {
@@ -36,8 +42,25 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({ config, onCh
         onChange({ ...config, [field]: value });
     };
 
+    const handleSelectChange = (field: keyof JORCReportConfig, value: string) => {
+        onChange({ ...config, [field]: value as any });
+    };
+
     return (
         <div className="space-y-6">
+            {/* Report Title */}
+            <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300">Report Title</label>
+                <input
+                    type="text"
+                    value={config.reportTitle || ''}
+                    onChange={(e) => handleChange('reportTitle', e.target.value)}
+                    className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-slate-50 placeholder:text-slate-500"
+                    placeholder="QAQC Analysis Report"
+                />
+            </div>
+
+            {/* Basic Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-300">Competent Person</label>
@@ -90,6 +113,63 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({ config, onCh
                     />
                 </div>
             </div>
+
+            {/* Customization Options */}
+            <div className="pt-4 border-t border-secondary-dark">
+                <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">
+                    Report Customization
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-300">Color Scheme</label>
+                        <select
+                            value={config.colorScheme || 'default'}
+                            onChange={(e) => handleSelectChange('colorScheme', e.target.value)}
+                            className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-slate-50"
+                        >
+                            <option value="default">Default</option>
+                            <option value="corporate">Corporate</option>
+                            <option value="minimal">Minimal</option>
+                        </select>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-300">Font Size</label>
+                        <select
+                            value={config.fontSize || 'medium'}
+                            onChange={(e) => handleSelectChange('fontSize', e.target.value)}
+                            className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-slate-50"
+                        >
+                            <option value="small">Small</option>
+                            <option value="medium">Medium</option>
+                            <option value="large">Large</option>
+                        </select>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-300">Page Layout</label>
+                        <select
+                            value={config.pageLayout || 'portrait'}
+                            onChange={(e) => handleSelectChange('pageLayout', e.target.value)}
+                            className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-slate-50"
+                        >
+                            <option value="portrait">Portrait</option>
+                            <option value="landscape">Landscape</option>
+                        </select>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-300">Logo URL (optional)</label>
+                        <input
+                            type="text"
+                            value={config.logoUrl || ''}
+                            onChange={(e) => handleChange('logoUrl', e.target.value)}
+                            className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-slate-50 placeholder:text-slate-500"
+                            placeholder="https://example.com/logo.png"
+                        />
+                        <p className="text-xs text-slate-500">URL or path to company logo image</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Comments */}
             <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-300">Comments / Notes</label>
                 <textarea

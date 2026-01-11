@@ -117,24 +117,63 @@ class QAQCApiClient {
 
     private async request<T>(
         endpoint: string,
-        options: RequestInit = {}
+        options: RequestInit = {},
+        timeout: number = 30000
     ): Promise<T> {
         const url = `${this.baseUrl}${endpoint}`;
         
-        const response = await fetch(url, {
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers,
-            },
-        });
+        // Create abort controller for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-            throw new Error(error.detail || `HTTP ${response.status}`);
+        try {
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers,
+                },
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                let errorMessage = `HTTP ${response.status}`;
+                try {
+                    const error = await response.json();
+                    errorMessage = error.detail || error.message || errorMessage;
+                } catch {
+                    // If response is not JSON, try to get text
+                    try {
+                        const text = await response.text();
+                        errorMessage = text || errorMessage;
+                    } catch {
+                        // Use default error message
+                    }
+                }
+                
+                // Create custom error with status code
+                const error = new Error(errorMessage) as Error & { status?: number };
+                error.status = response.status;
+                throw error;
+            }
+
+            return response.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            
+            if (error instanceof Error) {
+                if (error.name === 'AbortError') {
+                    throw new Error(`Request timeout after ${timeout}ms`);
+                }
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    throw new Error('Network error: Unable to connect to server. Please check your connection and try again.');
+                }
+            }
+            
+            throw error;
         }
-
-        return response.json();
     }
 
     // ============== Health ==============
@@ -162,21 +201,68 @@ class QAQCApiClient {
 
     // ============== File Upload ==============
 
-    async uploadFile(file: File): Promise<UploadResponse> {
+    async uploadFile(file: File, timeout: number = 60000): Promise<UploadResponse> {
+        // Validate file size (max 50MB)
+        const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+        if (file.size > MAX_FILE_SIZE) {
+            throw new Error(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size of 50MB`);
+        }
+
+        // Validate file type
+        const validTypes = [
+            'text/csv',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ];
+        const validExtensions = ['.csv', '.xlsx', '.xls'];
+        const hasValidType = validTypes.includes(file.type);
+        const hasValidExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+        
+        if (!hasValidType && !hasValidExtension) {
+            throw new Error(`Invalid file type. Please upload a CSV or Excel file (.csv, .xlsx, .xls)`);
+        }
+
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch(`${this.baseUrl}/api/upload`, {
-            method: 'POST',
-            body: formData,
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
-            throw new Error(error.detail);
+        try {
+            const response = await fetch(`${this.baseUrl}/api/upload`, {
+                method: 'POST',
+                body: formData,
+                signal: controller.signal,
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                let errorMessage = 'Upload failed';
+                try {
+                    const error = await response.json();
+                    errorMessage = error.detail || error.message || errorMessage;
+                } catch {
+                    errorMessage = `Upload failed with status ${response.status}`;
+                }
+                throw new Error(errorMessage);
+            }
+
+            return response.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            
+            if (error instanceof Error) {
+                if (error.name === 'AbortError') {
+                    throw new Error(`Upload timeout after ${timeout}ms. The file may be too large.`);
+                }
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    throw new Error('Network error: Unable to upload file. Please check your connection and try again.');
+                }
+            }
+            
+            throw error;
         }
-
-        return response.json();
     }
 
     async previewFile(fileId: string, offset = 0, limit = 50): Promise<PreviewResponse> {
