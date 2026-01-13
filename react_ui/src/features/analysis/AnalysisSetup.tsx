@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { getCRMsByCategory, type CRMValue } from '../../data/crmDatabase';
 import { HelpTooltip } from '../../components/common/HelpTooltip';
+import { useSettingsStore } from '../../stores/settingsStore';
 import type { MethodologyConfig } from './MethodologyWizard';
 import type { QAQCConfig } from './QAQCRuleConfig';
 
@@ -60,6 +61,7 @@ const DEFAULT_CRMS: Record<AnalysisCategory, string[]> = {
 };
 
 export const AnalysisSetup: React.FC<AnalysisSetupProps> = ({ initialCategory, onComplete, onNavigateToEducation }) => {
+    const { settings } = useSettingsStore();
     const [selectedCategory, setSelectedCategory] = useState<AnalysisCategory | null>(initialCategory || null);
     
     // If initialCategory changes (e.g., from demo data), update state
@@ -188,6 +190,10 @@ export const AnalysisSetup: React.FC<AnalysisSetupProps> = ({ initialCategory, o
                 precisionTarget,
                 precisionMethod,
                 failureThreshold,
+                correlationThreshold: settings.analysis.correlationThreshold,
+                nuggetRatioThreshold: settings.analysis.nuggetRatioThreshold,
+                enableCorrelation: settings.analysis.enableCorrelation,
+                enableNuggetRatio: settings.analysis.enableNuggetRatio,
             },
         };
 

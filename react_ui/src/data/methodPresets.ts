@@ -40,7 +40,11 @@ export const METHOD_PRESETS: Record<AnalyticalMethod, MethodPreset> = {
             duplicates: {
                 precisionTarget: 15,
                 precisionMethod: 'hard',
-                failureThreshold: 3
+                failureThreshold: 3,
+                correlationThreshold: 0.8,
+                nuggetRatioThreshold: 0.3,
+                enableCorrelation: true,
+                enableNuggetRatio: true
             },
             analyticalMethod: 'Fire Assay'
         }
@@ -65,7 +69,11 @@ export const METHOD_PRESETS: Record<AnalyticalMethod, MethodPreset> = {
             duplicates: {
                 precisionTarget: 12,  // Will be overridden by element-specific defaults
                 precisionMethod: 'hard',
-                failureThreshold: 3
+                failureThreshold: 3,
+                correlationThreshold: 0.8,
+                nuggetRatioThreshold: 0.3,
+                enableCorrelation: true,
+                enableNuggetRatio: true
             },
             analyticalMethod: 'ICP-MS'
         }
@@ -90,7 +98,11 @@ export const METHOD_PRESETS: Record<AnalyticalMethod, MethodPreset> = {
             duplicates: {
                 precisionTarget: 7,  // Will be overridden by element-specific defaults
                 precisionMethod: 'hard',
-                failureThreshold: 3
+                failureThreshold: 3,
+                correlationThreshold: 0.8,
+                nuggetRatioThreshold: 0.3,
+                enableCorrelation: true,
+                enableNuggetRatio: true
             },
             analyticalMethod: 'ICP-OES'
         }
@@ -115,7 +127,11 @@ export const METHOD_PRESETS: Record<AnalyticalMethod, MethodPreset> = {
             duplicates: {
                 precisionTarget: 20,  // Will be overridden by element-specific defaults
                 precisionMethod: 'hard',
-                failureThreshold: 3
+                failureThreshold: 3,
+                correlationThreshold: 0.8,
+                nuggetRatioThreshold: 0.3,
+                enableCorrelation: true,
+                enableNuggetRatio: true
             },
             analyticalMethod: 'pXRF'
         }
@@ -140,7 +156,11 @@ export const METHOD_PRESETS: Record<AnalyticalMethod, MethodPreset> = {
             duplicates: {
                 precisionTarget: 12,
                 precisionMethod: 'hard',
-                failureThreshold: 3
+                failureThreshold: 3,
+                correlationThreshold: 0.8,
+                nuggetRatioThreshold: 0.3,
+                enableCorrelation: true,
+                enableNuggetRatio: true
             },
             analyticalMethod: 'AAS'
         }

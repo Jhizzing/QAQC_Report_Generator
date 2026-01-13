@@ -17,7 +17,6 @@ import {
   ExportButtons,
   PLOTLY_COLORS,
   getBaseLayout,
-  getStatusColors,
   getMarkerColors,
   getMarkerSizes,
   createHorizontalLine,

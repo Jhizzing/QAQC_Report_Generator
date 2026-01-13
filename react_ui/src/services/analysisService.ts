@@ -283,8 +283,22 @@ function mapApiResultToOutput(apiResult: AnalysisResult): QAQCAnalysisOutput {
                 targetPrecision: 20,
                 precisionMethod: 'rpd' as const,
             })),
-            correlation: apiResult.duplicates.correlation || [],
-            nuggetRatio: apiResult.duplicates.nuggetRatio || [],
+            correlation: (apiResult.duplicates.correlation || []).map(c => ({
+                element: c.element,
+                coefficient: c.coefficient,
+                pValue: c.pValue,
+                strength: c.strength as 'strong' | 'moderate' | 'weak' | 'insufficient_data',
+                meetsThreshold: c.meetsThreshold,
+                statisticallySignificant: c.statisticallySignificant,
+            })),
+            nuggetRatio: (apiResult.duplicates.nuggetRatio || []).map(n => ({
+                element: n.element,
+                ratio: n.ratio,
+                nugget: n.nugget,
+                sill: n.sill,
+                interpretation: n.interpretation as 'low' | 'moderate' | 'high' | 'insufficient_data',
+                meetsThreshold: n.meetsThreshold,
+            })),
         },
         summary: {
             totalSamples: apiResult.summary.total_samples,
@@ -320,8 +334,7 @@ export async function uploadFileForAnalysis(file: File): Promise<{
  */
 export async function exportResults(
     analysisId: string,
-    format: 'excel' | 'pdf',
-    timeout: number = 120000 // 2 minutes for report generation
+    format: 'excel' | 'pdf'
 ): Promise<void> {
     if (!analysisId) {
         throw new Error('Analysis ID is required for export');

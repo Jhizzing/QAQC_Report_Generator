@@ -16,7 +16,6 @@ import {
   ExportButtons,
   PLOTLY_COLORS,
   getBaseLayout,
-  getStatusColors,
   getMarkerColors,
   getMarkerSizes,
   type PlotlyChartProps,
