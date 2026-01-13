@@ -1,4 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import type { Component, ErrorInfo, ReactNode } from 'react';
+import React from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface Props {
@@ -42,6 +43,33 @@ export class ErrorBoundary extends Component<Props, State> {
         // Call optional error handler
         if (this.props.onError) {
             this.props.onError(error, errorInfo);
+        }
+
+        // Try to log to backend if available
+        try {
+            if (window.fetch) {
+                fetch('/api/errors', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        error: {
+                            name: error.name,
+                            message: error.message,
+                            stack: error.stack,
+                        },
+                        errorInfo: {
+                            componentStack: errorInfo.componentStack,
+                        },
+                        timestamp: new Date().toISOString(),
+                        userAgent: navigator.userAgent,
+                        url: window.location.href,
+                    }),
+                }).catch(() => {
+                    // Silently fail if backend is not available
+                });
+            }
+        } catch (e) {
+            // Silently fail if error reporting fails
         }
     }
 

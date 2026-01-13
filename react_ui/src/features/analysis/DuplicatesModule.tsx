@@ -32,6 +32,14 @@ export const DuplicatesModule: React.FC<DuplicatesModuleProps> = ({ results }) =
         return results.statistics.find(s => s.element === selectedElement);
     }, [selectedElement, results]);
 
+    const correlation = useMemo(() => {
+        return results.correlation?.find(c => c.element === selectedElement);
+    }, [selectedElement, results]);
+
+    const nuggetRatio = useMemo(() => {
+        return results.nuggetRatio?.find(n => n.element === selectedElement);
+    }, [selectedElement, results]);
+
     // Prepare scatter plot data
     const scatterData: ScatterDataPoint[] = useMemo(() => {
         return filteredResults.map(r => ({
@@ -342,6 +350,133 @@ export const DuplicatesModule: React.FC<DuplicatesModuleProps> = ({ results }) =
                     </div>
                 </div>
             )}
+
+            {/* Advanced Metrics: Correlation & Nugget Ratio */}
+            <div className="grid gap-6 lg:grid-cols-2">
+                {/* Correlation Analysis */}
+                {correlation && (
+                    <div className="bg-surface border border-secondary-dark rounded-lg p-6">
+                        <h4 className="text-lg font-semibold text-slate-50 mb-4 flex items-center gap-2">
+                            <TrendingUp className="w-5 h-5 text-blue-400" />
+                            Correlation Analysis
+                        </h4>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-surface-light rounded-lg">
+                                <div>
+                                    <p className="text-sm text-slate-400">Pearson Correlation</p>
+                                    <p className={`text-2xl font-bold ${
+                                        correlation.strength === 'strong' ? 'text-status-success' :
+                                        correlation.strength === 'moderate' ? 'text-status-warning' :
+                                        'text-status-error'
+                                    }`}>
+                                        {correlation.coefficient.toFixed(3)}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                                        correlation.strength === 'strong' ? 'bg-status-success/20 text-status-success' :
+                                        correlation.strength === 'moderate' ? 'bg-status-warning/20 text-status-warning' :
+                                        'bg-status-error/20 text-status-error'
+                                    }`}>
+                                        {correlation.strength.toUpperCase()}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-3 bg-surface-light rounded-lg">
+                                    <p className="text-xs text-slate-400">P-Value</p>
+                                    <p className="text-sm font-semibold text-slate-50">
+                                        {correlation.pValue.toFixed(4)}
+                                    </p>
+                                </div>
+                                <div className="p-3 bg-surface-light rounded-lg">
+                                    <p className="text-xs text-slate-400">Significant</p>
+                                    <p className={`text-sm font-semibold ${
+                                        correlation.statisticallySignificant ? 'text-status-success' : 'text-slate-400'
+                                    }`}>
+                                        {correlation.statisticallySignificant ? 'Yes' : 'No'}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className={`p-3 rounded-lg ${
+                                correlation.meetsThreshold ? 'bg-status-success/10 border border-status-success/30' :
+                                'bg-status-warning/10 border border-status-warning/30'
+                            }`}>
+                                <p className="text-xs text-slate-400">
+                                    Threshold: ≥0.8 (Strong correlation indicates good precision)
+                                </p>
+                                <p className={`text-sm font-semibold mt-1 ${
+                                    correlation.meetsThreshold ? 'text-status-success' : 'text-status-warning'
+                                }`}>
+                                    {correlation.meetsThreshold ? '✓ Meets threshold' : '⚠ Below threshold'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Nugget Ratio Analysis */}
+                {nuggetRatio && (
+                    <div className="bg-surface border border-secondary-dark rounded-lg p-6">
+                        <h4 className="text-lg font-semibold text-slate-50 mb-4 flex items-center gap-2">
+                            <Info className="w-5 h-5 text-purple-400" />
+                            Nugget Ratio
+                        </h4>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-surface-light rounded-lg">
+                                <div>
+                                    <p className="text-sm text-slate-400">Nugget Ratio</p>
+                                    <p className={`text-2xl font-bold ${
+                                        nuggetRatio.interpretation === 'low' ? 'text-status-success' :
+                                        nuggetRatio.interpretation === 'moderate' ? 'text-status-warning' :
+                                        'text-status-error'
+                                    }`}>
+                                        {nuggetRatio.ratio.toFixed(3)}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                                        nuggetRatio.interpretation === 'low' ? 'bg-status-success/20 text-status-success' :
+                                        nuggetRatio.interpretation === 'moderate' ? 'bg-status-warning/20 text-status-warning' :
+                                        'bg-status-error/20 text-status-error'
+                                    }`}>
+                                        {nuggetRatio.interpretation.toUpperCase()}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-3 bg-surface-light rounded-lg">
+                                    <p className="text-xs text-slate-400">Nugget</p>
+                                    <p className="text-sm font-semibold text-slate-50">
+                                        {nuggetRatio.nugget.toFixed(4)}
+                                    </p>
+                                    <p className="text-xs text-slate-500 mt-1">Measurement error</p>
+                                </div>
+                                <div className="p-3 bg-surface-light rounded-lg">
+                                    <p className="text-xs text-slate-400">Sill</p>
+                                    <p className="text-sm font-semibold text-slate-50">
+                                        {nuggetRatio.sill.toFixed(4)}
+                                    </p>
+                                    <p className="text-xs text-slate-500 mt-1">Spatial variance</p>
+                                </div>
+                            </div>
+                            <div className={`p-3 rounded-lg ${
+                                nuggetRatio.meetsThreshold ? 'bg-status-success/10 border border-status-success/30' :
+                                'bg-status-warning/10 border border-status-warning/30'
+                            }`}>
+                                <p className="text-xs text-slate-400">
+                                    Threshold: ≤0.3 (Low ratio = good precision, high = measurement error)
+                                </p>
+                                <p className={`text-sm font-semibold mt-1 ${
+                                    nuggetRatio.meetsThreshold ? 'text-status-success' : 'text-status-warning'
+                                }`}>
+                                    {nuggetRatio.meetsThreshold ? '✓ Meets threshold' : '⚠ Above threshold'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
 
             {/* Flagged Pairs Alert */}
             {results.flaggedPairs.length > 0 && (

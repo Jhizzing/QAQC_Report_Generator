@@ -1,0 +1,28 @@
+QAQC Report Generator
+Copyright (c) 2024 LogiQore
+
+This software includes the following third-party components:
+
+Python Dependencies:
+- See requirements.txt for full list of Python dependencies and their licenses
+- All dependencies are available under their respective open-source licenses
+
+React UI Dependencies:
+- See react_ui/package.json for full list of npm dependencies and their licenses
+- All dependencies are available under their respective open-source licenses
+
+Key Third-Party Libraries:
+- React (MIT License)
+- Plotly.js (MIT License)
+- FastAPI (MIT License)
+- PyQt6 (GPL v3 or Commercial License)
+- ReportLab (BSD License)
+- pandas (BSD License)
+- matplotlib (PSF License)
+
+For detailed license information, please refer to:
+- Python: pip show <package-name> (shows license for each package)
+- Node.js: npm list --depth=0 (shows licenses for npm packages)
+
+This software is provided under the MIT License.
+See LICENSE file for full license text.

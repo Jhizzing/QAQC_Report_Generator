@@ -21,6 +21,10 @@ export interface AnalysisSettings {
   defaultPrecisionTarget: number;
   defaultContaminationMultiplier: number;
   defaultFailureThreshold: number;
+  correlationThreshold: number;
+  nuggetRatioThreshold: number;
+  enableCorrelation: boolean;
+  enableNuggetRatio: boolean;
 }
 
 export interface APISettings {
@@ -57,6 +61,10 @@ const DEFAULT_SETTINGS: AppSettings = {
     defaultPrecisionTarget: 20,
     defaultContaminationMultiplier: 3,
     defaultFailureThreshold: 3,
+    correlationThreshold: 0.8,
+    nuggetRatioThreshold: 0.3,
+    enableCorrelation: true,
+    enableNuggetRatio: true,
   },
   api: {
     backendUrl: 'http://localhost:8000',

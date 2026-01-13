@@ -72,10 +72,19 @@ Follow these steps to complete your first QAQC analysis:
 1. **Open the application** (React UI or PyQt GUI)
 2. **Click "Data Import"** or use the drag-and-drop area
 3. **Choose one of these options**:
-   - **Option A**: Click "Load Demo Data" → Select "Gold Fire Assay"
+   - **Option A**: Click a demo data button:
+     - **"Gold Fire Assay"** - Gold analysis with Fire Assay method
+     - **"PhotonAssay"** - Chrysos PhotonAssay gold analysis
+     - **"pXRF Base Metals"** - Portable XRF base metals exploration data
+     - **"Multi-Element ICP"** - ICP-MS/OES multi-element laboratory data
    - **Option B**: Drag and drop your own CSV/Excel file
 
 **What happens**: The application reads your file and suggests column mappings.
+
+**💡 Tip**: Start with demo data to learn the application! Each demo includes:
+- Realistic QAQC samples (standards, blanks, duplicates)
+- Pre-configured element-specific settings
+- Expected results documented in tutorials
 
 ### Step 2: Map Your Columns
 
@@ -92,18 +101,22 @@ Follow these steps to complete your first QAQC analysis:
 
 1. **Select Analysis Category**:
    - Choose "Gold (Fire Assay)" for gold analysis
-   - Choose "pXRF / Multi-element" for multi-element data
+   - Choose "pXRF / Multi-element" for pXRF or multi-element ICP data
    - Choose "Chrysos PhotonAssay" for PhotonAssay data
 
 2. **Configure Methodology**:
-   - **Assay Method**: Select your lab method (e.g., Fire Assay)
+   - **Assay Method**: Select your lab method (e.g., Fire Assay, ICP-MS, pXRF)
+   - **Analytical Method**: Automatically set based on category (can be overridden)
    - **Duplicate Type**: Choose Field Duplicate or Pulp Duplicate
-   - **Insertion Rate**: How often QAQC samples are inserted (e.g., 5%)
+   - **Insertion Rate**: How often QAQC samples are inserted (e.g., 5-10%)
 
 3. **Set QAQC Rules**:
-   - **Standards**: Select CRMs and set tolerance (default: 10%)
-   - **Blanks**: Set detection limit (default: 0.01 ppm for gold)
-   - **Duplicates**: Set precision target (default: 20% RPD)
+   - **Standards**: Select CRMs and set tolerance
+     - **Element-specific tolerances** are automatically applied based on analytical method
+     - Major elements (Cu, Pb, Zn, Fe, S): 5-10% tolerance
+     - Trace elements (As, Ni, Co, Au): 10-20% tolerance
+   - **Blanks**: Set detection limit (element-specific defaults applied)
+   - **Duplicates**: Set precision target (element-specific defaults applied)
 
 4. **Click "Run Analysis"**
 
@@ -145,6 +158,9 @@ Now that you've completed your first analysis, here's what to explore:
 ### Learn More
 - **[User Manual](USER_MANUAL.md)** - Comprehensive guide to all features
 - **[Tutorials](TUTORIALS.md)** - Detailed walkthroughs for specific scenarios
+- **[pXRF Base Metals Tutorial](TUTORIAL_PXRF_BASE_METALS.md)** - Complete pXRF analysis walkthrough
+- **[Multi-Element ICP Tutorial](TUTORIAL_MULTIELEMENT_ICP.md)** - Complete ICP analysis walkthrough
+- **[What Good Looks Like](WHAT_GOOD_LOOKS_LIKE.md)** - Visual guide to interpreting QAQC results
 - **In-App Education Center** - Learn QAQC concepts (click "Learn" in sidebar)
 
 ### Common Tasks

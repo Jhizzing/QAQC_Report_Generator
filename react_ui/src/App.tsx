@@ -19,7 +19,7 @@ import { Breadcrumbs } from './components/common/Breadcrumbs';
 import { useProjectStore } from './stores/projectStore';
 import { autoDetectColumnMapping, type QAQCAnalysisOutput } from './features/analysis/qaqcAnalysis';
 import { exportFiguresOnly, exportJORCReport } from './utils/export';
-import { generateMockGoldData, generateMockPhotonData } from './data/mockQAQCData';
+import { generateMockGoldData, generateMockPhotonData, generateMockPXRFData, generateMockMultiElementICPData } from './data/mockQAQCData';
 import { saveProjectToFile, type QAQCProjectFile, type WorkflowStep as ProjectWorkflowStep } from './utils/projectFile';
 import { useBackendService, setGlobalBackendStatus } from './hooks/useBackendService';
 import { runAnalysis } from './services/analysisService';
@@ -110,24 +110,44 @@ function App() {
     setWorkflowStep('setup');
   };
 
-  const handleLoadDemoData = (demoCategory?: 'gold' | 'photon') => {
+  const handleLoadDemoData = (demoCategory?: 'gold' | 'photon' | 'pxrf' | 'multielement') => {
     const categoryToUse = demoCategory || selectedCategory || 'gold';
 
-    const mockData = categoryToUse === 'photon'
-      ? generateMockPhotonData()
-      : generateMockGoldData();
+    let mockData;
+    let fileName: string;
+    let appCategory: 'gold' | 'pxrf' | 'photon';
+
+    switch (categoryToUse) {
+      case 'photon':
+        mockData = generateMockPhotonData();
+        fileName = 'Demo_PhotonAssay_Data.csv';
+        appCategory = 'photon';
+        break;
+      case 'pxrf':
+        mockData = generateMockPXRFData();
+        fileName = 'Demo_pXRF_BaseMetals_Data.csv';
+        appCategory = 'pxrf';
+        break;
+      case 'multielement':
+        mockData = generateMockMultiElementICPData();
+        fileName = 'Demo_MultiElement_ICP_Data.csv';
+        appCategory = 'pxrf'; // Use pxrf category for multi-element (handles both pXRF and multi-element)
+        break;
+      default:
+        mockData = generateMockGoldData();
+        fileName = 'Demo_Gold_QAQC_Data.csv';
+        appCategory = 'gold';
+    }
 
     const processedData: ProcessedData = {
-      fileName: categoryToUse === 'photon'
-        ? 'Demo_PhotonAssay_Data.csv'
-        : 'Demo_Gold_QAQC_Data.csv',
+      fileName,
       headers: Object.keys(mockData.combined[0]),
       data: mockData.combined.map(row => Object.values(row)),
       rowCount: mockData.combined.length
     };
 
     setData(processedData);
-    setSelectedCategory(categoryToUse);
+    setSelectedCategory(appCategory);
     setWorkflowStep('setup');
   };
 

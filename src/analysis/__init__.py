@@ -586,33 +586,133 @@ class DuplicatesAnalyzer:
             'biases': biases
         }
 
-    def calculate_nugget_ratio(self, duplicates: list) -> float:
+    def calculate_correlation(self, duplicates: list) -> dict:
         """
-        Calculate nugget ratio for spatial analysis.
+        Calculate Pearson correlation coefficient for duplicate pairs.
+        
+        Args:
+            duplicates: List of [value1, value2] pairs
+            
+        Returns:
+            Dictionary with correlation coefficient, p-value, and interpretation
+        """
+        if len(duplicates) < 3:
+            return {
+                'coefficient': 0.0,
+                'p_value': 1.0,
+                'strength': 'insufficient_data',
+                'meets_threshold': False
+            }
+        
+        try:
+            from scipy.stats import pearsonr
+            import numpy as np
+            
+            # Extract original and duplicate values
+            original_values = [pair[0] for pair in duplicates]
+            duplicate_values = [pair[1] for pair in duplicates]
+            
+            # Calculate Pearson correlation
+            correlation_coef, p_value = pearsonr(original_values, duplicate_values)
+            
+            # Interpret correlation strength
+            abs_coef = abs(correlation_coef)
+            if abs_coef >= 0.8:
+                strength = 'strong'
+            elif abs_coef >= 0.5:
+                strength = 'moderate'
+            else:
+                strength = 'weak'
+            
+            # Check against threshold (default 0.8 from config)
+            correlation_threshold = self.config.get('correlation_threshold', 0.8)
+            meets_threshold = abs_coef >= correlation_threshold
+            
+            return {
+                'coefficient': float(correlation_coef),
+                'p_value': float(p_value),
+                'strength': strength,
+                'meets_threshold': meets_threshold,
+                'threshold': correlation_threshold,
+                'statistically_significant': p_value < 0.05
+            }
+        except ImportError:
+            # Fallback if scipy not available
+            return {
+                'coefficient': 0.0,
+                'p_value': 1.0,
+                'strength': 'calculation_unavailable',
+                'meets_threshold': False,
+                'error': 'scipy not available'
+            }
+
+    def calculate_nugget_ratio(self, duplicates: list) -> dict:
+        """
+        Calculate nugget ratio for spatial analysis with detailed statistics.
 
         Nugget ratio = nugget / (nugget + sill)
+        
+        Where:
+        - Nugget = average absolute difference between pairs (measurement error)
+        - Sill = variance of pair means (spatial variance)
+        - Ratio indicates proportion of variance due to measurement error
 
         Args:
             duplicates: List of [value1, value2] pairs
 
         Returns:
-            Nugget ratio (0-1)
+            Dictionary with nugget ratio, nugget, sill, and interpretation
         """
         if len(duplicates) < 2:
-            return 0.0
+            return {
+                'ratio': 0.0,
+                'nugget': 0.0,
+                'sill': 0.0,
+                'interpretation': 'insufficient_data',
+                'meets_threshold': True
+            }
 
-        # Simple nugget calculation from duplicate variance
+        # Calculate pair means and absolute differences
         pair_means = [(pair[0] + pair[1]) / 2 for pair in duplicates]
         pair_diffs = [abs(pair[0] - pair[1]) for pair in duplicates]
 
-        nugget = sum(pair_diffs) / len(pair_diffs)
-        sill = sum((mean - sum(pair_means) / len(pair_means)) ** 2 for mean in pair_means) / len(pair_means)
+        # Nugget = average absolute difference (measurement precision)
+        nugget = sum(pair_diffs) / len(pair_diffs) if pair_diffs else 0.0
+        
+        # Sill = variance of pair means (spatial variability)
+        mean_of_means = sum(pair_means) / len(pair_means) if pair_means else 0.0
+        sill = sum((mean - mean_of_means) ** 2 for mean in pair_means) / len(pair_means) if pair_means else 0.0
 
+        # Calculate ratio
         if nugget + sill == 0:
-            return 0.0
+            ratio = 0.0
+        else:
+            ratio = nugget / (nugget + sill)
 
-        nugget_ratio = nugget / (nugget + sill)
-        return nugget_ratio
+        # Interpret ratio
+        # Low ratio (<0.3) = good precision, most variance is spatial
+        # Moderate (0.3-0.6) = acceptable, some measurement error
+        # High (>0.6) = poor precision, most variance is measurement error
+        if ratio < 0.3:
+            interpretation = 'low'
+        elif ratio < 0.6:
+            interpretation = 'moderate'
+        else:
+            interpretation = 'high'
+        
+        # Check against threshold (default 0.3 from config)
+        nugget_threshold = self.config.get('nugget_threshold', 0.3)
+        meets_threshold = ratio <= nugget_threshold
+
+        return {
+            'ratio': float(ratio),
+            'nugget': float(nugget),
+            'sill': float(sill),
+            'interpretation': interpretation,
+            'meets_threshold': meets_threshold,
+            'threshold': nugget_threshold,
+            'pair_count': len(duplicates)
+        }
 
     def analyze_duplicates(self, data: dict) -> dict:
         """
@@ -637,23 +737,29 @@ class DuplicatesAnalyzer:
             precision = self.assess_precision(duplicates)
 
         systematic = self.detect_systematic_errors(duplicates)
-        nugget_ratio = self.calculate_nugget_ratio(duplicates)
+        nugget_ratio_result = self.calculate_nugget_ratio(duplicates)
+        correlation_result = self.calculate_correlation(duplicates)
 
         # Overall assessment
         overall_acceptable = (
             precision['acceptable'] and
             not systematic['systematic_error'] and
-            nugget_ratio <= self.nugget_threshold
+            nugget_ratio_result['meets_threshold'] and
+            correlation_result.get('meets_threshold', True)  # Correlation is informational, not blocking
         )
 
         return {
             'overall_acceptable': overall_acceptable,
             'precision': precision,
             'systematic_errors': systematic,
-            'nugget_ratio': nugget_ratio,
+            'nugget_ratio': nugget_ratio_result.get('ratio', 0.0),
+            'nugget_ratio_details': nugget_ratio_result,
+            'correlation': correlation_result,
             'summary': {
                 'n_duplicates': len(duplicates),
-                'mean_rpd': precision['mean_rpd'],
-                'max_rpd': precision['max_rpd']
+                'mean_rpd': precision.get('mean_rpd', 0),
+                'max_rpd': precision.get('max_rpd', 0),
+                'correlation_coefficient': correlation_result.get('coefficient', 0.0),
+                'nugget_ratio': nugget_ratio_result.get('ratio', 0.0)
             }
         }

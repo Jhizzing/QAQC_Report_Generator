@@ -525,6 +525,10 @@ async def run_analysis(request: AnalysisRequest):
                     mean_rpd = sum(p["rpd"] for p in pairs) / len(pairs)
                     within_target = sum(1 for p in pairs if p["rpd"] <= request.qaqc_rules.duplicates_rpd_limit) / len(pairs) * 100
                     
+                    # Extract correlation and nugget ratio from results
+                    correlation_result = dup_results.get("correlation", {})
+                    nugget_ratio_details = dup_results.get("nugget_ratio_details", {})
+                    
                     results["duplicates"] = {
                         "statistics": [{
                             "element": "Au",
@@ -534,7 +538,23 @@ async def run_analysis(request: AnalysisRequest):
                             "count": len(pairs)
                         }],
                         "pairs": pairs,
-                        "flagged_pairs": [p for p in pairs if p["rpd"] > request.qaqc_rules.duplicates_rpd_limit]
+                        "flagged_pairs": [p for p in pairs if p["rpd"] > request.qaqc_rules.duplicates_rpd_limit],
+                        "correlation": [{
+                            "element": "Au",
+                            "coefficient": correlation_result.get("coefficient", 0.0),
+                            "pValue": correlation_result.get("p_value", 1.0),
+                            "strength": correlation_result.get("strength", "insufficient_data"),
+                            "meetsThreshold": correlation_result.get("meets_threshold", False),
+                            "statisticallySignificant": correlation_result.get("statistically_significant", False)
+                        }],
+                        "nuggetRatio": [{
+                            "element": "Au",
+                            "ratio": nugget_ratio_details.get("ratio", 0.0),
+                            "nugget": nugget_ratio_details.get("nugget", 0.0),
+                            "sill": nugget_ratio_details.get("sill", 0.0),
+                            "interpretation": nugget_ratio_details.get("interpretation", "insufficient_data"),
+                            "meetsThreshold": nugget_ratio_details.get("meets_threshold", True)
+                        }]
                     }
         
         # Calculate overall pass rate

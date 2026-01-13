@@ -105,6 +105,22 @@ export interface AnalysisResult {
             rpd: number;
         }>;
         flagged_pairs: any[];
+        correlation?: Array<{
+            element: string;
+            coefficient: number;
+            pValue: number;
+            strength: string;
+            meetsThreshold: boolean;
+            statisticallySignificant: boolean;
+        }>;
+        nuggetRatio?: Array<{
+            element: string;
+            ratio: number;
+            nugget: number;
+            sill: number;
+            interpretation: string;
+            meetsThreshold: boolean;
+        }>;
     };
 }
 

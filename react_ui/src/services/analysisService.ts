@@ -222,6 +222,7 @@ function mapApiResultToOutput(apiResult: AnalysisResult): QAQCAnalysisOutput {
                 pass: dp.status === 'PASS',
                 upperLimit: 1.1,
                 lowerLimit: 0.9,
+                toleranceUsed: 10, // Default tolerance for API results
             })),
             statistics: apiResult.standards.statistics.map(s => ({
                 crm: 'CRM',
@@ -282,6 +283,8 @@ function mapApiResultToOutput(apiResult: AnalysisResult): QAQCAnalysisOutput {
                 targetPrecision: 20,
                 precisionMethod: 'rpd' as const,
             })),
+            correlation: apiResult.duplicates.correlation || [],
+            nuggetRatio: apiResult.duplicates.nuggetRatio || [],
         },
         summary: {
             totalSamples: apiResult.summary.total_samples,

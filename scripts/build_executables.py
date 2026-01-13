@@ -108,9 +108,55 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _get_version() -> str:
+    """Get application version from config or git."""
+    try:
+        import subprocess
+        result = subprocess.run(
+            ['git', 'describe', '--tags', '--always'],
+            capture_output=True,
+            text=True,
+            cwd=PROJECT_ROOT
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+    
+    # Fallback to version from config or default
+    try:
+        import yaml
+        config_path = PROJECT_ROOT / "config.yaml"
+        if config_path.exists():
+            with open(config_path) as f:
+                config = yaml.safe_load(f)
+                return config.get('version', '1.0.0')
+    except Exception:
+        pass
+    
+    return '1.0.0'
+
+
+def _verify_build(executable_path: Path) -> bool:
+    """Verify that built executable exists and is valid."""
+    if not executable_path.exists():
+        print(f"[verify] ❌ Executable not found: {executable_path}")
+        return False
+    
+    if executable_path.stat().st_size == 0:
+        print(f"[verify] ❌ Executable is empty: {executable_path}")
+        return False
+    
+    print(f"[verify] ✅ Executable verified: {executable_path} ({executable_path.stat().st_size / 1024 / 1024:.1f} MB)")
+    return True
+
+
 def main() -> None:
     args = parse_args()
     _ensure_pyinstaller_available()
+
+    version = _get_version()
+    print(f"[build] Building version: {version}")
 
     targets = list(TARGET_MAP.keys()) if args.target == "all" else [args.target]
 
@@ -130,10 +176,24 @@ def main() -> None:
         )
         if code != 0:
             failures.append((target, code))
+        else:
+            # Verify build
+            dist_path = args.dist_dir / target
+            if target == "cli":
+                exe_name = "QAQC-CLI.exe" if sys.platform == "win32" else "QAQC-CLI"
+            else:
+                exe_name = "QAQC-GUI.exe" if sys.platform == "win32" else "QAQC-GUI"
+            
+            executable_path = dist_path / exe_name
+            if not _verify_build(executable_path):
+                failures.append((target, -1))
 
     if failures:
         summary = ", ".join(f"{target} (exit {code})" for target, code in failures)
         raise SystemExit(f"One or more builds failed: {summary}")
+    
+    print(f"\n[build] ✅ All builds completed successfully!")
+    print(f"[build] Output directory: {args.dist_dir}")
 
 
 if __name__ == "__main__":

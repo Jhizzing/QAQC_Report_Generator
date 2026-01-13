@@ -38,6 +38,10 @@ interface DuplicatesConfig {
     elementSpecificPrecision?: Record<string, number>;  // Element-specific overrides
     precisionMethod: 'rpd' | 'hard';
     failureThreshold: number;
+    correlationThreshold: number;  // Minimum correlation coefficient (default 0.8)
+    nuggetRatioThreshold: number;  // Maximum nugget ratio (default 0.3)
+    enableCorrelation: boolean;
+    enableNuggetRatio: boolean;
 }
 
 export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, methodologyConfig, onComplete }) => {
@@ -91,7 +95,11 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
     const [duplicatesConfig, setDuplicatesConfig] = useState<DuplicatesConfig>({
         precisionTarget: settings.analysis.defaultPrecisionTarget,
         precisionMethod: 'hard',
-        failureThreshold: settings.analysis.defaultFailureThreshold
+        failureThreshold: settings.analysis.defaultFailureThreshold,
+        correlationThreshold: settings.analysis.correlationThreshold,
+        nuggetRatioThreshold: settings.analysis.nuggetRatioThreshold,
+        enableCorrelation: settings.analysis.enableCorrelation,
+        enableNuggetRatio: settings.analysis.enableNuggetRatio
     });
 
     // Update configs when settings change
@@ -108,7 +116,11 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
         setDuplicatesConfig(prev => ({
             ...prev,
             precisionTarget: settings.analysis.defaultPrecisionTarget,
-            failureThreshold: settings.analysis.defaultFailureThreshold
+            failureThreshold: settings.analysis.defaultFailureThreshold,
+            correlationThreshold: settings.analysis.correlationThreshold,
+            nuggetRatioThreshold: settings.analysis.nuggetRatioThreshold,
+            enableCorrelation: settings.analysis.enableCorrelation,
+            enableNuggetRatio: settings.analysis.enableNuggetRatio
         }));
     }, [settings.analysis]);
 
@@ -425,6 +437,93 @@ export const QAQCRuleConfig: React.FC<QAQCRuleConfigProps> = ({ category, method
                                     min="1"
                                     max="10"
                                 />
+                            </div>
+                        </div>
+
+                        {/* Advanced Metrics */}
+                        <div className="mt-6 pt-6 border-t border-secondary-dark">
+                            <h4 className="text-lg font-semibold text-slate-50 mb-4">Advanced Metrics</h4>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="checkbox"
+                                            id="enableCorrelation"
+                                            checked={duplicatesConfig.enableCorrelation}
+                                            onChange={(e) => setDuplicatesConfig({
+                                                ...duplicatesConfig,
+                                                enableCorrelation: e.target.checked
+                                            })}
+                                            className="w-4 h-4 text-primary bg-surface-light border-secondary-light rounded focus:ring-primary"
+                                        />
+                                        <label htmlFor="enableCorrelation" className="text-sm font-medium text-slate-300">
+                                            Enable Correlation Analysis
+                                        </label>
+                                    </div>
+                                    {duplicatesConfig.enableCorrelation && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                                Correlation Threshold (≥)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={duplicatesConfig.correlationThreshold}
+                                                onChange={(e) => setDuplicatesConfig({
+                                                    ...duplicatesConfig,
+                                                    correlationThreshold: parseFloat(e.target.value)
+                                                })}
+                                                className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
+                                                step="0.1"
+                                                min="0"
+                                                max="1"
+                                            />
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                Strong correlation (≥0.8) indicates good precision
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="checkbox"
+                                            id="enableNuggetRatio"
+                                            checked={duplicatesConfig.enableNuggetRatio}
+                                            onChange={(e) => setDuplicatesConfig({
+                                                ...duplicatesConfig,
+                                                enableNuggetRatio: e.target.checked
+                                            })}
+                                            className="w-4 h-4 text-primary bg-surface-light border-secondary-light rounded focus:ring-primary"
+                                        />
+                                        <label htmlFor="enableNuggetRatio" className="text-sm font-medium text-slate-300">
+                                            Enable Nugget Ratio Analysis
+                                        </label>
+                                    </div>
+                                    {duplicatesConfig.enableNuggetRatio && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                                Nugget Ratio Threshold (≤)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={duplicatesConfig.nuggetRatioThreshold}
+                                                onChange={(e) => setDuplicatesConfig({
+                                                    ...duplicatesConfig,
+                                                    nuggetRatioThreshold: parseFloat(e.target.value)
+                                                })}
+                                                className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
+                                                step="0.1"
+                                                min="0"
+                                                max="1"
+                                            />
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                Low ratio (≤0.3) = good precision, high = measurement error
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

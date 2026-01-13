@@ -1,0 +1,8 @@
+"""
+Copyright (c) 2024 LogiQore
+
+This file is part of QAQC Report Generator.
+
+QAQC Report Generator is free software: you can redistribute it and/or modify
+it under the terms of the MIT License. See LICENSE file for details.
+"""

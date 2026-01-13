@@ -361,11 +361,13 @@ python setup.py build
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+Copyright (c) 2024 LogiQore
+
 ## Contact
 
-Your Name - your.email@example.com
+LogiQore - info@logiqore.com
 
-Project Link: [https://github.com/yourusername/qaqc-report-generator](https://github.com/yourusername/qaqc-report-generator)
+For legal and licensing inquiries, see [LEGAL.md](docs/LEGAL.md)
 
 ## Import Cookbook (CLI)
 

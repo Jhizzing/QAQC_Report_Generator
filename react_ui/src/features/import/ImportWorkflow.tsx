@@ -8,7 +8,7 @@ import { uploadFileForAnalysis } from '../../services/analysisService';
 
 interface ImportWorkflowProps {
     onComplete?: (data: any, serverFileId?: string) => void;
-    onLoadDemoData?: (category?: 'gold' | 'photon') => void;
+    onLoadDemoData?: (category?: 'gold' | 'photon' | 'pxrf' | 'multielement') => void;
     isBackendAvailable?: boolean;
 }
 
@@ -156,6 +156,20 @@ export const ImportWorkflow: React.FC<ImportWorkflowProps> = ({ onComplete, onLo
                     >
                         <FileSpreadsheet className="w-4 h-4" />
                         PhotonAssay
+                    </button>
+                    <button
+                        onClick={() => onLoadDemoData?.('pxrf')}
+                        className="px-4 py-3 bg-gradient-to-r from-amber-500 to-amber-700 text-slate-50 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                    >
+                        <FileSpreadsheet className="w-4 h-4" />
+                        pXRF Base Metals
+                    </button>
+                    <button
+                        onClick={() => onLoadDemoData?.('multielement')}
+                        className="px-4 py-3 bg-gradient-to-r from-teal-500 to-teal-700 text-slate-50 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                    >
+                        <FileSpreadsheet className="w-4 h-4" />
+                        Multi-Element ICP
                     </button>
                 </div>
             </div>

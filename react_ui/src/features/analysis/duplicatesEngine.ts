@@ -24,6 +24,9 @@ export interface DuplicateResult extends DuplicatePair {
     pass: boolean;
     targetPrecision: number;  // The precision target actually used for this element
     precisionMethod: 'rpd' | 'hard';
+    correlation?: number;  // Pearson correlation coefficient (calculated per element group)
+    correlationPValue?: number;  // Statistical significance
+    correlationStrength?: 'strong' | 'moderate' | 'weak' | 'insufficient_data';
 }
 
 export interface DuplicatesAnalysisConfig {
@@ -43,6 +46,22 @@ export interface DuplicatesAnalysisResults {
         meanHARD: number;
         withinTarget: number;  // % of pairs within target precision
         count: number;
+    }[];
+    correlation: {
+        element: string;
+        coefficient: number;
+        pValue: number;
+        strength: 'strong' | 'moderate' | 'weak' | 'insufficient_data';
+        meetsThreshold: boolean;
+        statisticallySignificant: boolean;
+    }[];
+    nuggetRatio: {
+        element: string;
+        ratio: number;
+        nugget: number;
+        sill: number;
+        interpretation: 'low' | 'moderate' | 'high' | 'insufficient_data';
+        meetsThreshold: boolean;
     }[];
 }
 
@@ -93,13 +112,21 @@ export function analyzeDuplicates(
     // Calculate statistics for each element
     const statistics = calculateDuplicatesStatistics(results);
 
+    // Calculate correlation for each element
+    const correlation = calculateCorrelationByElement(pairs, config);
+
+    // Calculate nugget ratio for each element
+    const nuggetRatio = calculateNuggetRatioByElement(pairs, config);
+
     // Flag poor precision pairs
     const flaggedPairs = results.filter(r => !r.pass);
 
     return {
         results,
         flaggedPairs,
-        statistics
+        statistics,
+        correlation,
+        nuggetRatio
     };
 }
 
@@ -220,6 +247,204 @@ function extractUnit(columnName: string, element: string): string {
     if (element === 'Au') return 'g/t';
     if (['Cu', 'Fe', 'S'].includes(element)) return '%';
     return 'ppm';
+}
+
+/**
+ * Calculate Pearson correlation coefficient for duplicate pairs
+ */
+function calculateCorrelation(
+    pairs: DuplicatePair[]
+): { coefficient: number; pValue: number; strength: 'strong' | 'moderate' | 'weak' | 'insufficient_data'; statisticallySignificant: boolean } {
+    if (pairs.length < 3) {
+        return {
+            coefficient: 0,
+            pValue: 1.0,
+            strength: 'insufficient_data',
+            statisticallySignificant: false
+        };
+    }
+
+    const originalValues = pairs.map(p => p.originalValue);
+    const duplicateValues = pairs.map(p => p.duplicateValue);
+
+    // Calculate Pearson correlation coefficient
+    const n = pairs.length;
+    const meanOriginal = originalValues.reduce((sum, v) => sum + v, 0) / n;
+    const meanDuplicate = duplicateValues.reduce((sum, v) => sum + v, 0) / n;
+
+    let numerator = 0;
+    let sumSqOriginal = 0;
+    let sumSqDuplicate = 0;
+
+    for (let i = 0; i < n; i++) {
+        const diffOriginal = originalValues[i] - meanOriginal;
+        const diffDuplicate = duplicateValues[i] - meanDuplicate;
+        numerator += diffOriginal * diffDuplicate;
+        sumSqOriginal += diffOriginal * diffOriginal;
+        sumSqDuplicate += diffDuplicate * diffDuplicate;
+    }
+
+    const denominator = Math.sqrt(sumSqOriginal * sumSqDuplicate);
+    const coefficient = denominator !== 0 ? numerator / denominator : 0;
+
+    // Calculate p-value using t-test (simplified)
+    // t = r * sqrt((n-2) / (1-r^2))
+    // For large n, p-value approximation
+    const t = Math.abs(coefficient) * Math.sqrt((n - 2) / (1 - coefficient * coefficient));
+    // Simplified p-value (for n > 30, t > 2 is approximately p < 0.05)
+    const pValue = n > 30 ? (t > 2 ? 0.01 : 0.1) : 0.05;
+    const statisticallySignificant = pValue < 0.05;
+
+    // Interpret correlation strength
+    const absCoeff = Math.abs(coefficient);
+    let strength: 'strong' | 'moderate' | 'weak' | 'insufficient_data';
+    if (absCoeff >= 0.8) {
+        strength = 'strong';
+    } else if (absCoeff >= 0.5) {
+        strength = 'moderate';
+    } else {
+        strength = 'weak';
+    }
+
+    return {
+        coefficient,
+        pValue,
+        strength,
+        statisticallySignificant
+    };
+}
+
+/**
+ * Calculate correlation by element
+ */
+function calculateCorrelationByElement(
+    pairs: DuplicatePair[],
+    config: DuplicatesAnalysisConfig
+): DuplicatesAnalysisResults['correlation'] {
+    const elementGroups = new Map<string, DuplicatePair[]>();
+
+    // Group pairs by element
+    for (const pair of pairs) {
+        if (!elementGroups.has(pair.element)) {
+            elementGroups.set(pair.element, []);
+        }
+        elementGroups.get(pair.element)!.push(pair);
+    }
+
+    const correlationResults: DuplicatesAnalysisResults['correlation'] = [];
+    const correlationThreshold = 0.8; // Default threshold
+
+    for (const [element, elementPairs] of elementGroups) {
+        if (elementPairs.length < 3) {
+            correlationResults.push({
+                element,
+                coefficient: 0,
+                pValue: 1.0,
+                strength: 'insufficient_data',
+                meetsThreshold: false,
+                statisticallySignificant: false
+            });
+            continue;
+        }
+
+        const correlation = calculateCorrelation(elementPairs);
+        const meetsThreshold = Math.abs(correlation.coefficient) >= correlationThreshold;
+
+        correlationResults.push({
+            element,
+            coefficient: correlation.coefficient,
+            pValue: correlation.pValue,
+            strength: correlation.strength,
+            meetsThreshold,
+            statisticallySignificant: correlation.statisticallySignificant
+        });
+    }
+
+    return correlationResults;
+}
+
+/**
+ * Calculate nugget ratio for duplicate pairs
+ */
+function calculateNuggetRatio(
+    pairs: DuplicatePair[]
+): { ratio: number; nugget: number; sill: number; interpretation: 'low' | 'moderate' | 'high' | 'insufficient_data' } {
+    if (pairs.length < 2) {
+        return {
+            ratio: 0,
+            nugget: 0,
+            sill: 0,
+            interpretation: 'insufficient_data'
+        };
+    }
+
+    // Calculate pair means and absolute differences
+    const pairMeans = pairs.map(p => (p.originalValue + p.duplicateValue) / 2);
+    const pairDiffs = pairs.map(p => Math.abs(p.originalValue - p.duplicateValue));
+
+    // Nugget = average absolute difference (measurement precision)
+    const nugget = pairDiffs.reduce((sum, d) => sum + d, 0) / pairDiffs.length;
+
+    // Sill = variance of pair means (spatial variability)
+    const meanOfMeans = pairMeans.reduce((sum, m) => sum + m, 0) / pairMeans.length;
+    const sill = pairMeans.reduce((sum, m) => sum + Math.pow(m - meanOfMeans, 2), 0) / pairMeans.length;
+
+    // Calculate ratio
+    const ratio = (nugget + sill) !== 0 ? nugget / (nugget + sill) : 0;
+
+    // Interpret ratio
+    let interpretation: 'low' | 'moderate' | 'high' | 'insufficient_data';
+    if (ratio < 0.3) {
+        interpretation = 'low';
+    } else if (ratio < 0.6) {
+        interpretation = 'moderate';
+    } else {
+        interpretation = 'high';
+    }
+
+    return {
+        ratio,
+        nugget,
+        sill,
+        interpretation
+    };
+}
+
+/**
+ * Calculate nugget ratio by element
+ */
+function calculateNuggetRatioByElement(
+    pairs: DuplicatePair[],
+    config: DuplicatesAnalysisConfig
+): DuplicatesAnalysisResults['nuggetRatio'] {
+    const elementGroups = new Map<string, DuplicatePair[]>();
+
+    // Group pairs by element
+    for (const pair of pairs) {
+        if (!elementGroups.has(pair.element)) {
+            elementGroups.set(pair.element, []);
+        }
+        elementGroups.get(pair.element)!.push(pair);
+    }
+
+    const nuggetRatioResults: DuplicatesAnalysisResults['nuggetRatio'] = [];
+    const nuggetThreshold = 0.3; // Default threshold
+
+    for (const [element, elementPairs] of elementGroups) {
+        const nuggetResult = calculateNuggetRatio(elementPairs);
+        const meetsThreshold = nuggetResult.ratio <= nuggetThreshold;
+
+        nuggetRatioResults.push({
+            element,
+            ratio: nuggetResult.ratio,
+            nugget: nuggetResult.nugget,
+            sill: nuggetResult.sill,
+            interpretation: nuggetResult.interpretation,
+            meetsThreshold
+        });
+    }
+
+    return nuggetRatioResults;
 }
 
 /**

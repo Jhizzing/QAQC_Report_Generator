@@ -18,8 +18,8 @@ def read_requirements():
 setup(
     name="qaqc-analysis-automation",
     version="1.0.0",
-    author="Your Name",
-    author_email="your.email@example.com",
+    author="LogiQore",
+    author_email="info@logiqore.com",
     description="Automated QAQC analysis system for drilling assay data",
     long_description=read_readme(),
     long_description_content_type="text/markdown",

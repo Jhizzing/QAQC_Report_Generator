@@ -310,13 +310,19 @@ A histogram shows the distribution of values in your data.
 **Passing**:
 - RPD within precision target (e.g., < 20%)
 - Good agreement between pairs
+- Correlation coefficient ≥ 0.8 (if enabled)
+- Nugget ratio ≤ 0.3 (if enabled)
 
 **Failing**:
 - RPD outside precision target (e.g., > 20%)
 - Poor agreement between pairs
+- Correlation coefficient < 0.8 (if enabled)
+- Nugget ratio > 0.3 (if enabled)
 
 **Warning**:
 - RPD approaching target limit
+- Correlation coefficient 0.5-0.8 (moderate)
+- Nugget ratio 0.3-0.6 (moderate)
 - Monitor closely
 
 ### Overall Pass Rate
@@ -402,17 +408,67 @@ A histogram shows the distribution of values in your data.
 - **Positive**: Overestimation
 - **Negative**: Underestimation
 
-### Correlation (r)
+### Correlation (Pearson Correlation Coefficient)
 
-**Definition**: Measure of linear relationship
+**Definition**: Measure of linear relationship between original and duplicate values
 
 **Range**: -1 to +1
 
+**Formula**: r = Σ((x - x̄)(y - ȳ)) / √(Σ(x - x̄)² × Σ(y - ȳ)²)
+
 **Interpretation**:
-- **r = 1**: Perfect positive correlation
-- **r = 0**: No correlation
-- **r = -1**: Perfect negative correlation
-- **r > 0.9**: Strong correlation (good for duplicates)
+- **r = 1**: Perfect positive correlation (ideal)
+- **r = -1**: Perfect negative correlation (unusual, indicates problem)
+- **r = 0**: No correlation (poor precision)
+- **r > 0.8**: Strong correlation (good precision)
+- **r = 0.5-0.8**: Moderate correlation (acceptable)
+- **r < 0.5**: Weak correlation (poor precision)
+
+**For Duplicates**:
+- **Strong correlation (≥0.8)**: Indicates good analytical precision and consistent relationship between original and duplicate measurements
+- **Moderate correlation (0.5-0.8)**: Acceptable but may indicate some variability
+- **Weak correlation (<0.5)**: Poor precision, investigate analytical issues
+
+**P-Value**: Statistical significance of correlation
+- **p < 0.05**: Statistically significant (reliable)
+- **p ≥ 0.05**: Not statistically significant (may be due to chance)
+
+**What Good Correlation Looks Like**:
+- Correlation coefficient ≥ 0.8
+- Statistically significant (p < 0.05)
+- Points in scatter plot follow a clear linear trend
+- Most points near the 1:1 line
+
+### Nugget Ratio
+
+**Definition**: Ratio of measurement error variance to total variance (spatial + measurement)
+
+**Range**: 0 to 1
+
+**Formula**: Nugget Ratio = Nugget / (Nugget + Sill)
+- **Nugget**: Average absolute difference between duplicate pairs (measurement error)
+- **Sill**: Variance of pair means (spatial variability)
+
+**Interpretation**:
+- **Low ratio (<0.3)**: Good precision, most variance is spatial (natural variation)
+- **Moderate ratio (0.3-0.6)**: Acceptable, some measurement error present
+- **High ratio (>0.6)**: Poor precision, most variance is measurement error
+
+**For Duplicates**:
+- **Low nugget ratio**: Indicates good analytical precision; differences between pairs are small relative to spatial variation
+- **High nugget ratio**: Indicates poor analytical precision; measurement error dominates over natural spatial variation
+
+**What Good Nugget Ratio Looks Like**:
+- Nugget ratio ≤ 0.3
+- Low nugget value (small differences between pairs)
+- High sill value (natural spatial variation is larger than measurement error)
+- Consistent precision across grade ranges
+
+**Troubleshooting High Nugget Ratio**:
+- Review analytical method precision
+- Check for systematic errors
+- Verify sample preparation consistency
+- Consider method improvements if ratio consistently high
 
 ---
 

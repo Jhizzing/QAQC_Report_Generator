@@ -6,8 +6,8 @@ of drilling assay data, including standards, blanks, and duplicates evaluation.
 """
 
 __version__ = "1.0.0"
-__author__ = "Your Name"
-__email__ = "your.email@example.com"
+__author__ = "LogiQore"
+__email__ = "info@logiqore.com"
 
 # Import main modules
 from .data import DataProcessor, DataImporter
