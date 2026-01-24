@@ -92,7 +92,7 @@ class TestImportPerformance:
         """Test import performance with large dataset."""
         start_time = time.time()
         importer = DataImporter()
-        raw_data = importer.import_csv(large_dataset_csv)
+        raw_data = importer.read_table(large_dataset_csv)
         import_time = time.time() - start_time
         
         # Should complete in reasonable time (<5 seconds for 1000 samples)
@@ -108,7 +108,7 @@ class TestImportPerformance:
         """Test import performance with multiple elements."""
         start_time = time.time()
         importer = DataImporter()
-        raw_data = importer.import_csv(multi_element_dataset_csv)
+        raw_data = importer.read_table(multi_element_dataset_csv)
         import_time = time.time() - start_time
         
         assert import_time < 3.0
@@ -125,7 +125,7 @@ class TestAnalysisPerformance:
         standards_analyzer = StandardsAnalyzer()
         
         # Import and process
-        raw_data = importer.import_csv(multi_element_dataset_csv)
+        raw_data = importer.read_table(multi_element_dataset_csv)
         processed_data = processor.process_data(raw_data)
         
         # Analyze multiple elements
@@ -158,7 +158,7 @@ class TestAnalysisPerformance:
         duplicates_analyzer = DuplicatesAnalyzer()
         
         # Import and process
-        raw_data = importer.import_csv(large_dataset_csv)
+        raw_data = importer.read_table(large_dataset_csv)
         processed_data = processor.process_data(raw_data)
         
         # Run all analyses
@@ -198,7 +198,7 @@ class TestMemoryUsage:
         processor = DataProcessor()
         
         # Import and process
-        raw_data = importer.import_csv(large_dataset_csv)
+        raw_data = importer.read_table(large_dataset_csv)
         processed_data = processor.process_data(raw_data)
         
         peak_memory = process.memory_info().rss / 1024 / 1024  # MB
@@ -217,7 +217,7 @@ class TestMemoryUsage:
         processor = DataProcessor()
         
         # Import and process
-        raw_data = importer.import_csv(large_dataset_csv)
+        raw_data = importer.read_table(large_dataset_csv)
         processed_data = processor.process_data(raw_data)
         
         # Delete references
@@ -257,7 +257,7 @@ class TestConcurrentOperations:
             # Process multiple files
             results = []
             for dataset in datasets:
-                raw_data = importer.import_csv(dataset)
+                raw_data = importer.read_table(dataset)
                 results.append(len(raw_data))
             
             total_time = time.time() - start_time
@@ -280,7 +280,7 @@ class TestPerformanceBenchmarks:
         """Benchmark import speed."""
         importer = DataImporter()
         start_time = time.time()
-        raw_data = importer.import_csv(large_dataset_csv)
+        raw_data = importer.read_table(large_dataset_csv)
         import_time = time.time() - start_time
         
         samples_per_second = len(raw_data) / import_time
@@ -295,7 +295,7 @@ class TestPerformanceBenchmarks:
         processor = DataProcessor()
         standards_analyzer = StandardsAnalyzer()
         
-        raw_data = importer.import_csv(large_dataset_csv)
+        raw_data = importer.read_table(large_dataset_csv)
         processed_data = processor.process_data(raw_data)
         
         start_time = time.time()
