@@ -279,9 +279,10 @@ class TestPerformanceBenchmarks:
     def test_benchmark_import_speed(self, large_dataset_csv):
         """Benchmark import speed."""
         importer = DataImporter()
-        start_time = time.time()
+        start_ns = time.perf_counter_ns()
         raw_data = importer.read_table(large_dataset_csv)
-        import_time = time.time() - start_time
+        import_time_ns = max(1, time.perf_counter_ns() - start_ns)
+        import_time = import_time_ns / 1_000_000_000
         
         samples_per_second = len(raw_data) / import_time
         print(f"\n[Benchmark] Import: {samples_per_second:.0f} samples/second")
@@ -298,15 +299,16 @@ class TestPerformanceBenchmarks:
         raw_data = importer.read_table(large_dataset_csv)
         processed_data = processor.process_data(raw_data)
         
-        start_time = time.time()
+        start_ns = time.perf_counter_ns()
         standards_analyzer.analyze(
             processed_data.get('standards', []),
             certified_value=0.082,
             uncertainty=0.005
         )
-        analysis_time = time.time() - start_time
+        analysis_time_ns = max(1, time.perf_counter_ns() - start_ns)
+        analysis_time = analysis_time_ns / 1_000_000_000
         
-        samples_per_second = len(processed_data.get('standards', [])) / analysis_time if analysis_time > 0 else 0
+        samples_per_second = len(processed_data.get('standards', [])) / analysis_time
         print(f"\n[Benchmark] Analysis: {samples_per_second:.0f} standards/second")
         
-        assert analysis_time > 0
+        assert samples_per_second >= 0
