@@ -15,8 +15,8 @@ export default defineConfig({
     'global': 'globalThis',
   },
   optimizeDeps: {
-    // Include plotly.js in dependency optimization
-    include: ['plotly.js', 'react-plotly.js'],
+    // Include Plotly runtime pieces used by lazy chart components
+    include: ['plotly.js-basic-dist-min', 'react-plotly.js/factory'],
     esbuildOptions: {
       // Node.js global to browser globalThis
       define: {
@@ -25,13 +25,13 @@ export default defineConfig({
     },
   },
   build: {
-    // Increase chunk size warning limit for Plotly
-    chunkSizeWarningLimit: 5000,
+    // Keep warnings visible for oversized bundles
+    chunkSizeWarningLimit: 3000,
     rollupOptions: {
       output: {
         manualChunks: {
-          // Separate Plotly into its own chunk for better caching
-          plotly: ['plotly.js', 'react-plotly.js'],
+          // Separate Plotly runtime into its own lazy chunk for better caching
+          plotly: ['plotly.js-basic-dist-min', 'react-plotly.js/factory'],
         },
       },
     },

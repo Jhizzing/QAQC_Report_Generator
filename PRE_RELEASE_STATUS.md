@@ -27,6 +27,9 @@
   - `npm run type-check` ✅
   - `npm run build` ✅
   - `npm test -- --run` ✅
+- ✅ Plotly runtime bundle optimized for release:
+  - Switched runtime charts to `plotly.js-basic-dist-min` via `react-plotly.js/factory`
+  - Removed 10MB+ Plotly chunk warning in production build
 
 ### 4. CI Hardening
 - ✅ CI now triggers on `pre-release` branch
@@ -53,6 +56,11 @@
   - `.github/workflows/release.yml`
   - Trigger: `v*` tags
   - Produces draft GitHub Release with zipped platform artifacts + checksums
+- ✅ Validated tag-driven draft release end-to-end:
+  - `v1.0.0-rc2` run: `21780665366` (all jobs green)
+  - Draft release created with cross-platform assets + `SHA256SUMS.txt`
+- ✅ Validated manual build-artifacts run on current `pre-release` head:
+  - Run: `21780782159` (all jobs green)
 - ✅ Added installer/build scripts:
   - `packaging/windows/qaqc.iss` (Inno Setup template)
   - `packaging/macos/create_dmg.sh`
@@ -64,11 +72,9 @@
 1. **Installer/signing is partially implemented**
    - Installer scripts/templates are present, but signing/notarization for production trust is not yet wired
 
-2. **Release artifact optimization pending (React bundle size)**
-   - Vite build completes but reports very large chunks; code-splitting/manual chunking recommended
-
-3. **Release workflow needs first tagged validation run**
-   - Tag-triggered draft release workflow is added, but first `v*` tag execution should be verified end-to-end
+2. **Release signing secrets and identities are not yet configured**
+   - `RELEASE_GPG_PRIVATE_KEY` / `RELEASE_GPG_PASSPHRASE` not configured (checksum signature file not generated)
+   - macOS notarization and Windows Authenticode certificates are still external setup tasks
 
 ## 📋 Pre-Release Checklist Status
 
@@ -80,7 +86,7 @@
 - [x] React production checks passing
 - [x] PyInstaller executable builds working on current platform
 - [x] Cross-platform executable validation (first green run confirmed)
-- [~] Tag-driven release publication (workflow added, first tag run pending)
+- [x] Tag-driven release publication (validated with `v1.0.0-rc2`)
 - [~] Installer packaging + signing/notarization (scripts added, trust automation pending)
 
 ### Feature Coverage
@@ -96,11 +102,9 @@
 ## 🚀 Recommended Next Steps Toward Full Release
 
 1. Keep `.github/workflows/build-artifacts.yml` green on every release-candidate change
-2. Run first `v*` tag through `.github/workflows/release.yml` and verify release assets
-3. Complete signing/notarization pipeline for production distribution
-4. Optimize React bundle size (code splitting)
-5. Run external UAT with representative lab datasets
-6. Cut `v1.0.0` with release notes, checksums, and install guide
+2. Configure release signing secrets + certificate identities
+3. Run external UAT with representative lab datasets
+4. Cut `v1.0.0` with release notes, signed checksums, and install guide
 
 ---
 

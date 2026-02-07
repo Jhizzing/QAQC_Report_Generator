@@ -10,7 +10,14 @@ import type { Layout, Config, PlotMouseEvent, Data, Shape, Annotations, PlotSele
 import { Download, Image, FileCode } from 'lucide-react';
 
 // Lazy load Plotly to reduce initial bundle size
-const Plot = React.lazy(() => import('react-plotly.js'));
+const Plot = React.lazy(async () => {
+  const [{ default: createPlotlyComponent }, { default: Plotly }] = await Promise.all([
+    import('react-plotly.js/factory'),
+    import('plotly.js-basic-dist-min'),
+  ]);
+
+  return { default: createPlotlyComponent(Plotly) };
+});
 
 // ============== Theme Colors ==============
 
@@ -153,7 +160,7 @@ export const ExportButtons: React.FC<ExportButtonsProps> = ({ plotRef, filename 
   const exportChart = useCallback(async (format: 'png' | 'svg' | 'jpeg') => {
     if (!plotRef.current?.el) return;
     
-    const Plotly = await import('plotly.js');
+    const Plotly = await import('plotly.js-basic-dist-min');
     const graphDiv = plotRef.current.el;
     
     const options = {
@@ -164,7 +171,8 @@ export const ExportButtons: React.FC<ExportButtonsProps> = ({ plotRef, filename 
       scale: format === 'svg' ? 1 : 2,
     };
     
-    await Plotly.downloadImage(graphDiv, options);
+    await (Plotly as unknown as { downloadImage: (el: HTMLElement, opts: Record<string, unknown>) => Promise<unknown> })
+      .downloadImage(graphDiv, options);
   }, [plotRef, filename]);
 
   return (

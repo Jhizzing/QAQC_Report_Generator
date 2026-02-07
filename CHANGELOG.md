@@ -67,10 +67,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tag-driven release workflow in `.github/workflows/release.yml`
   - Triggered by `v*` tags
   - Builds cross-platform executables, zips artifacts, and creates a draft GitHub Release
+- Release-candidate validation with `v1.0.0-rc2` completed end-to-end
+  - Release workflow succeeded with packaged multi-platform artifacts and checksum manifest
 
 ### Fixed
 - Stabilized performance benchmark tests on Windows by switching benchmark timing to `time.perf_counter_ns()`
 - Refactored `tests/test_persistence.py` to assert-based pytest style (removed boolean-return test warning)
+- Reduced React production chart bundle footprint by using `plotly.js-basic-dist-min` with `react-plotly.js/factory`
 
 ### Planned
 - Tag-driven GitHub Release publication with attached binaries and checksum manifest
