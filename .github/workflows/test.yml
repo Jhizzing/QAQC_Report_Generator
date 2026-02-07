@@ -91,3 +91,12 @@ jobs:
     - name: Run tests
       working-directory: react_ui
       run: npm test -- --run
+
+    - name: Run coverage
+      working-directory: react_ui
+      run: npm run test:coverage
+
+    - name: Coverage ratchet (warn-only)
+      continue-on-error: true
+      working-directory: react_ui
+      run: npm run coverage:ratchet:ci

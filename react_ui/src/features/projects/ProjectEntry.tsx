@@ -191,8 +191,9 @@ export const ProjectEntry: React.FC<ProjectEntryProps> = ({ onProjectLoaded }) =
                             <form onSubmit={handleSubmit} className="space-y-4 flex-1">
                                 {/* Project Name */}
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-slate-300">Project Name</label>
+                                    <label htmlFor="project-name" className="text-sm font-medium text-slate-300">Project Name</label>
                                     <input
+                                        id="project-name"
                                         required
                                         type="text"
                                         placeholder="e.g. Q4 Drilling Report"
@@ -204,8 +205,9 @@ export const ProjectEntry: React.FC<ProjectEntryProps> = ({ onProjectLoaded }) =
 
                                 {/* Deposit */}
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-slate-300">Deposit / Area</label>
+                                    <label htmlFor="project-deposit" className="text-sm font-medium text-slate-300">Deposit / Area</label>
                                     <input
+                                        id="project-deposit"
                                         required
                                         type="text"
                                         placeholder="e.g. North Zone, Main Pit"
@@ -217,9 +219,10 @@ export const ProjectEntry: React.FC<ProjectEntryProps> = ({ onProjectLoaded }) =
 
                                 {/* Commodity with Dropdown Suggestions */}
                                 <div className="space-y-1.5 relative">
-                                    <label className="text-sm font-medium text-slate-300">Commodity</label>
+                                    <label htmlFor="project-commodity" className="text-sm font-medium text-slate-300">Commodity</label>
                                     <div className="relative">
                                         <input
+                                            id="project-commodity"
                                             required
                                             type="text"
                                             placeholder="Select or type..."
@@ -231,6 +234,7 @@ export const ProjectEntry: React.FC<ProjectEntryProps> = ({ onProjectLoaded }) =
                                         <button
                                             type="button"
                                             onClick={() => setShowCommodityDropdown(!showCommodityDropdown)}
+                                            aria-label="Toggle commodity options"
                                             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
                                         >
                                             <ChevronDown className={`w-4 h-4 transition-transform ${showCommodityDropdown ? 'rotate-180' : ''}`} />

@@ -233,7 +233,6 @@ export const PlotlyWrapper: React.FC<PlotlyWrapperProps> = ({
     <Suspense fallback={<ChartLoadingFallback height={height} />}>
       <div className={`rounded-lg overflow-hidden ${className}`} style={{ height }}>
         <Plot
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ref={plotRef as any}
           data={data}
           layout={mergedLayout}
