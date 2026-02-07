@@ -73,6 +73,19 @@ venv/bin/python scripts/build_executables.py --target all --clean
 
 ## Phase 5: Launch Readiness
 
+### 0. Run tag-driven release pipeline
+- Ensure `pre-release` is green
+- Tag the release candidate and push:
+```bash
+git tag v1.0.0-rc1
+git push origin v1.0.0-rc1
+```
+- Verify `.github/workflows/release.yml` creates a draft GitHub Release with:
+  - `qaqc-ubuntu-latest.zip`
+  - `qaqc-macos-latest.zip`
+  - `qaqc-windows-latest.zip`
+  - `SHA256SUMS.txt` (and optional `SHA256SUMS.txt.asc`)
+
 ### 1. Release assets
 - Executables/installers per OS
 - Checksums file

@@ -49,6 +49,10 @@
 - ✅ Verified first fully green cross-platform artifact run
   - Run ID: `21779078084`
 - ✅ Added checksum manifest generation (`SHA256SUMS.txt`) with optional GPG signing in CI
+- ✅ Added tag-driven release workflow:
+  - `.github/workflows/release.yml`
+  - Trigger: `v*` tags
+  - Produces draft GitHub Release with zipped platform artifacts + checksums
 - ✅ Added installer/build scripts:
   - `packaging/windows/qaqc.iss` (Inno Setup template)
   - `packaging/macos/create_dmg.sh`
@@ -58,13 +62,13 @@
 ## ⚠️ Current Release Blockers
 
 1. **Installer/signing is partially implemented**
-   - Installer scripts/templates are present, but signing/notarization and release automation are not yet wired
+   - Installer scripts/templates are present, but signing/notarization for production trust is not yet wired
 
 2. **Release artifact optimization pending (React bundle size)**
    - Vite build completes but reports very large chunks; code-splitting/manual chunking recommended
 
-3. **GitHub release publication remains manual**
-   - Artifacts + checksums are produced in CI, but tag-triggered Release publishing is not yet automated
+3. **Release workflow needs first tagged validation run**
+   - Tag-triggered draft release workflow is added, but first `v*` tag execution should be verified end-to-end
 
 ## 📋 Pre-Release Checklist Status
 
@@ -76,6 +80,7 @@
 - [x] React production checks passing
 - [x] PyInstaller executable builds working on current platform
 - [x] Cross-platform executable validation (first green run confirmed)
+- [~] Tag-driven release publication (workflow added, first tag run pending)
 - [~] Installer packaging + signing/notarization (scripts added, trust automation pending)
 
 ### Feature Coverage
@@ -90,8 +95,8 @@
 
 ## 🚀 Recommended Next Steps Toward Full Release
 
-1. Run and verify `.github/workflows/build-artifacts.yml` on `pre-release`
-2. Add tag-driven GitHub Release publication (attach artifacts + checksums)
+1. Keep `.github/workflows/build-artifacts.yml` green on every release-candidate change
+2. Run first `v*` tag through `.github/workflows/release.yml` and verify release assets
 3. Complete signing/notarization pipeline for production distribution
 4. Optimize React bundle size (code splitting)
 5. Run external UAT with representative lab datasets

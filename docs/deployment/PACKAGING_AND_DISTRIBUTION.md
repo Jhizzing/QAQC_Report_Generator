@@ -122,6 +122,8 @@ The `build-artifacts` workflow now includes a `checksums` job that:
 - Produces `SHA256SUMS.txt`
 - Optionally signs the checksum file as `SHA256SUMS.txt.asc` when GPG secrets are configured
 
+For tagged releases, `.github/workflows/release.yml` runs the same build + smoke checks and publishes a **draft GitHub Release** with zipped platform artifacts and checksum files attached.
+
 ### Required Secrets for Optional GPG Signing
 - `RELEASE_GPG_PRIVATE_KEY`: ASCII-armored private key
 - `RELEASE_GPG_PASSPHRASE`: passphrase for the private key

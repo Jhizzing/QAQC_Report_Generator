@@ -64,6 +64,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions artifact checksum stage in `.github/workflows/build-artifacts.yml`
   - Generates `SHA256SUMS.txt` from cross-platform build artifacts
   - Supports optional detached GPG signature (`SHA256SUMS.txt.asc`) via release secrets
+- Tag-driven release workflow in `.github/workflows/release.yml`
+  - Triggered by `v*` tags
+  - Builds cross-platform executables, zips artifacts, and creates a draft GitHub Release
 
 ### Fixed
 - Stabilized performance benchmark tests on Windows by switching benchmark timing to `time.perf_counter_ns()`
