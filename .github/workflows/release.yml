@@ -186,8 +186,12 @@ jobs:
       - name: Create draft release and upload assets
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ github.ref_name }}
           files: |
             release_assets/*
           draft: true
-          prerelease: ${{ contains(github.ref_name, '-pre') }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          make_latest: false
           generate_release_notes: true

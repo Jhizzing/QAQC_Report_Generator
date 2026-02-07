@@ -100,7 +100,7 @@ export const AnalysisSetup: React.FC<AnalysisSetupProps> = ({ initialCategory, o
         }
 
         // Map category to CRM database category
-        let dbCategory: 'gold' | 'pxrf' | 'multi-element' = 
+        const dbCategory: 'gold' | 'pxrf' | 'multi-element' = 
             selectedCategory === 'photon' ? 'gold' : 
             selectedCategory === 'pxrf' ? 'pxrf' : 'gold';
 
