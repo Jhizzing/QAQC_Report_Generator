@@ -41,6 +41,7 @@ jobs:
           python scripts/build_executables.py --target all --clean
 
       - name: Smoke test packaged CLI
+        shell: bash
         run: |
           python - <<'PY'
           import os
