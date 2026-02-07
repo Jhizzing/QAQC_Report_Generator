@@ -68,9 +68,9 @@ def _build_target(
     env["QAQC_PROJECT_ROOT"] = str(PROJECT_ROOT)
     result = subprocess.run(cmd, check=False, cwd=PROJECT_ROOT, env=env)
     if result.returncode == 0:
-        print(f"[build] ✅ Success ({target}) -> {dist_path}")
+        print(f"[build] Success ({target}) -> {dist_path}")
     else:
-        print(f"[build] ❌ Failed ({target}) with exit code {result.returncode}")
+        print(f"[build] Failed ({target}) with exit code {result.returncode}")
     return result.returncode
 
 
@@ -143,14 +143,14 @@ def _get_version() -> str:
 def _verify_build(executable_path: Path) -> bool:
     """Verify that built executable exists and is valid."""
     if not executable_path.exists():
-        print(f"[verify] ❌ Executable not found: {executable_path}")
+        print(f"[verify] Executable not found: {executable_path}")
         return False
     
     if executable_path.stat().st_size == 0:
-        print(f"[verify] ❌ Executable is empty: {executable_path}")
+        print(f"[verify] Executable is empty: {executable_path}")
         return False
     
-    print(f"[verify] ✅ Executable verified: {executable_path} ({executable_path.stat().st_size / 1024 / 1024:.1f} MB)")
+    print(f"[verify] Executable verified: {executable_path} ({executable_path.stat().st_size / 1024 / 1024:.1f} MB)")
     return True
 
 
@@ -195,7 +195,7 @@ def main() -> None:
         summary = ", ".join(f"{target} (exit {code})" for target, code in failures)
         raise SystemExit(f"One or more builds failed: {summary}")
     
-    print(f"\n[build] ✅ All builds completed successfully!")
+    print(f"\n[build] All builds completed successfully!")
     print(f"[build] Output directory: {args.dist_dir}")
 
 
