@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -63,7 +64,9 @@ def _build_target(
     cmd.append(str(spec_path))
 
     print(f"\n[build] Target={target} -> {' '.join(cmd)}")
-    result = subprocess.run(cmd, check=False)
+    env = os.environ.copy()
+    env["QAQC_PROJECT_ROOT"] = str(PROJECT_ROOT)
+    result = subprocess.run(cmd, check=False, cwd=PROJECT_ROOT, env=env)
     if result.returncode == 0:
         print(f"[build] ✅ Success ({target}) -> {dist_path}")
     else:

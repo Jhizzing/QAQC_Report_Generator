@@ -30,6 +30,73 @@ class StandardsAnalyzer:
         self.precision_threshold = self.config.get('precision_threshold', 5.0)  # %RSD
         self.westgard_config = self.config.get('westgard_rules', {'enable': False, 'rules': []})
 
+    @staticmethod
+    def _coerce_float(value):
+        """Best-effort numeric conversion."""
+        try:
+            converted = float(value)
+        except (TypeError, ValueError):
+            return None
+        if converted != converted:  # NaN guard
+            return None
+        return converted
+
+    def _extract_measured_values(self, records) -> list:
+        """Extract measured values from either numeric lists or row dictionaries."""
+        if not records:
+            return []
+
+        measured = []
+        if isinstance(records, dict):
+            records = [records]
+
+        # Raw numeric list
+        if isinstance(records, list) and records and not isinstance(records[0], dict):
+            for item in records:
+                value = self._coerce_float(item)
+                if value is not None:
+                    measured.append(value)
+            return measured
+
+        preferred_keys = (
+            'result', 'value', 'measured', 'assay', 'au_ppm', 'au_gpt',
+            'cu_ppm', 'pb_ppm', 'zn_ppm', 'fe_pct',
+        )
+        for row in records:
+            if not isinstance(row, dict):
+                continue
+
+            chosen = None
+            for key in preferred_keys:
+                if key in row:
+                    chosen = self._coerce_float(row.get(key))
+                    if chosen is not None:
+                        break
+
+            # Fallback: first numeric-looking value in row
+            if chosen is None:
+                for value in row.values():
+                    chosen = self._coerce_float(value)
+                    if chosen is not None:
+                        break
+
+            if chosen is not None:
+                measured.append(chosen)
+
+        return measured
+
+    def analyze(self, standards, *, certified_value: float = 0.0, uncertainty: float = None) -> dict:
+        """Backward-compatible wrapper for legacy callers using ``analyze(...)``."""
+        if isinstance(standards, dict):
+            payload = standards
+        else:
+            payload = {
+                'measured': self._extract_measured_values(standards),
+                'certified': certified_value,
+                'uncertainty': uncertainty,
+            }
+        return self.analyze_standards(payload)
+
     def calculate_z_scores(self, measured: list, certified: float, uncertainty: float = None) -> list:
         """
         Calculate Z-scores for bias detection.
@@ -290,6 +357,70 @@ class BlanksAnalyzer:
         self.carryover_threshold = self.config.get('carryover_threshold', 5.0)  # %
         self.blank_limit = self.config.get('blank_limit', 0.1)  # absolute value
 
+    @staticmethod
+    def _coerce_float(value):
+        try:
+            converted = float(value)
+        except (TypeError, ValueError):
+            return None
+        if converted != converted:  # NaN guard
+            return None
+        return converted
+
+    def _extract_blank_values(self, blanks) -> list:
+        """Extract blank values from simple numeric lists or row dictionaries."""
+        if not blanks:
+            return []
+
+        if isinstance(blanks, dict):
+            blanks = [blanks]
+
+        values = []
+        if isinstance(blanks, list) and blanks and not isinstance(blanks[0], dict):
+            for item in blanks:
+                value = self._coerce_float(item)
+                if value is not None:
+                    values.append(value)
+            return values
+
+        preferred_keys = ('result', 'value', 'measured', 'blank')
+        for row in blanks:
+            if not isinstance(row, dict):
+                continue
+
+            chosen = None
+            for key in preferred_keys:
+                if key in row:
+                    chosen = self._coerce_float(row.get(key))
+                    if chosen is not None:
+                        break
+
+            if chosen is None:
+                for value in row.values():
+                    chosen = self._coerce_float(value)
+                    if chosen is not None:
+                        break
+
+            if chosen is not None:
+                values.append(chosen)
+
+        return values
+
+    def analyze(self, blanks, *, detection_limit: float = None, previous_samples: list = None) -> dict:
+        """Backward-compatible wrapper for legacy callers using ``analyze(...)``."""
+        if isinstance(blanks, dict):
+            payload = blanks
+        else:
+            payload = {
+                'blanks': self._extract_blank_values(blanks),
+                'previous_samples': previous_samples or [],
+            }
+
+        result = self.analyze_blanks(payload)
+        if detection_limit is not None:
+            result.setdefault('summary', {})['detection_limit'] = detection_limit
+        return result
+
     def calculate_mdl(self, blanks: list, confidence: float = 0.95) -> float:
         """
         Calculate Method Detection Limit from blanks.
@@ -408,7 +539,7 @@ class BlanksAnalyzer:
         Returns:
             Comprehensive analysis results
         """
-        blanks = data.get('blanks', [])
+        blanks = self._extract_blank_values(data.get('blanks', []))
         previous_samples = data.get('previous_samples', [])
 
         # Calculate metrics
@@ -462,6 +593,125 @@ class DuplicatesAnalyzer:
         self.precision_method = self.config.get('precision_method', 'simple_rpd')
         self.hyperbolic_m = self.config.get('hyperbolic_m', 1.0)
         self.hyperbolic_c = self.config.get('hyperbolic_c', 0.0)
+
+    @staticmethod
+    def _coerce_float(value):
+        try:
+            converted = float(value)
+        except (TypeError, ValueError):
+            return None
+        if converted != converted:  # NaN guard
+            return None
+        return converted
+
+    def _extract_numeric_from_row(self, row: dict):
+        preferred_keys = (
+            'result', 'value', 'measured', 'assay', 'original', 'duplicate',
+            'or', 'ck', 'au_ppm', 'au_gpt', 'cu_ppm', 'pb_ppm', 'zn_ppm', 'fe_pct',
+        )
+        for key in preferred_keys:
+            if key in row:
+                value = self._coerce_float(row.get(key))
+                if value is not None:
+                    return value
+        for value in row.values():
+            coerced = self._coerce_float(value)
+            if coerced is not None:
+                return coerced
+        return None
+
+    def _extract_duplicate_pairs(self, duplicates) -> list:
+        """Extract duplicate pairs from legacy representations."""
+        if not duplicates:
+            return []
+
+        # Already in pair format
+        if isinstance(duplicates, list) and duplicates and isinstance(duplicates[0], (list, tuple)):
+            pairs = []
+            for pair in duplicates:
+                if len(pair) < 2:
+                    continue
+                left = self._coerce_float(pair[0])
+                right = self._coerce_float(pair[1])
+                if left is not None and right is not None:
+                    pairs.append([left, right])
+            return pairs
+
+        # Scalar list -> pair consecutive values
+        if isinstance(duplicates, list) and duplicates and not isinstance(duplicates[0], dict):
+            numeric = [self._coerce_float(v) for v in duplicates]
+            numeric = [v for v in numeric if v is not None]
+            return [[numeric[i], numeric[i + 1]] for i in range(0, len(numeric) - 1, 2)]
+
+        if not isinstance(duplicates, list):
+            return []
+
+        pairs = []
+
+        # Dicts with explicit pair keys
+        explicit_keys = (
+            ('original', 'duplicate'),
+            ('primary', 'duplicate'),
+            ('value1', 'value2'),
+            ('or', 'ck'),
+        )
+        for row in duplicates:
+            if not isinstance(row, dict):
+                continue
+            for left_key, right_key in explicit_keys:
+                if left_key in row and right_key in row:
+                    left = self._coerce_float(row.get(left_key))
+                    right = self._coerce_float(row.get(right_key))
+                    if left is not None and right is not None:
+                        pairs.append([left, right])
+                    break
+
+        if pairs:
+            return pairs
+
+        # Group by sample ID root (e.g., RC0001 + RC0001-DUP)
+        grouped = {}
+        for row in duplicates:
+            if not isinstance(row, dict):
+                continue
+            sample_id = None
+            for id_key in ('sample_id', 'sampleid', 'sample', 'id', 'Sample_ID', 'SampleID'):
+                if id_key in row:
+                    sample_id = str(row.get(id_key, '')).strip().upper()
+                    break
+            value = self._extract_numeric_from_row(row)
+            if not sample_id or value is None:
+                continue
+
+            for suffix in ('-DUPLICATE', '_DUPLICATE', '-DUP', '_DUP', '-CK', '_CK'):
+                if sample_id.endswith(suffix):
+                    sample_id = sample_id[:-len(suffix)]
+                    break
+            grouped.setdefault(sample_id, []).append(value)
+
+        for values in grouped.values():
+            if len(values) >= 2:
+                pairs.append([values[0], values[1]])
+
+        if pairs:
+            return pairs
+
+        # Final fallback: numeric values from rows, paired in order
+        numeric_values = []
+        for row in duplicates:
+            if isinstance(row, dict):
+                value = self._extract_numeric_from_row(row)
+                if value is not None:
+                    numeric_values.append(value)
+        return [[numeric_values[i], numeric_values[i + 1]] for i in range(0, len(numeric_values) - 1, 2)]
+
+    def analyze(self, duplicates) -> dict:
+        """Backward-compatible wrapper for legacy callers using ``analyze(...)``."""
+        if isinstance(duplicates, dict):
+            payload = duplicates
+        else:
+            payload = {'duplicates': self._extract_duplicate_pairs(duplicates)}
+        return self.analyze_duplicates(payload)
 
     def calculate_rpd(self, value1: float, value2: float) -> float:
         """
@@ -724,7 +974,7 @@ class DuplicatesAnalyzer:
         Returns:
             Comprehensive analysis results
         """
-        duplicates = data.get('duplicates', [])
+        duplicates = self._extract_duplicate_pairs(data.get('duplicates', []))
 
         # Calculate metrics
         if self.precision_method == 'hyperbolic':

@@ -57,17 +57,66 @@ class QAQCPDFReporter:
             config: Dictionary with report settings
         """
         self.config = config or {}
-        self.page_size = self.config.get('page_size', A4)
-        self.margins = self.config.get('margins', {
+        self.page_size = self._normalize_page_size(self.config.get('page_size', A4))
+        default_margins = {
             'top': 0.75 * inch,
             'bottom': 0.75 * inch,
             'left': 0.75 * inch,
             'right': 0.75 * inch
-        })
+        }
+        self.margins = self._normalize_margins(self.config.get('margins', default_margins), default_margins)
         self.include_plots = self.config.get('include_plots', True)
         
         # Initialize styles
         self._init_styles()
+
+    @staticmethod
+    def _normalize_page_size(page_size: Any):
+        """Normalize page size from config string or tuple."""
+        if isinstance(page_size, str):
+            normalized = page_size.strip().upper()
+            if normalized == "A4":
+                return A4
+            if normalized in {"LETTER", "US_LETTER", "US-LETTER"}:
+                return letter
+            return A4
+
+        if isinstance(page_size, (list, tuple)) and len(page_size) == 2:
+            return tuple(page_size)
+
+        return page_size
+
+    @staticmethod
+    def _margin_to_points(value: Any) -> float:
+        """
+        Convert margin value to PDF points.
+
+        Backward compatibility:
+        - small numeric values (<= 10) are treated as inches
+        - larger numeric values are treated as points
+        """
+        if isinstance(value, (int, float)):
+            return float(value) * inch if value <= 10 else float(value)
+        return float(value)
+
+    def _normalize_margins(self, margins: Any, default_margins: Dict[str, float]) -> Dict[str, float]:
+        """Accept either dict margins or legacy [top, bottom, left, right] lists."""
+        if isinstance(margins, dict):
+            return {
+                key: self._margin_to_points(margins.get(key, default_margins[key]))
+                for key in ('top', 'bottom', 'left', 'right')
+            }
+
+        if isinstance(margins, (list, tuple)) and len(margins) == 4:
+            top, bottom, left, right = margins
+            return {
+                'top': self._margin_to_points(top),
+                'bottom': self._margin_to_points(bottom),
+                'left': self._margin_to_points(left),
+                'right': self._margin_to_points(right),
+            }
+
+        return default_margins
     
     def _init_styles(self) -> None:
         """Initialize custom paragraph styles."""

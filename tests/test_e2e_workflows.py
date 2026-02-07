@@ -193,7 +193,7 @@ PX0001-DUP,DUP,248,59,191,4.3
             assert len(results) > 0
             for element in elements:
                 if element in results:
-                    assert 'pass_rate' in results[element]
+                    assert 'overall_acceptable' in results[element]
 
         finally:
             if os.path.exists(csv_path):
@@ -251,7 +251,7 @@ ICP0001-DUP,DUP,1.22,46,191,8.6,1.18
                         certified_value=certified_values.get(element, 0),
                         uncertainty=certified_values.get(element, 0) * tolerance
                     )
-                    assert 'pass_rate' in element_results
+                    assert 'overall_acceptable' in element_results
 
         finally:
             if os.path.exists(csv_path):

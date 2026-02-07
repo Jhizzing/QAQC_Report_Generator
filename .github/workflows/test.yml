@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, pre-release ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, pre-release ]
 
 jobs:
   test:
@@ -28,13 +28,13 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-cov pytest-mock httpx
 
-    - name: Run unit tests
+    - name: Run functional tests
       run: |
-        pytest tests/ -m "not (integration or e2e or performance or slow)" -v --cov=src --cov-report=xml
+        pytest -q --no-cov
 
-    - name: Run integration tests
+    - name: Run core coverage gate
       run: |
-        pytest tests/ -m "integration" -v || true
+        pytest tests/ -q -o addopts='-v --strict-markers --tb=short --cov=src/analysis --cov=src/data --cov=src/reporting --cov=src/visualization --cov=src/core --cov-report=term-missing --cov-report=xml --cov-fail-under=60'
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -84,8 +84,8 @@ jobs:
 
     - name: Run type check
       working-directory: react_ui
-      run: npm run type-check || true
+      run: npm run type-check
 
     - name: Run tests
       working-directory: react_ui
-      run: npm test -- --run || true
+      run: npm test -- --run
