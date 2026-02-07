@@ -18,6 +18,7 @@
   - Core coverage command now enforces `--cov-fail-under=60`
   - Current result: **62.68%** on scoped modules
 - ✅ `pytest` default behavior now focuses on functional correctness (`--no-cov` in CI step)
+- ✅ Benchmark timing checks made platform-robust for Windows CI runs
 
 ### 3. React UI Quality Gates
 - ✅ Added `npm run type-check` script
@@ -45,6 +46,9 @@
   - `.github/workflows/build-artifacts.yml`
   - Matrix build targets: Windows/macOS/Linux
   - Includes packaged CLI smoke test + artifact upload
+- ✅ Verified first fully green cross-platform artifact run
+  - Run ID: `21779078084`
+- ✅ Added checksum manifest generation (`SHA256SUMS.txt`) with optional GPG signing in CI
 - ✅ Added installer/build scripts:
   - `packaging/windows/qaqc.iss` (Inno Setup template)
   - `packaging/macos/create_dmg.sh`
@@ -53,14 +57,14 @@
 
 ## ⚠️ Current Release Blockers
 
-1. **Cross-platform CI run confirmation pending**
-   - New workflow exists, but needs first successful run on GitHub Actions (Windows/macOS/Linux)
-
-2. **Installer/signing is partially implemented**
+1. **Installer/signing is partially implemented**
    - Installer scripts/templates are present, but signing/notarization and release automation are not yet wired
 
-3. **Release artifact optimization pending (React bundle size)**
+2. **Release artifact optimization pending (React bundle size)**
    - Vite build completes but reports very large chunks; code-splitting/manual chunking recommended
+
+3. **GitHub release publication remains manual**
+   - Artifacts + checksums are produced in CI, but tag-triggered Release publishing is not yet automated
 
 ## 📋 Pre-Release Checklist Status
 
@@ -71,7 +75,7 @@
 - [x] CI gates aligned for current release strategy
 - [x] React production checks passing
 - [x] PyInstaller executable builds working on current platform
-- [~] Cross-platform executable validation (workflow added, first green run pending)
+- [x] Cross-platform executable validation (first green run confirmed)
 - [~] Installer packaging + signing/notarization (scripts added, trust automation pending)
 
 ### Feature Coverage
@@ -87,10 +91,11 @@
 ## 🚀 Recommended Next Steps Toward Full Release
 
 1. Run and verify `.github/workflows/build-artifacts.yml` on `pre-release`
-2. Add checksum generation + signing/notarization workflow
-3. Optimize React bundle size (code splitting)
-4. Run external UAT with representative lab datasets
-5. Cut `v1.0.0` with release notes, checksums, and install guide
+2. Add tag-driven GitHub Release publication (attach artifacts + checksums)
+3. Complete signing/notarization pipeline for production distribution
+4. Optimize React bundle size (code splitting)
+5. Run external UAT with representative lab datasets
+6. Cut `v1.0.0` with release notes, checksums, and install guide
 
 ---
 

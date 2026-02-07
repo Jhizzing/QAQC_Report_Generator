@@ -60,12 +60,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- GitHub Actions artifact checksum stage in `.github/workflows/build-artifacts.yml`
+  - Generates `SHA256SUMS.txt` from cross-platform build artifacts
+  - Supports optional detached GPG signature (`SHA256SUMS.txt.asc`) via release secrets
+
+### Fixed
+- Stabilized performance benchmark tests on Windows by switching benchmark timing to `time.perf_counter_ns()`
+- Refactored `tests/test_persistence.py` to assert-based pytest style (removed boolean-return test warning)
+
 ### Planned
-- Full executable builds for Windows, macOS, and Linux
-- Installer packages (DMG, EXE, AppImage)
-- Additional test coverage improvements
-- Performance optimizations for very large datasets
-- Enhanced JORC report templates
+- Tag-driven GitHub Release publication with attached binaries and checksum manifest
+- Full installer trust automation (code signing/notarization)
+- React bundle size optimization for production distribution
 
 ---
 

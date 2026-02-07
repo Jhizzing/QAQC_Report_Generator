@@ -112,3 +112,18 @@ Document test results in `docs/testing/distribution/<date>.md` for traceability.
 3. **Code Signing Pipeline**: Securely store signing certificates and automate signing/notarization where your release policy requires it.
 4. **User Acceptance Testing**: Recruit a small group of geologists to exercise the packaged apps with real data before broad rollout.
 5. **Feedback Loop**: Capture installer/first-run friction in an issue tracker to prioritize quick fixes before marketing the standalone release.
+
+---
+
+## 6. CI Artifact Integrity (Checksums + Optional Signature)
+
+The `build-artifacts` workflow now includes a `checksums` job that:
+- Downloads all uploaded build artifacts from Windows/macOS/Linux jobs
+- Produces `SHA256SUMS.txt`
+- Optionally signs the checksum file as `SHA256SUMS.txt.asc` when GPG secrets are configured
+
+### Required Secrets for Optional GPG Signing
+- `RELEASE_GPG_PRIVATE_KEY`: ASCII-armored private key
+- `RELEASE_GPG_PASSPHRASE`: passphrase for the private key
+
+If these secrets are not set, checksum generation still runs and uploads `SHA256SUMS.txt`.
