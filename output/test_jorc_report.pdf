@@ -1,138 +1,175 @@
-QAQC ANALYSIS REPORT
-==================================================
-Generated: 2025-11-19 22:18:54
+%PDF-1.4
+%“Œ‹ž ReportLab Generated PDF document http://www.reportlab.com
+1 0 obj
+<<
+/F1 2 0 R /F2 3 0 R /F3 9 0 R
+>>
+endobj
+2 0 obj
+<<
+/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font
+>>
+endobj
+3 0 obj
+<<
+/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /Name /F2 /Subtype /Type1 /Type /Font
+>>
+endobj
+4 0 obj
+<<
+/Contents 14 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 13 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
 
-EXECUTIVE SUMMARY
-================
+>> 
+  /Type /Page
+>>
+endobj
+5 0 obj
+<<
+/Contents 15 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 13 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
 
-Overall QAQC Status: FAIL
-Analysis Date: 2025-11-19
-Total Samples: 100
+>> 
+  /Type /Page
+>>
+endobj
+6 0 obj
+<<
+/Contents 16 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 13 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
 
-JORC COMPLIANCE SUMMARY:
-QAQC samples were inserted at an overall rate of 15.0%, below the target of 20.0%. The program included Standards (5.0%), Blanks (5.0%), and Duplicates (5.0%). Corrective action is recommended to increase QAQC frequency in future programs.
+>> 
+  /Type /Page
+>>
+endobj
+7 0 obj
+<<
+/Contents 17 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 13 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
 
-STANDARDS ANALYSIS: FAIL
-- Bias Detection: YES
-- Recovery: 102.9%
-- Precision (RSD): 4.3%
+>> 
+  /Type /Page
+>>
+endobj
+8 0 obj
+<<
+/Contents 18 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 13 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
 
-BLANKS ANALYSIS: PASS
-- Contamination Rate: 0.0%
-- MDL: 0.000
-- Carry-over: NONE
+>> 
+  /Type /Page
+>>
+endobj
+9 0 obj
+<<
+/BaseFont /Helvetica-Oblique /Encoding /WinAnsiEncoding /Name /F3 /Subtype /Type1 /Type /Font
+>>
+endobj
+10 0 obj
+<<
+/Contents 19 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 13 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
 
-DUPLICATES ANALYSIS: FAIL
-- Mean RPD: 49.2%
-- Systematic Error: YES
-- Nugget Ratio: 0.140
+>> 
+  /Type /Page
+>>
+endobj
+11 0 obj
+<<
+/PageMode /UseNone /Pages 13 0 R /Type /Catalog
+>>
+endobj
+12 0 obj
+<<
+/Author (\(anonymous\)) /CreationDate (D:20260208194249+08'00') /Creator (\(unspecified\)) /Keywords () /ModDate (D:20260208194249+08'00') /Producer (ReportLab PDF Library - www.reportlab.com) 
+  /Subject (\(unspecified\)) /Title (\(anonymous\)) /Trapped /False
+>>
+endobj
+13 0 obj
+<<
+/Count 6 /Kids [ 4 0 R 5 0 R 6 0 R 7 0 R 8 0 R 10 0 R ] /Type /Pages
+>>
+endobj
+14 0 obj
+<<
+/Filter [ /ASCII85Decode /FlateDecode ] /Length 589
+>>
+stream
+Gat%_9lJ`N&;KZQ'm"2kZL#eak=3o3[>IijmNG(-DFB/O33Fa,rqMN*2DIUVJh1'ucHa&Jbe&KMq8)i4'EFa](lf2i+Su>@Kneq0Y-VZ*Zk6XMK!=XR:k?tQ&DH=j$&$\q"qTf_SUdh'"t-3(*YdcPn0&gK="r@PfDDJr'28#TgTlE\E0G52EaIj#+A$`!BcoPl:Z`0Ji!!YPOF<(C"tQ7r+>!)M#9gKAj^<Cu&H#6\?o3+BK_J/<n/i!X`]gT.@@!]o;oe&`YZ)9?'W3+loNc-s#Xi;_=,\^6eRtqHMBr[?WP^Fk`L[[l/^mTWKq@>XZKoEakk9K!FU$=\anKN#eN#VCb#P>m\=@j[fjZ'!>p_9]299U$NrDOZF<o5DNqp_m>#fA3BMr^io0mf[4l5o7(bI]((^*4"a&X.6nEhf'2c67KZ:YtWhTFEb,C*jR<IDAYiSAD%mN=][b0[hV.(5ZQ[#'##C0MD,jf7$Ap24=u0!B"4GHqsn)idZLh`@=0^^u$bjMS3LiV>I&TG8@-5Kc:_EY$TJMBd9SNtH161d^TJ*p3-3TLPe;jVTU-oi-+^hDBfE58VrSgA~>endstream
+endobj
+15 0 obj
+<<
+/Filter [ /ASCII85Decode /FlateDecode ] /Length 1232
+>>
+stream
+Gatm9h/D%+&:aF]EA%@@!+AHVUo6f8EJeRPPLrL]!I7NVekp'OY,$0\YWmS,MGb201,`r,@++fF]An;nT_N*d2pD@e`:3br!TO`@"X]%Up_)`ZjSQl:Zt2WnGrc6Uc=@2K8.e]/6jcL1%Fs/^0Q3LN+e_MC#Z*10j.#;X%&QJ!H)\+gQ=a?%%K$AO9jt&t0os+!=/V:T;N9c'A8Qk3KD6D(-dHG%BW)(G`UKaU:_BoSK]U5\LHd*h8-,/OU,=.:nK/u<Pj0W5"09NQ`mirT22&j<dMs,m]-rJ3pqc/B%j[3ZU8#G?2"/aN0]hl%D,u\[?fn]Lpu60$X4tU&])6CFrT9*s5RdQGK[8QmoWJur"qi'fMNLA[Yu'*Z$`BJH#bj4,lGM:4bT\7Di>n5AB[=OtX_!&L17qQaP8P>Geea)Lp?HP0S6fNRHdYnVNGhmniGoeK'j(H6$ih81QuuFpP<<Xi<$lH)h.0aeN%WIR\e)c@+ABF_KRt'.F.u(frWaiZ:[)E&.+_K9IoC=,`p;Tk(Nm;<=A'Us%(F"$q+orU5+b(p3ASS6)iQ$L68%f!\1\PG@d`SETdN6NMFV79lNnoTIbVdN1<Fr#%FWK9;+fS\_fe&4?<du'qV@ujpItbHf?oZp7;^0nVo/?Pkoc%V+f$5YqiG#?._b&.#dYWt/5o8_+P9V&a)plSU^*tEFbJL\M2l0S?Rg_"\1I=EA6.jIZ7n^'aOtML.7$;WBs!i"H*6m7Ee0BIG+ua?(Kd'%b0p7JJZt3d8`(h`B/:*p:9'50*Jc2<6r=7_FT@??UjB-$rckkVeG&FO_SUa<S^pQX]F%8>eb8./P8Yf&%c+CWoFQs(_9m]tM,ki-6!LT92G*H9862.!C%@G=e(&19.(6'd]uaD[1eF8R8X#FY5="Sc.%qlAXdjFXJ7<0;gJ+!.d8A7C]3b>1FsXtMi8k_$6)`CJ@n8=>h?s^]k=;`0ghm/th[XK*,2L+O>;g\bA8cW9FGn#akUQu\aL'a3Rb6XP&MG.6qm`K]V5&%tBj?!''>dnZk>.#+[=7I&nBP6@HZmn%_bK&'j84%g#\hW]YIeU2T3X#ao1s#Jpu:Sfp`?bZZ$QD_>LC%LS%j)mcb^5GMBA^5Z8Ipj@)G?8<c61306LcF/G^&%ZD7\0P]]2&&jPps,/mRQs!#^s<VaPJA(NK?7AO('gTl+)b3/F24IE!#'g.b,\McnMVeb!,PVDnPT]TC`~>endstream
+endobj
+16 0 obj
+<<
+/Filter [ /ASCII85Decode /FlateDecode ] /Length 1056
+>>
+stream
+Gatm9hbVu\&:Vr4EA'id$.$BH4E`Ci#UX489h`3ee1I*:"QBDKg)n)9S#0Hr'b<-9m+e.[pYC6]1SFNIps'ZU?RP@)KE:*eR/rL>_W1d49p3Pme!QfLM!j=lA=TV5Lf?.)*/Kc8Ad4]L=MVN(=dB]#PlZI%(,36>?6@"fZK8,?4H/&_h6cYV:0ls"gU\hQb4Qq>LX`!lb0D#`I@0qaa[($;BpoqH6o1>N+B/[p;AbrO*+"d8PQX>g0a8k*i"mV#<I-5I@@URIVH&#CJQ-g(I";W6+poMOrX^+36Lek"'a5Z*Ho^0$FNg'X=W*/G_sbX`dIA'.hhN",j0S8Fm+;7t(37;I_tY+>@fSu.bWmqBK-Jf=17%2*Z&3<5+@W_l76<Wd)mbLEDW<=6c<.8:Y[M1$-s;m;*jR6o6Q=r8QLphCH3C`G;P"4p]tiRI2/P&uY^drWF,d5@#FAQ>VQcnPgVM;$dbjJFD&bZ`ZtaB\hE12B"u<PSDG.3Zrm]Tu'kL=2]%5spg_JBRR,#;R->E*2X37et.B5Bbc9ISr#Cg*q5^VtX_)8R1=kF9P4TjU$DRPt-Vn"B/ha62?qJ=>&kK0kNl')k[7P;5DM&*omb22&2ft2=sU4UtQPn$/K!-q^0"CfBnV(1%I9aTr&VZrQB8IkqmM`cFr1^Kk62Ou9U@4f37LdTjt_eF$-fB*Wf.UfaTnkGnZ*:De+!E@14_ZXnu82?<JKuE!lot(gX&;Z+50WIJ[Y_KId9LO,k9Sj!_ff46.*]Ef22::,CjNugqG]p?Sn&Lgcm@4PVp_u5+8h>%deCrh8Ti&L\Uus/p)q\o=`aX)/s%r<]+BH/$elrWu+sl2-daLqJjUO'cmbUb,^ZV]e.W!#[NUuUbd3(XUd\ZmO57be[h70#+H=n=:*,blc-Y`l1r[EYnXfrW'os8F?G@Kjn;=(n-MhIpi)1&(#)#cflN,k*Km4-R4@(O4m>54hpYb@)sa1(rXC\8"<,SBZ#<9O&V[Hjh:.UL.0FD-$VQnSi5<KP=f9WhrS-0+;aD6#6:DDkZQ,_#hR%/9,~>endstream
+endobj
+17 0 obj
+<<
+/Filter [ /ASCII85Decode /FlateDecode ] /Length 1017
+>>
+stream
+Gau0A8T3?C'Y`m7I$Xi$!+AHVUo:';R247CK-iK1k`M/K>HO2Z;Nf.0If)=VnkuqOH:TVibM0e@;1R+Aik;:AM](Ba'+be_>6r1^As`:&QJ<i4`s,#YbXcA\/qqTdPZBf2?s799>BJ&]+@bZ@cPSUp+sjo@Vq7-u\!T"THLArt2u]uI#5j8N^@@a5quW$SF3`l-[m^5VQ6,<Mbe@J.(7jTBB3'R$6#RNtX&Pl4DVc`R:ItYj@(Bn#;C",J#pqHFG-hV*jI.c>il`l.2=cWn(sGG`9H![=3\F>_o)hr318&pa:-t>80,q3;H>tsUqJ1u1e`?;moZuc.i7Hk3:">h:6,<qV+RdlX^gK/+_$ObWKZHj&f0nF5.a?S4p^$$/YfN4N%3MfJ0"*;t)D!Cj.)qe"ONR2WVu^,9mL?nuNIWm"B3&F67'J2nHq!Mh]?9keSVIRfrg1bfZrm+>(B]Q')-gH*DCF7o";Ys)n,"/I=+":sm/p38s6-MTiU+AG-At"_U9;&/gi>upT2r\B4SjMKeH<AUrtIXV?2;l`E)i0G3M:i"L@VJsM*6?C,FQjOX0u3ieeLR,Z"(a.R:PFb3L)X8-4L#KD$B?kPIY%d%0ebp4Ltg4.do]J`X6<=eh5,_je#j2[1aiNF=BcqnN/%JnC1<I'U:T?d_.nn<21MJDFL=<JRGIo`piiMU]1BGr-a;H3Ur@(_\d)i,n0uZ->BPqW4B?;L7S\L7uf!rF*^ZBDpKgBiEA06*/=.WOQ25NCEo6&@jGM6SUR#$pLiMM-N#RZ.;/2V.2P$NVd/PY^jX'EHP=N0<TSC\D=e:fC@(tm>$r?7VZ$+WajY/h'K<D1?L/bBpO']BhJYo%]3W@H:X8aWMd?hACZ,'QLK1t%n([*;%+B83gXbi>mZX!QdI.?'q'ors?2&a'55K/MkSHaoak*KG<I:f^YCPnI[m<6)f,V!F0.k`[qL:MKMD6-4Bate7TsQ_jKQA]ke:siD1qB=%h0F4K.^ZR0gDS-54LG8M~>endstream
+endobj
+18 0 obj
+<<
+/Filter [ /ASCII85Decode /FlateDecode ] /Length 1047
+>>
+stream
+Gatm:9i'e'&A@7.bQXsg@Jh//f]='W#hl?k&sj0b&sT1<8_HPd+2;;EBhO"0LJe_^1LnbD2_U@MT_MspRMGlf@Q6>U^c97W@$4':0B"l#?@pa<S0K5h[1a-lVEuD'abXs[8h(_sW5`]WCJSS?8>oPn"R[e5GLO;eKRT?MDfo*u^eQ7W"+T:ZQF9C(qZr^4]heGf2/'^!`YR&V`6T"`q4s.MTohSs_`IsR9#3n$K@>@gn"9e0_,*RZ_+G(4`X!*??J9E:"uh@;X"Q:@b1;mpkTIm?+B%5AU8(sA*j)-1^`Akr'+R]_^5QQuGP(4to),^6*tP&pe\Aa9Se"n[^\NsoaHasX!AM%!$B3!!JOETG7BDV^/CY/>l1Yr975W%R><qKZZ\Z]ri&-j]fYW>Uh8p:<ZBeS[kS,,s3denO+*=XrLR4r979VtS)kkTTH'VnITh^JZDJMf.g=EdDAiJqrnb-tjc,qb7/":-n2CSsTTUt6SL/o)VCQd#V&n\NZ)q[8eZ<,fN8:@p^>G\cEi$]P(Ch:f>_L6?AI<<6iPFNrp#l5)),bJL2h%B+Nch[_[?J)-td[G";P7BV#T?t\[8@3=:;D&#WJt3-.c:Vc5LYMs*C`q!/W=u1J?Dr8+_N5o5G\^,MaL`*77\p$q^]:hn+4Gsbj7_Ii"i'-c5.k0SqRn>fPB,jsSmSJCT>D8smQh`W=<qXp7M:Q>/(>VYjkm5>#H'`/KN7F"Jt3hI+VF,u(Q3b[k/2h\,@X).>SF4KGT$0LqWF1qI(spGf/XY3n4u#V9$B:s.fh:(p$SuGKhV;OLirTWB%^r!>6Bh9kbK:PO6lhP8I6fT04i&F8uAdpIK,N`L'h-V-1P-qq(e"#nSJA(o&mc,(5]ae1d6W2KHO_;*k;_B[or<UcX<8BA(tff-+AKk,fsi6!>ODqW8Ut:fE,\g$HH.(WA`bq>7ob`XZ*Y&$_XY7@r)_c&CtB5UUJPt8slEHUq+;@k=r-dUAXHf5HYA6KROQFQ`ma[cDHpdg"GH7`]G,H^:;eWSt]iY>m%o-_NQ@B~>endstream
+endobj
+19 0 obj
+<<
+/Filter [ /ASCII85Decode /FlateDecode ] /Length 1355
+>>
+stream
+Gat%!gMYb*&:O:S$jm\F((Dcle1GTqj()#_]8<Wnp;&D@7,-M\i_m-h"8hUMUuZkAFCQGZ3TBOu1M;FVI/Hh85Hb(T1ALc4JMP;Y5WReb4i&NcHlM^?`!0*Pp$3ko)%C'u4QNKfJ:p&Wdff<uDP2E$R`<:,_?9qq=+U*dq_EiZ>*RcB[4moi7N;+=*b?q20X:]@Zfp+Uf7&=pcXJLM\q98jaF82cVNDrJ*(WKf.08H"J-I`e*sW34K,R&dM'%m+5pR3EU4gKoFBC&%13c)[4+)#L1%/UtK`R>r(5,3QL[9C(KIf8rjTDi*5!L`oOjbhcWd%nM*"O4)]mC[V9>?OZSk%fcn1PS*#Q3drM?G>T5m0c4TRimE`(-sZV_jDba4fp_J-Tf/bO5b.-`/?OIH%S0PgXscg"OXiC!p<hB&sFRkZWG$DZJ;Ur*fC65D`kl"k\?l/L8Q/Z>;G!SqE0_%:FaR\ll'8bA%q,/XG1B_&%l$[?O/3#+hZ/Ri5683NeXqf\N*WijG"95J]bM7Q'j68DbFX@HpPim]c.m11/PrgIemsl2pC-&^r63c_V>X">/4tDHruP$8pQ^&eI]h[aYXI8)>an'W&nAa%CB%+8U++&&r#_+haRM7O"9?GZfl$R4U6O/""sUJSZ>$;S4p?,E:QS]WGo*K,pi:s2N%i>hl$JO?.@)K"FL@keo/s_LM>JR$EsQhmXYAhUG"RV(HjC$OicB7C0AW4S9tf'5.gf&@uO>_.tLb2uG:/=M#R7a(I5ee2S,%.%XD-Ou-c%m#75`AH(.TYFHr/Kg\.>&:#mp`]9o\CK\)@^H>k;O`(hc,*H@-r6;CZ.^@aCe1t)W\dK9_/`B^P1S:AfQrUO%=ca0_.\;<HrR`N,9_Y5f2[\F]jf%4Pa^:*iUIdATLMZU,G4Qb!*iDNKSe`6b$YJQIUiG*'[]B)8oKPhPhQ?*D/Jk^1'rpD.3Ym4J70OWH/nI,T_Y-G(W&cS5L$d;nC85AJf<h&>/aHY.-(OAGp-a$m_D'q*FqpBjHhU4;HN-6G>MiW)((kVR`K?i"\852-a2OP7'&<,1StpS?M9m$UnQ1BM(L7ZD;o5&u$@IT[JjUjN7Y@n1#FjC'/(<Lj47T)GPX2)aAJWR;:uLQ\;&]RDV5R7N]NInpp/@TGoHQ@VQNWhVh6@2WGHQoXptQmh"(FdgPa(K8;5maOZ"d(RB2r(][\FB\:?)]`jK'SS8m0MT0g*QjYAp$GVoHc89&/lnF9-e3qC1iU2t&?D6NKs$U,\Ha2l[A4rEa(3.ZC"gm;!\g#%9`t[$rSG?K2/bo=\,3=;>#O]@0MfKd[:uI0dGMlZZ**D2YmOq$dFYrrBWBTC)~>endstream
+endobj
+xref
+0 20
+0000000000 65535 f 
+0000000073 00000 n 
+0000000124 00000 n 
+0000000231 00000 n 
+0000000343 00000 n 
+0000000548 00000 n 
+0000000753 00000 n 
+0000000958 00000 n 
+0000001163 00000 n 
+0000001368 00000 n 
+0000001483 00000 n 
+0000001689 00000 n 
+0000001759 00000 n 
+0000002043 00000 n 
+0000002134 00000 n 
+0000002814 00000 n 
+0000004138 00000 n 
+0000005286 00000 n 
+0000006395 00000 n 
+0000007534 00000 n 
+trailer
+<<
+/ID 
+[<f66664811255931a1f61b4736ce53d61><f66664811255931a1f61b4736ce53d61>]
+% ReportLab generated PDF document -- digest (http://www.reportlab.com)
 
-RECOMMENDATIONS:
-- Investigate and correct systematic bias in standards analysis
-- Improve duplicate precision through better homogenization
-- Investigate systematic errors in duplicate analysis
-
-
-STANDARDS
-=========
-
-BIAS ANALYSIS:
-- Bias Detected: YES
-- Systematic Bias: NO
-- Max Z-Score: 2.684
-- Mean Z-Score: 0.968
-
-RECOVERY ANALYSIS:
-- Recovery Acceptable: YES
-- Mean Recovery: 102.95%
-- Recovery Limits: (90, 110)
-
-PRECISION ANALYSIS:
-- Precision Acceptable: YES
-- RSD: 4.30%
-- CV: 0.043
-- Standard Deviation: 0.028
-
-
-BLANKS
-======
-
-CONTAMINATION ANALYSIS:
-- Contamination Acceptable: NO
-- Contamination Rate: 0.00%
-- MDL: 0.000
-- Threshold: 0.000
-
-CARRY-OVER ANALYSIS:
-- Carry-over Detected: NO
-- Trend: 0.000
-
-BACKGROUND ANALYSIS:
-- Background Acceptable: NO
-- Mean: 0.000
-- Standard Deviation: 0.000
-- CV: 0.00%
-
-
-DUPLICATES
-==========
-
-PRECISION ANALYSIS:
-- Precision Acceptable: NO
-- Mean RPD: 49.25%
-- Max RPD: 133.33%
-- Threshold: 0.00%
-
-SYSTEMATIC ERROR ANALYSIS:
-- Systematic Error: YES
-- Mean Bias: -0.492
-
-SPATIAL ANALYSIS:
-- Nugget Ratio: 0.140
-
-
-
-
-JORC TABLE 1 - SECTION 1 (SAMPLING TECHNIQUES AND DATA)
-=======================================================
-
-The following text is generated to assist the Competent Person in completing JORC Table 1.
-Please review and edit as necessary to ensure it accurately reflects the project's specific procedures.
-
-Criteria: Quality of assay data and laboratory tests
-----------------------------------------------------
-"Nature of quality control procedures adopted (e.g. standards, blanks, duplicates, external laboratory checks) and whether acceptable levels of accuracy (i.e. lack of bias) and precision have been established."
-
-SUGGESTED TEXT:
-QAQC samples were inserted at an overall rate of 15.0%, below the target of 20.0%. The program included Standards (5.0%), Blanks (5.0%), and Duplicates (5.0%). Corrective action is recommended to increase QAQC frequency in future programs.
-
-Standards Analysis:
-Analysis of Certified Reference Materials (CRMs) indicates that accuracy is outside of tolerance.
-- Bias: Bias detected in some standards.
-- Precision: Acceptable.
-
-Blanks Analysis:
-Analysis of blank samples indicates that contamination is minimal.
-- Contamination Rate: 0.0% of blanks returned values > 3x MDL.
-
-Duplicates Analysis:
-Analysis of duplicate samples indicates that precision is poor.
-- Sampling/Analytical Precision: Mean RPD of 49.2%.
-
-Criteria: Verification of sampling and assaying
------------------------------------------------
-"The verification of significant intersections by either independent or alternative personnel."
-
-SUGGESTED TEXT:
-Significant intersections have been verified by internal QAQC procedures.
-No independent verification has been performed at this stage (modify if incorrect).
-
-
-APPENDICES
-====================
-
-DATA SUMMARY:
-- Total Samples: 100
-- Standards: 5
-- Blanks: 0
-- Duplicates: 3
+/Info 12 0 R
+/Root 11 0 R
+/Size 20
+>>
+startxref
+8981
+%%EOF
