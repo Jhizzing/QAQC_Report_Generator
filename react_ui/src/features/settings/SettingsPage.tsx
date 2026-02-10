@@ -1,11 +1,11 @@
 import React from 'react';
-import { 
-  Settings, 
-  FileOutput, 
+import {
+  Settings,
+  FileOutput,
   FileText,
-  Beaker, 
-  Server, 
-  Info, 
+  Beaker,
+  Server,
+  Info,
   RotateCcw,
   Check,
   X,
@@ -59,7 +59,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, isBackendAv
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-        
+
         {/* Export Settings */}
         <section className="bg-surface rounded-xl border border-secondary-dark overflow-hidden">
           <div className="px-6 py-4 border-b border-secondary-dark flex items-center gap-3">
@@ -189,16 +189,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, isBackendAv
         <section className="bg-surface rounded-xl border border-secondary-dark overflow-hidden">
           <div className="px-6 py-4 border-b border-secondary-dark flex items-center gap-3">
             <Server className="w-5 h-5 text-emerald-400" />
-            <h2 className="text-lg font-semibold text-slate-50">Backend Connection</h2>
+            <h2 className="text-lg font-semibold text-slate-50">Server Status</h2>
             <div className={`
               ml-auto flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium
-              ${isBackendAvailable 
-                ? 'bg-status-success/20 text-status-success' 
+              ${isBackendAvailable
+                ? 'bg-status-success/20 text-status-success'
                 : 'bg-slate-600/20 text-slate-400'
               }
             `}>
               <div className={`w-2 h-2 rounded-full ${isBackendAvailable ? 'bg-status-success' : 'bg-slate-500'}`} />
-              {isBackendAvailable ? 'Connected' : 'Offline'}
+              {isBackendAvailable ? 'Server Connected' : 'Offline Mode'}
             </div>
           </div>
           <div className="p-6 space-y-6">
@@ -371,15 +371,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, isBackendAv
                 </p>
                 <div className="flex items-center gap-4 mt-3">
                   <span className="text-xs text-slate-500">Version 1.0.0</span>
-                  <a 
-                    href="#" 
+                  <a
+                    href="#"
                     className="flex items-center gap-1 text-xs text-primary hover:text-primary-light transition-colors"
                   >
                     <ExternalLink className="w-3 h-3" />
                     Documentation
                   </a>
-                  <a 
-                    href="#" 
+                  <a
+                    href="#"
                     className="flex items-center gap-1 text-xs text-primary hover:text-primary-light transition-colors"
                   >
                     <ExternalLink className="w-3 h-3" />
@@ -405,7 +405,7 @@ interface ToggleSettingProps {
 }
 
 const ToggleSetting: React.FC<ToggleSettingProps> = ({ label, description, value, onChange }) => (
-  <div 
+  <div
     className="flex items-center justify-between p-4 bg-surface-light/30 rounded-lg border border-white/5 cursor-pointer hover:bg-surface-light/50 transition-colors"
     onClick={() => onChange(!value)}
   >
@@ -440,8 +440,8 @@ interface NumberSettingProps {
   step: number;
 }
 
-const NumberSetting: React.FC<NumberSettingProps> = ({ 
-  label, description, value, onChange, min, max, step 
+const NumberSetting: React.FC<NumberSettingProps> = ({
+  label, description, value, onChange, min, max, step
 }) => (
   <div className="p-4 bg-surface-light/30 rounded-lg border border-white/5">
     <div className="flex items-center justify-between mb-2">

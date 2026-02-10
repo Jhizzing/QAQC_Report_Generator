@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Image, ArrowLeft, Download, CheckSquare, Server, FileOutput, Save } from 'lucide-react';
+import { FileText, Image, ArrowLeft, Download, CheckSquare, Server, FileOutput, Save, Check, AlertCircle } from 'lucide-react';
 import type { JORCReportConfig, FiguresConfig } from './ReportConfig';
 import type { QAQCAnalysisOutput } from '../analysis/qaqcAnalysis';
 import { exportResults } from '../../services/analysisService';
@@ -8,7 +8,7 @@ import { useSettingsStore } from '../../stores/settingsStore';
 interface ReportWorkflowProps {
     results: QAQCAnalysisOutput;
     onBack: () => void;
-    onGenerate: (type: 'report' | 'figures', config: JORCReportConfig | FiguresConfig) => void;
+    onGenerate: (type: 'report' | 'figures', config: JORCReportConfig | FiguresConfig) => Promise<void>;
     isBackendAvailable?: boolean;
     analysisId?: string | null;
 }
@@ -16,8 +16,8 @@ interface ReportWorkflowProps {
 type ReportType = 'figures' | 'report';
 type ExportFormat = 'docx' | 'excel' | 'pdf';
 
-export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({ 
-    onBack, 
+export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({
+    onBack,
     onGenerate,
     isBackendAvailable,
     analysisId
@@ -26,6 +26,7 @@ export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({
     const [reportType, setReportType] = useState<ReportType>('figures');
     const [isExporting, setIsExporting] = useState(false);
     const [exportError, setExportError] = useState<string | null>(null);
+    const [exportSuccess, setExportSuccess] = useState(false);
 
     // Figures config
     const [figuresConfig, setFiguresConfig] = useState<FiguresConfig>({
@@ -79,11 +80,23 @@ export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({
         setFiguresConfig(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
-    const handleGenerate = () => {
-        if (reportType === 'figures') {
-            onGenerate('figures', figuresConfig);
-        } else {
-            onGenerate('report', jorcConfig);
+    const handleGenerate = async () => {
+        setIsExporting(true);
+        setExportError(null);
+        setExportSuccess(false);
+        try {
+            if (reportType === 'figures') {
+                await onGenerate('figures', figuresConfig);
+            } else {
+                await onGenerate('report', jorcConfig);
+            }
+            setExportSuccess(true);
+            // Auto-hide success after 5 seconds
+            setTimeout(() => setExportSuccess(false), 5000);
+        } catch (error) {
+            setExportError(error instanceof Error ? error.message : 'Export failed');
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -132,16 +145,14 @@ export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({
             <div className="grid grid-cols-2 gap-4 mb-8">
                 <button
                     onClick={() => setReportType('figures')}
-                    className={`relative p-5 rounded-xl border-2 transition-all text-left ${
-                        reportType === 'figures'
+                    className={`relative p-5 rounded-xl border-2 transition-all text-left ${reportType === 'figures'
                             ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
                             : 'border-secondary-dark hover:border-primary/50 hover:bg-surface-light'
-                    }`}
+                        }`}
                 >
                     <div className="flex items-start gap-4">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                            reportType === 'figures' ? 'bg-primary text-slate-900' : 'bg-accent/20 text-accent'
-                        }`}>
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${reportType === 'figures' ? 'bg-primary text-slate-900' : 'bg-accent/20 text-accent'
+                            }`}>
                             <Image className="w-5 h-5" />
                         </div>
                         <div>
@@ -162,16 +173,14 @@ export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({
 
                 <button
                     onClick={() => setReportType('report')}
-                    className={`relative p-5 rounded-xl border-2 transition-all text-left ${
-                        reportType === 'report'
+                    className={`relative p-5 rounded-xl border-2 transition-all text-left ${reportType === 'report'
                             ? 'border-purple-500 bg-purple-500/10 ring-2 ring-purple-500/20'
                             : 'border-secondary-dark hover:border-purple-500/50 hover:bg-surface-light'
-                    }`}
+                        }`}
                 >
                     <div className="flex items-start gap-4">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                            reportType === 'report' ? 'bg-purple-500 text-slate-50' : 'bg-purple-500/20 text-purple-400'
-                        }`}>
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${reportType === 'report' ? 'bg-purple-500 text-slate-50' : 'bg-purple-500/20 text-purple-400'
+                            }`}>
                             <FileText className="w-5 h-5" />
                         </div>
                         <div>
@@ -203,15 +212,13 @@ export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({
                                 <button
                                     key={opt.key}
                                     onClick={() => toggleFigureOption(opt.key)}
-                                    className={`p-4 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${
-                                        figuresConfig[opt.key]
+                                    className={`p-4 rounded-xl border-2 text-left transition-all flex items-center gap-3 ${figuresConfig[opt.key]
                                             ? 'border-primary bg-primary/10'
                                             : 'border-secondary-light bg-surface-light hover:border-primary/50'
-                                    }`}
+                                        }`}
                                 >
-                                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                                        figuresConfig[opt.key] ? 'bg-primary border-primary text-slate-900' : 'border-secondary-light'
-                                    }`}>
+                                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${figuresConfig[opt.key] ? 'bg-primary border-primary text-slate-900' : 'border-secondary-light'
+                                        }`}>
                                         {figuresConfig[opt.key] && <CheckSquare className="w-3 h-3" />}
                                     </div>
                                     <div>
@@ -339,10 +346,80 @@ export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({
                 )}
             </div>
 
+            {/* Report Options (Cover Page & JORC Table) — inline for convenience */}
+            {reportType === 'report' && (
+                <div className="bg-surface rounded-xl border border-secondary-dark p-6 mb-6">
+                    <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">
+                        Report Options
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div
+                            className="flex items-center justify-between p-4 bg-surface-light/30 rounded-lg border border-white/5 cursor-pointer hover:bg-surface-light/50 transition-colors"
+                            onClick={() => settings.export && updateExportSettings({ includeCoverPage: !settings.export.includeCoverPage })}
+                        >
+                            <div>
+                                <p className="text-sm font-medium text-slate-200">Include Cover Page</p>
+                                <p className="text-xs text-slate-500">Add a professional cover page</p>
+                            </div>
+                            <div className={`
+                                w-11 h-6 rounded-full transition-colors relative
+                                ${settings.export.includeCoverPage ? 'bg-primary' : 'bg-slate-600'}
+                            `}>
+                                <div className={`
+                                    absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow
+                                    ${settings.export.includeCoverPage ? 'left-5.5 translate-x-0.5' : 'left-0.5'}
+                                `}>
+                                    {settings.export.includeCoverPage && <Check className="w-3 h-3 text-primary absolute top-1 left-1" />}
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            className="flex items-center justify-between p-4 bg-surface-light/30 rounded-lg border border-white/5 cursor-pointer hover:bg-surface-light/50 transition-colors"
+                            onClick={() => settings.export && updateExportSettings({ includeJORCTable: !settings.export.includeJORCTable })}
+                        >
+                            <div>
+                                <p className="text-sm font-medium text-slate-200">Include JORC Table 1</p>
+                                <p className="text-xs text-slate-500">Add editable JORC Table 1 section</p>
+                            </div>
+                            <div className={`
+                                w-11 h-6 rounded-full transition-colors relative
+                                ${settings.export.includeJORCTable ? 'bg-primary' : 'bg-slate-600'}
+                            `}>
+                                <div className={`
+                                    absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow
+                                    ${settings.export.includeJORCTable ? 'left-5.5 translate-x-0.5' : 'left-0.5'}
+                                `}>
+                                    {settings.export.includeJORCTable && <Check className="w-3 h-3 text-primary absolute top-1 left-1" />}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Export Success Banner */}
+            {exportSuccess && (
+                <div className="mb-4 p-4 bg-status-success/10 border border-status-success rounded-lg flex items-center gap-3 animate-fade-in">
+                    <div className="w-8 h-8 rounded-full bg-status-success/20 flex items-center justify-center">
+                        <Check className="w-5 h-5 text-status-success" />
+                    </div>
+                    <div>
+                        <p className="text-status-success font-medium">Report exported successfully!</p>
+                        <p className="text-slate-400 text-sm">Your {reportType === 'figures' ? 'figures' : 'JORC report'} has been downloaded.</p>
+                    </div>
+                </div>
+            )}
+
             {/* Export Error */}
             {exportError && (
-                <div className="mb-4 p-4 bg-status-error/10 border border-status-error rounded-lg">
-                    <p className="text-status-error text-sm">{exportError}</p>
+                <div className="mb-4 p-4 bg-status-error/10 border border-status-error rounded-lg flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-status-error/20 flex items-center justify-center">
+                        <AlertCircle className="w-5 h-5 text-status-error" />
+                    </div>
+                    <div>
+                        <p className="text-status-error font-medium">Export failed</p>
+                        <p className="text-slate-400 text-sm">{exportError}</p>
+                    </div>
                 </div>
             )}
 
@@ -363,14 +440,22 @@ export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({
                 <button
                     onClick={handleGenerate}
                     disabled={isExporting}
-                    className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 ${
-                        reportType === 'figures'
+                    className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 ${reportType === 'figures'
                             ? 'bg-gradient-to-r from-primary to-primary-dark text-slate-900 hover:shadow-primary/20'
                             : 'bg-gradient-to-r from-purple-500 to-purple-700 text-slate-50 hover:shadow-purple-500/20'
-                    }`}
+                        }`}
                 >
-                    <Download className="w-5 h-5" />
-                    {reportType === 'figures' ? 'Export Figures (DOCX)' : 'Generate JORC Report (DOCX)'}
+                    {isExporting ? (
+                        <>
+                            <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            Exporting...
+                        </>
+                    ) : (
+                        <>
+                            <Download className="w-5 h-5" />
+                            {reportType === 'figures' ? 'Export Figures (DOCX)' : 'Generate JORC Report (DOCX)'}
+                        </>
+                    )}
                 </button>
 
                 {/* Server-Side Export Options */}

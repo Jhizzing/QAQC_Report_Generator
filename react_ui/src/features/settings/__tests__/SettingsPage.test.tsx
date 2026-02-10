@@ -50,7 +50,7 @@ describe('SettingsPage', () => {
             />
         );
 
-        expect(screen.getByText(/backend connection/i)).toBeInTheDocument();
+        expect(screen.getByText(/server status/i)).toBeInTheDocument();
     });
 
     it('should show backend connection status', () => {
@@ -61,7 +61,7 @@ describe('SettingsPage', () => {
             />
         );
 
-        expect(screen.getByText(/connected/i)).toBeInTheDocument();
+        expect(screen.getByText(/server connected/i)).toBeInTheDocument();
 
         rerender(
             <SettingsPage
@@ -70,6 +70,6 @@ describe('SettingsPage', () => {
             />
         );
 
-        expect(screen.getByText(/offline/i)).toBeInTheDocument();
+        expect(screen.getByText(/offline mode/i)).toBeInTheDocument();
     });
 });
