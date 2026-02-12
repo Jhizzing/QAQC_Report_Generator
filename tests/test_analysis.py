@@ -317,18 +317,25 @@ class TestDuplicatesAnalyzer:
         analyzer = DuplicatesAnalyzer()
         duplicates = [[10.0, 12.0], [15.0, 17.0], [20.0, 22.0]]
 
-        nugget_ratio = analyzer.calculate_nugget_ratio(duplicates)
+        result = analyzer.calculate_nugget_ratio(duplicates)
 
-        assert 0 <= nugget_ratio <= 1
+        assert isinstance(result, dict)
+        assert 'ratio' in result
+        assert 0 <= result['ratio'] <= 1
+        assert 'nugget' in result
+        assert 'sill' in result
+        assert 'interpretation' in result
 
     def test_calculate_nugget_ratio_insufficient_data(self):
         """Test nugget ratio calculation with insufficient data."""
         analyzer = DuplicatesAnalyzer()
         duplicates = [[10.0, 12.0]]
 
-        nugget_ratio = analyzer.calculate_nugget_ratio(duplicates)
+        result = analyzer.calculate_nugget_ratio(duplicates)
 
-        assert nugget_ratio == 0.0
+        assert isinstance(result, dict)
+        assert result['ratio'] == 0.0
+        assert result['interpretation'] == 'insufficient_data'
 
     def test_analyze_duplicates(self):
         """Test complete duplicates analysis."""

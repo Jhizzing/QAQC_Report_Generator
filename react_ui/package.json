@@ -8,12 +8,17 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "type-check": "tsc -b",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "coverage:ratchet": "node scripts/check-coverage-ratchet.mjs",
+    "coverage:ratchet:ci": "node scripts/check-coverage-ratchet.mjs --warn-only",
+    "test:e2e": "playwright test",
+    "test:e2e:update": "playwright test --update-snapshots"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -28,6 +33,7 @@
     "jspdf": "^3.0.4",
     "lucide-react": "^0.554.0",
     "plotly.js": "^3.3.1",
+    "plotly.js-basic-dist-min": "^3.3.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-dropzone": "^14.3.8",
@@ -39,10 +45,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.2",
     "@types/file-saver": "^2.0.7",
+    "@types/jest-axe": "^3.5.9",
     "@types/node": "^24.10.0",
     "@types/plotly.js": "^3.0.9",
     "@types/react": "^19.2.2",
@@ -56,6 +64,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "jest-axe": "^10.0.0",
     "jsdom": "^25.0.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",

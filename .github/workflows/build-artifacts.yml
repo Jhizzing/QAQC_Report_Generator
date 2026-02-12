@@ -1,0 +1,140 @@
+name: Build Artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ pre-release ]
+    paths:
+      - 'scripts/build_executables.py'
+      - 'packaging/pyinstaller/**'
+      - 'src/**'
+      - 'main.py'
+      - 'launch_gui.py'
+      - 'requirements.txt'
+      - '.github/workflows/build-artifacts.yml'
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.11']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build CLI and GUI executables
+        run: |
+          python scripts/build_executables.py --target all --clean
+
+      - name: Smoke test packaged CLI
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          import shutil
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          root = Path.cwd()
+          exe_name = "QAQC-CLI.exe" if os.name == "nt" else "QAQC-CLI"
+          cli_exe = root / "dist" / "cli" / exe_name
+
+          if not cli_exe.exists():
+              raise SystemExit(f"CLI executable not found: {cli_exe}")
+
+          subprocess.run([str(cli_exe), "--help"], check=True)
+
+          out_dir = root / "output" / "ci_smoke"
+          if out_dir.exists():
+              shutil.rmtree(out_dir)
+
+          cmd = [
+              str(cli_exe),
+              "--input", "mock_data/complex_test_data.csv",
+              "--output", str(out_dir),
+              "--infer-mapping",
+              "--normalize-results",
+              "--yes",
+              "--auto-crm",
+              "--output-format", "both",
+          ]
+          subprocess.run(cmd, check=True)
+
+          has_pdf = any(out_dir.glob("*.pdf"))
+          has_xlsx = any(out_dir.glob("*.xlsx"))
+          if not has_pdf or not has_xlsx:
+              raise SystemExit("Smoke test did not generate both PDF and XLSX outputs")
+
+          print("Smoke test passed")
+          PY
+
+      - name: Upload executables
+        uses: actions/upload-artifact@v4
+        with:
+          name: qaqc-${{ matrix.os }}
+          path: |
+            dist/cli/*
+            dist/gui/*
+          if-no-files-found: error
+          retention-days: 14
+
+  checksums:
+    name: Generate Checksums
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      RELEASE_GPG_PRIVATE_KEY: ${{ secrets.RELEASE_GPG_PRIVATE_KEY }}
+      RELEASE_GPG_PASSPHRASE: ${{ secrets.RELEASE_GPG_PASSPHRASE }}
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate SHA256 checksums
+        run: |
+          set -euo pipefail
+          cd artifacts
+          find . -type f ! -name 'SHA256SUMS.txt' ! -name 'SHA256SUMS.txt.asc' \
+            -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Import release signing key
+        if: ${{ env.RELEASE_GPG_PRIVATE_KEY != '' && env.RELEASE_GPG_PASSPHRASE != '' }}
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ env.RELEASE_GPG_PRIVATE_KEY }}
+          passphrase: ${{ env.RELEASE_GPG_PASSPHRASE }}
+
+      - name: Sign checksum manifest
+        if: ${{ env.RELEASE_GPG_PRIVATE_KEY != '' && env.RELEASE_GPG_PASSPHRASE != '' }}
+        run: |
+          set -euo pipefail
+          cd artifacts
+          gpg --batch --yes --pinentry-mode loopback --armor \
+            --detach-sign --output SHA256SUMS.txt.asc SHA256SUMS.txt
+
+      - name: Upload checksum manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: qaqc-checksums
+          path: |
+            artifacts/SHA256SUMS.txt
+            artifacts/SHA256SUMS.txt.asc
+          if-no-files-found: ignore
+          retention-days: 30

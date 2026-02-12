@@ -113,10 +113,10 @@ export function analyzeDuplicates(
     const statistics = calculateDuplicatesStatistics(results);
 
     // Calculate correlation for each element
-    const correlation = calculateCorrelationByElement(pairs, config);
+    const correlation = calculateCorrelationByElement(pairs);
 
     // Calculate nugget ratio for each element
-    const nuggetRatio = calculateNuggetRatioByElement(pairs, config);
+    const nuggetRatio = calculateNuggetRatioByElement(pairs);
 
     // Flag poor precision pairs
     const flaggedPairs = results.filter(r => !r.pass);
@@ -318,8 +318,7 @@ function calculateCorrelation(
  * Calculate correlation by element
  */
 function calculateCorrelationByElement(
-    pairs: DuplicatePair[],
-    config: DuplicatesAnalysisConfig
+    pairs: DuplicatePair[]
 ): DuplicatesAnalysisResults['correlation'] {
     const elementGroups = new Map<string, DuplicatePair[]>();
 
@@ -414,8 +413,7 @@ function calculateNuggetRatio(
  * Calculate nugget ratio by element
  */
 function calculateNuggetRatioByElement(
-    pairs: DuplicatePair[],
-    config: DuplicatesAnalysisConfig
+    pairs: DuplicatePair[]
 ): DuplicatesAnalysisResults['nuggetRatio'] {
     const elementGroups = new Map<string, DuplicatePair[]>();
 

@@ -1,11 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller spec for QAQC CLI executable (single-file)."""
 
+import os
 from pathlib import Path
 
 block_cipher = None
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+# PyInstaller may execute spec files without __file__ set.
+PROJECT_ROOT = Path(os.environ.get("QAQC_PROJECT_ROOT", Path.cwd())).resolve()
 MAIN_SCRIPT = PROJECT_ROOT / "main.py"
 SPEC_NAME = "qaqc_cli"
 

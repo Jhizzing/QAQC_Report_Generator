@@ -45,16 +45,16 @@ function App() {
   const [analysisId, setAnalysisId] = useState<string | null>(null); // Server analysis ID for exports
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-  
+
   // Backend service hook
   const backendService = useBackendService();
-  
-  // Update global backend status for non-React contexts
-  setGlobalBackendStatus(backendService.isAvailable);
-  
-  // Notify on backend status changes (only when it becomes available)
+
+  // Notify on backend status changes and update global status
   const prevBackendAvailable = React.useRef(backendService.isAvailable);
   React.useEffect(() => {
+    // Update global backend status for non-React contexts (moved from render body to avoid hook ordering issues)
+    setGlobalBackendStatus(backendService.isAvailable);
+
     if (backendService.isAvailable && !prevBackendAvailable.current) {
       addNotification({
         type: 'success',
@@ -87,7 +87,7 @@ function App() {
   // Handle saving the current project to file
   const handleSaveProject = useCallback(() => {
     if (!currentProject) return;
-    
+
     saveProjectToFile(currentProject, {
       data,
       category: selectedCategory,
@@ -149,6 +149,13 @@ function App() {
     setData(processedData);
     setSelectedCategory(appCategory);
     setWorkflowStep('setup');
+
+    // Notify user that sample data skips preview/mapping
+    addNotification({
+      type: 'info',
+      title: 'Sample Data Loaded',
+      message: `Loaded ${fileName} — preview and column mapping steps skipped.`,
+    });
   };
 
   // New unified handler for the AnalysisSetup component
@@ -166,7 +173,7 @@ function App() {
     // Run analysis immediately
     if (data) {
       setIsAnalyzing(true);
-      
+
       try {
         const rawData = data.data.map((row) => {
           const rowObj: Record<string, unknown> = {};
@@ -191,13 +198,13 @@ function App() {
         );
 
         console.log(`Analysis completed using ${analysisOutput.mode} mode:`, analysisOutput.messages);
-        
+
         setAnalysisResults(analysisOutput.results);
         if (analysisOutput.analysisId) {
           setAnalysisId(analysisOutput.analysisId);
         }
         setWorkflowStep('dashboard');
-        
+
         // Notification for successful analysis
         const passRate = analysisOutput.results.summary.overallPassRate;
         addNotification({
@@ -213,7 +220,7 @@ function App() {
         console.error('Analysis failed:', error);
         const errorMessage = error instanceof Error ? error.message : 'Analysis failed';
         setAnalysisError(errorMessage);
-        
+
         // Notification for analysis failure
         addNotification({
           type: 'error',
@@ -230,7 +237,7 @@ function App() {
     setWorkflowStep('report');
   };
 
-  const handleGenerateReport = async (type: 'report' | 'figures', config: JORCReportConfig | FiguresConfig) => {
+  const handleGenerateReport = async (type: 'report' | 'figures', config: JORCReportConfig | FiguresConfig): Promise<void> => {
     if (!analysisResults || !currentProject) return;
 
     try {
@@ -238,8 +245,8 @@ function App() {
         await exportFiguresOnly(analysisResults, config as FiguresConfig, currentProject.name);
         addNotification({
           type: 'success',
-          title: 'Report Exported',
-          message: 'Figures report has been exported successfully.',
+          title: 'Figures Exported',
+          message: 'Figures have been exported successfully.',
         });
       } else {
         await exportJORCReport(analysisResults, config as JORCReportConfig, currentProject.name);
@@ -255,6 +262,7 @@ function App() {
         title: 'Export Failed',
         message: error instanceof Error ? error.message : 'Failed to export report',
       });
+      throw error; // Re-throw so ReportWorkflow can show local feedback
     }
   };
 
@@ -355,8 +363,8 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <MainLayout 
-        onSidebarNavigate={handleSidebarNavigate} 
+      <MainLayout
+        onSidebarNavigate={handleSidebarNavigate}
         activeSection={getActiveSection()}
         hasData={!!data}
         hasAnalysis={!!analysisResults}
@@ -365,148 +373,148 @@ function App() {
         <WelcomeModal />
         <OnboardingOverlay />
         <Header onSaveProject={handleSaveProject} />
-      
-      {/* Workflow Stepper - shows progress through main workflow */}
-      <WorkflowStepper
-        currentStep={workflowStep}
-        onNavigate={navigateTo}
-        canNavigateTo={canNavigateTo}
-        completedSteps={completedSteps as WorkflowStep[]}
-      />
 
-      <div className="space-y-6 mt-4">
-        {/* Breadcrumbs */}
-        <Breadcrumbs
+        {/* Workflow Stepper - shows progress through main workflow */}
+        <WorkflowStepper
           currentStep={workflowStep}
-          projectName={currentProject.name}
           onNavigate={navigateTo}
           canNavigateTo={canNavigateTo}
+          completedSteps={completedSteps as WorkflowStep[]}
         />
 
-        <div className="flex items-center justify-between">
-          <div data-tour="project-header">
-            <h2 className="text-2xl font-bold text-slate-50">
-              {getStepTitle()}
-            </h2>
-            <p className="text-sm text-slate-400 mt-1">
-              {currentProject.deposit} ({currentProject.commodity})
-            </p>
+        <div className="space-y-6 mt-4">
+          {/* Breadcrumbs */}
+          <Breadcrumbs
+            currentStep={workflowStep}
+            projectName={currentProject.name}
+            onNavigate={navigateTo}
+            canNavigateTo={canNavigateTo}
+          />
+
+          <div className="flex items-center justify-between">
+            <div data-tour="project-header">
+              <h2 className="text-2xl font-bold text-slate-50">
+                {getStepTitle()}
+              </h2>
+              <p className="text-sm text-slate-400 mt-1">
+                {currentProject.deposit} ({currentProject.commodity})
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <BackendStatus
+                isAvailable={backendService.isAvailable}
+                isChecking={backendService.isChecking}
+                onRetry={backendService.retry}
+              />
+              {data && workflowStep === 'dashboard' && (
+                <button
+                  onClick={() => {
+                    setData(null);
+                    setFileId(null);
+                    setAnalysisId(null);
+                    setSelectedCategory(null);
+                    setMethodologyConfig(null);
+                    setQaqcConfig(null);
+                    setAnalysisResults(null);
+                    setAnalysisError(null);
+                    setWorkflowStep('import');
+                  }}
+                  className="px-4 py-2 text-sm text-status-error hover:bg-status-error/10 rounded-lg transition-colors"
+                >
+                  Reset Data
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <BackendStatus 
-              isAvailable={backendService.isAvailable}
-              isChecking={backendService.isChecking}
-              onRetry={backendService.retry}
-            />
-            {data && workflowStep === 'dashboard' && (
+          {/* Demo Template Editor Button */}
+          {workflowStep === 'import' && (
+            <div className="flex justify-end">
               <button
-                onClick={() => {
-                  setData(null);
-                  setFileId(null);
-                  setAnalysisId(null);
-                  setSelectedCategory(null);
-                  setMethodologyConfig(null);
-                  setQaqcConfig(null);
-                  setAnalysisResults(null);
-                  setAnalysisError(null);
-                  setWorkflowStep('import');
-                }}
-                className="px-4 py-2 text-sm text-status-error hover:bg-status-error/10 rounded-lg transition-colors"
+                onClick={() => setWorkflowStep('template_editor')}
+                className="px-4 py-2 bg-purple-600 text-slate-50 rounded-lg font-medium hover:bg-purple-700 transition-colors"
               >
-                Reset Data
+                Open Template Editor (Demo)
               </button>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
 
-        {/* Demo Template Editor Button */}
-        {workflowStep === 'import' && (
-          <div className="flex justify-end">
-            <button
-              onClick={() => setWorkflowStep('template_editor')}
-              className="px-4 py-2 bg-purple-600 text-slate-50 rounded-lg font-medium hover:bg-purple-700 transition-colors"
-            >
-              Open Template Editor (Demo)
-            </button>
-          </div>
-        )}
+          {workflowStep === 'template_editor' && (
+            <TemplateEditor onBack={() => setWorkflowStep('import')} />
+          )}
 
-        {workflowStep === 'template_editor' && (
-          <TemplateEditor onBack={() => setWorkflowStep('import')} />
-        )}
+          {workflowStep === 'import' && (
+            <div className="mt-8">
+              <ImportWorkflow
+                onComplete={handleImportComplete}
+                onLoadDemoData={handleLoadDemoData}
+                isBackendAvailable={backendService.isAvailable}
+              />
+            </div>
+          )}
 
-        {workflowStep === 'import' && (
-          <div className="mt-8">
-            <ImportWorkflow
-              onComplete={handleImportComplete}
-              onLoadDemoData={handleLoadDemoData}
-              isBackendAvailable={backendService.isAvailable}
-            />
-          </div>
-        )}
-
-        {workflowStep === 'setup' && (
-          <div className="relative">
-            {isAnalyzing && (
-              <div className="absolute inset-0 bg-background-dark/80 z-10 flex items-center justify-center rounded-lg">
-                <div className="text-center">
-                  <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                  <p className="text-slate-300">
-                    Running analysis{backendService.isAvailable ? ' on server...' : '...'}
-                  </p>
+          {workflowStep === 'setup' && (
+            <div className="relative">
+              {isAnalyzing && (
+                <div className="absolute inset-0 bg-background-dark/80 z-10 flex items-center justify-center rounded-lg">
+                  <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                    <p className="text-slate-300">
+                      Running analysis{backendService.isAvailable ? ' on server...' : '...'}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )}
-            {analysisError && (
-              <div className="mb-4 p-4 bg-status-error/10 border border-status-error rounded-lg">
-                <p className="text-status-error font-medium">Analysis Error</p>
-                <p className="text-slate-400 text-sm mt-1">{analysisError}</p>
-              </div>
-            )}
-            <AnalysisSetup 
-              initialCategory={selectedCategory as 'gold' | 'pxrf' | 'photon' | null} 
-              onComplete={handleAnalysisSetupComplete}
+              )}
+              {analysisError && (
+                <div className="mb-4 p-4 bg-status-error/10 border border-status-error rounded-lg">
+                  <p className="text-status-error font-medium">Analysis Error</p>
+                  <p className="text-slate-400 text-sm mt-1">{analysisError}</p>
+                </div>
+              )}
+              <AnalysisSetup
+                initialCategory={selectedCategory as 'gold' | 'pxrf' | 'photon' | null}
+                onComplete={handleAnalysisSetupComplete}
+                onNavigateToEducation={handleNavigateToEducation}
+              />
+            </div>
+          )}
+
+          {workflowStep === 'dashboard' && analysisResults && (
+            <ResultsDashboard
+              results={analysisResults}
+              onProceed={handleProceedToReport}
+            />
+          )}
+
+          {workflowStep === 'report' && analysisResults && (
+            <ReportWorkflow
+              results={analysisResults}
+              onBack={() => setWorkflowStep('dashboard')}
+              onGenerate={handleGenerateReport}
+              isBackendAvailable={backendService.isAvailable}
+              analysisId={analysisId}
+            />
+          )}
+
+          {workflowStep === 'education' && (
+            <EducationCenter onClose={() => setWorkflowStep('import')} />
+          )}
+
+          {workflowStep === 'crm' && (
+            <CRMDatabase
+              onClose={() => setWorkflowStep('import')}
               onNavigateToEducation={handleNavigateToEducation}
             />
-          </div>
-        )}
+          )}
 
-        {workflowStep === 'dashboard' && analysisResults && (
-          <ResultsDashboard
-            results={analysisResults}
-            onProceed={handleProceedToReport}
-          />
-        )}
-
-        {workflowStep === 'report' && analysisResults && (
-          <ReportWorkflow
-            results={analysisResults}
-            onBack={() => setWorkflowStep('dashboard')}
-            onGenerate={handleGenerateReport}
-            isBackendAvailable={backendService.isAvailable}
-            analysisId={analysisId}
-          />
-        )}
-
-        {workflowStep === 'education' && (
-          <EducationCenter onClose={() => setWorkflowStep('import')} />
-        )}
-
-        {workflowStep === 'crm' && (
-          <CRMDatabase 
-            onClose={() => setWorkflowStep('import')} 
-            onNavigateToEducation={handleNavigateToEducation}
-          />
-        )}
-
-        {workflowStep === 'settings' && (
-          <SettingsPage 
-            onClose={() => setWorkflowStep('import')}
-            isBackendAvailable={backendService.isAvailable}
-          />
-        )}
-      </div>
+          {workflowStep === 'settings' && (
+            <SettingsPage
+              onClose={() => setWorkflowStep('import')}
+              isBackendAvailable={backendService.isAvailable}
+            />
+          )}
+        </div>
       </MainLayout>
     </ErrorBoundary>
   );

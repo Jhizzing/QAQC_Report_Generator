@@ -33,6 +33,7 @@ export interface AnalysisRequest {
     column_mapping: ColumnMapping;
     methodology: MethodologyConfig;
     qaqc_rules: QAQCRulesConfig;
+    crms: any[]; // Using any[] temporarily to avoid circular dependency, or define CRMValue interface here
 }
 
 export interface UploadResponse {
@@ -52,6 +53,25 @@ export interface PreviewResponse {
     data: Record<string, any>[];
 }
 
+export interface StandardStatistic {
+    element: string;
+    mean: number;
+    sd: number;
+    rsd: number;
+    pass_rate: number;
+    count: number;
+    crm?: string;
+    found_in_db?: boolean;
+}
+
+export interface StandardDataPoint {
+    sequence: number;
+    value: number;
+    status: 'PASS' | 'FAIL';
+    crm_id?: string;
+    certified_value?: number;
+}
+
 export interface AnalysisResult {
     analysis_id: string;
     file_id: string;
@@ -64,19 +84,8 @@ export interface AnalysisResult {
         overall_pass_rate: number;
     };
     standards: {
-        statistics: Array<{
-            element: string;
-            mean: number;
-            sd: number;
-            rsd: number;
-            pass_rate: number;
-            count: number;
-        }>;
-        data_points: Array<{
-            sequence: number;
-            value: number;
-            status: string;
-        }>;
+        statistics: Array<StandardStatistic>;
+        data_points: Array<StandardDataPoint>;
         flagged_batches: string[];
     };
     blanks: {
@@ -137,7 +146,7 @@ class QAQCApiClient {
         timeout: number = 30000
     ): Promise<T> {
         const url = `${this.baseUrl}${endpoint}`;
-        
+
         // Create abort controller for timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -168,7 +177,7 @@ class QAQCApiClient {
                         // Use default error message
                     }
                 }
-                
+
                 // Create custom error with status code
                 const error = new Error(errorMessage) as Error & { status?: number };
                 error.status = response.status;
@@ -178,7 +187,7 @@ class QAQCApiClient {
             return response.json();
         } catch (error) {
             clearTimeout(timeoutId);
-            
+
             if (error instanceof Error) {
                 if (error.name === 'AbortError') {
                     throw new Error(`Request timeout after ${timeout}ms`);
@@ -187,7 +196,7 @@ class QAQCApiClient {
                     throw new Error('Network error: Unable to connect to server. Please check your connection and try again.');
                 }
             }
-            
+
             throw error;
         }
     }
@@ -233,7 +242,7 @@ class QAQCApiClient {
         const validExtensions = ['.csv', '.xlsx', '.xls'];
         const hasValidType = validTypes.includes(file.type);
         const hasValidExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
-        
+
         if (!hasValidType && !hasValidExtension) {
             throw new Error(`Invalid file type. Please upload a CSV or Excel file (.csv, .xlsx, .xls)`);
         }
@@ -267,7 +276,7 @@ class QAQCApiClient {
             return response.json();
         } catch (error) {
             clearTimeout(timeoutId);
-            
+
             if (error instanceof Error) {
                 if (error.name === 'AbortError') {
                     throw new Error(`Upload timeout after ${timeout}ms. The file may be too large.`);
@@ -276,7 +285,7 @@ class QAQCApiClient {
                     throw new Error('Network error: Unable to upload file. Please check your connection and try again.');
                 }
             }
-            
+
             throw error;
         }
     }
@@ -291,7 +300,7 @@ class QAQCApiClient {
         const params = new URLSearchParams();
         if (element) params.append('element', element);
         if (search) params.append('search', search);
-        
+
         const query = params.toString();
         return this.request<{ crms: any[]; total: number }>(
             `/api/crms${query ? `?${query}` : ''}`

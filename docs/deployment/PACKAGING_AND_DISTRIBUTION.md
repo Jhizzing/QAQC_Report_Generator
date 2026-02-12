@@ -58,23 +58,24 @@ Once the single-file executables are produced, ship them directly or embed them 
 
 ### 3.1 Windows (Inno Setup)
 1. Install [Inno Setup](https://jrsoftware.org/isinfo.php).
-2. Create a script (e.g., `packaging/windows/qaqc.iss`) pointing to `dist/cli/QAQC-CLI.exe` and `dist/gui/QAQC-GUI.exe`.
+2. Use the checked-in script `packaging/windows/qaqc.iss` (or copy/adjust it) pointing to `dist/cli/QAQC-CLI.exe` and `dist/gui/QAQC-GUI.exe`.
 3. Include config templates as `Source: "config\\*"; DestDir: "{app}\\config"`.
 4. Build via `ISCC.exe packaging/windows/qaqc.iss`.
 5. Optional: sign the installer with `signtool sign /a /tr http://timestamp.digicert.com /fd sha256 QAQC_Setup.exe`.
 
 ### 3.2 macOS (DMG / PKG)
-1. Create an `.app` bundle for the GUI binaries (PyInstaller can emit `.app` when run on macOS with `--windowed`).
-2. Codesign the bundle.
-3. Build a DMG: `hdiutil create -volname "QAQC" -srcfolder dist/gui/QAQC-GUI.app dist/gui/QAQC.dmg`.
-4. Notarize if distributing outside the organization (`xcrun notarytool submit dist/gui/QAQC.dmg --apple-id ...`).
+1. Build a wrapper `.app` + DMG with the helper script:
+   - `bash packaging/macos/create_dmg.sh 1.0.0-pre`
+2. Optional codesign at build time:
+   - `CODESIGN_IDENTITY="Developer ID Application: <Team Name>" bash packaging/macos/create_dmg.sh 1.0.0-pre`
+3. Notarize if distributing outside the organization (`xcrun notarytool submit dist/gui/QAQC-<version>.dmg --apple-id ...`).
 5. Provide a companion CLI binary inside `/Applications/QAQC Tools/` or ship it separately via a signed tarball.
 
 ### 3.3 Linux (AppImage / Deb / Rpm)
-- **AppImage**: combine the GUI binary with the config assets using `generate_appimage.sh`:
-  1. Create `AppDir/usr/bin/QAQC-GUI` (copy the PyInstaller output).
-  2. Provide a `.desktop` file plus icon.
-  3. Run `appimagetool AppDir QAQC-GUI-x86_64.AppImage`.
+- **AppImage**: use the helper script:
+  1. Install `appimagetool`.
+  2. Run `bash packaging/linux/create_appimage.sh 1.0.0-pre`.
+  3. Artifact is written to `dist/gui/QAQC-GUI-<version>-x86_64.AppImage`.
 - **Debian/Ubuntu**: craft `debian/` metadata pointing to `/opt/qaqc/QAQC-CLI` and `/opt/qaqc/QAQC-GUI`. Build with `dpkg-deb --build debian/qaqc`.
 - **RHEL/Fedora**: mirror the same layout via `rpmbuild`.
 
@@ -111,3 +112,20 @@ Document test results in `docs/testing/distribution/<date>.md` for traceability.
 3. **Code Signing Pipeline**: Securely store signing certificates and automate signing/notarization where your release policy requires it.
 4. **User Acceptance Testing**: Recruit a small group of geologists to exercise the packaged apps with real data before broad rollout.
 5. **Feedback Loop**: Capture installer/first-run friction in an issue tracker to prioritize quick fixes before marketing the standalone release.
+
+---
+
+## 6. CI Artifact Integrity (Checksums + Optional Signature)
+
+The `build-artifacts` workflow now includes a `checksums` job that:
+- Downloads all uploaded build artifacts from Windows/macOS/Linux jobs
+- Produces `SHA256SUMS.txt`
+- Optionally signs the checksum file as `SHA256SUMS.txt.asc` when GPG secrets are configured
+
+For tagged releases, `.github/workflows/release.yml` runs the same build + smoke checks and publishes a **draft GitHub Release** with zipped platform artifacts and checksum files attached.
+
+### Required Secrets for Optional GPG Signing
+- `RELEASE_GPG_PRIVATE_KEY`: ASCII-armored private key
+- `RELEASE_GPG_PASSPHRASE`: passphrase for the private key
+
+If these secrets are not set, checksum generation still runs and uploads `SHA256SUMS.txt`.

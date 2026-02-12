@@ -27,14 +27,24 @@ sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
 # Import exceptions after path setup
-from api.exceptions import (
-    FileProcessingError,
-    FileNotFoundError,
-    AnalysisNotFoundError,
-    AnalysisExecutionError,
-    ReportGenerationError,
-    ValidationError
-)
+try:
+    from api.exceptions import (
+        FileProcessingError,
+        FileNotFoundError,
+        AnalysisNotFoundError,
+        AnalysisExecutionError,
+        ReportGenerationError,
+        ValidationError
+    )
+except ImportError:
+    from exceptions import (
+        FileProcessingError,
+        FileNotFoundError,
+        AnalysisNotFoundError,
+        AnalysisExecutionError,
+        ReportGenerationError,
+        ValidationError
+    )
 
 from data import DataImporter
 from data.crm_manager import CRMManager
@@ -143,11 +153,19 @@ class QAQCRulesConfig(BaseModel):
     duplicates_hard_limit: float = 15.0
 
 
+class CRMDefinition(BaseModel):
+    name: str
+    certified_value: float
+    uncertainty: Optional[float] = None
+    unit: Optional[str] = "ppm"
+
+
 class AnalysisRequest(BaseModel):
     file_id: str
     column_mapping: ColumnMapping
     methodology: MethodologyConfig
     qaqc_rules: QAQCRulesConfig
+    crms: List[CRMDefinition] = []
 
 
 class ProjectCreate(BaseModel):
@@ -427,6 +445,7 @@ async def run_analysis(request: AnalysisRequest):
             request.column_mapping.result: "result"
         }
         df = data_importer.apply_mapping(df, mapping)
+        df = data_importer.normalize_sample_type(df)
         
         # Ensure numeric result column
         df["result"] = pd.to_numeric(df["result"], errors="coerce")
@@ -448,28 +467,105 @@ async def run_analysis(request: AnalysisRequest):
         }
         
         # Standards Analysis
+        # Standards Analysis
         standards_df = df[df["sample_type"].str.upper() == "STANDARD"].copy()
+        
+        # Build CRM lookup from request (primary) and database (fallback)
+        crm_lookup = {c.name.upper(): c for c in request.crms}
+        
+        standards_stats = []
+        standards_points = []
+        
         if len(standards_df) > 0:
             results["summary"]["total_standards"] = len(standards_df)
-            standards_data = {
-                "measured": standards_df["result"].tolist(),
-                "certified": 1.0,  # Default, should come from CRM selection
-                "uncertainty": 0.05
-            }
-            standards_results = standards_analyzer.analyze_standards(standards_data)
+            
+            # Group by Standard ID to analyze each population separately
+            # Use the mapped 'sample_id' column which contains the standard name
+            if "sample_id" in standards_df.columns:
+                grouped = standards_df.groupby("sample_id")
+                
+                for std_name, group in grouped:
+                    std_name_upper = str(std_name).upper()
+                    
+                    # 1. Try custom CRMs from request
+                    crm_def = crm_lookup.get(std_name_upper)
+                    
+                    count = len(group)
+                    certified_val = 1.0 # Default fallback
+                    uncertainty_val = 0.05
+                    crm_found = False
+                    
+                    if crm_def:
+                        certified_val = crm_def.certified_value
+                        uncertainty_val = crm_def.uncertainty if crm_def.uncertainty is not None else (certified_val * 0.05)
+                        crm_found = True
+                    else:
+                        # 2. Try backend database
+                        db_crm = crm_manager.get_crm_by_name(str(std_name))
+                        if db_crm and db_crm.get('elements') and 'Au' in db_crm['elements']:
+                             # Assumes Au for now as implied by rest of code
+                             # Ideally we should use the mapped element column
+                             el_data = db_crm['elements']['Au']
+                             certified_val = el_data['certified']
+                             uncertainty_val = el_data.get('uncertainty', certified_val * 0.05)
+                             crm_found = True
+                    
+                    # Run analysis for this group
+                    result_values = pd.to_numeric(group["result"], errors='coerce').fillna(0).tolist()
+                    
+                    group_data = {
+                        "measured": result_values,
+                        "certified": certified_val,
+                        "uncertainty": uncertainty_val
+                    }
+                    
+                    # We only run analysis if we found a CRM or if we want to process it as unknown
+                    # For now, process everything but flag if unknown
+                    std_results = standards_analyzer.analyze_standards(group_data)
+                    
+                    precision_metrics = std_results.get("precision", {})
+                    
+                    # Calculate basic stats locally to ensure they exist even if N < 2
+                    local_mean = sum(result_values) / len(result_values) if result_values else 0
+                    if len(result_values) > 1:
+                        local_variance = sum((x - local_mean) ** 2 for x in result_values) / (len(result_values) - 1)
+                        local_sd = local_variance ** 0.5
+                    else:
+                        local_sd = 0
+                    
+                    local_rsd = (local_sd / local_mean * 100) if local_mean != 0 else 0
+
+                    # Add stats
+                    standards_stats.append({
+                        "crm": str(std_name),
+                        "element": "Au", # TODO: Dynamic element
+                        "mean": precision_metrics.get("mean", local_mean),
+                        "sd": precision_metrics.get("std_dev", local_sd),
+                        "rsd": precision_metrics.get("rsd", local_rsd),
+                        "pass_rate": 100 if std_results.get("overall_acceptable", False) else 50, # Simplified
+                        "count": count,
+                        "found_in_db": crm_found
+                    })
+                    
+                    # Add data points
+                    for idx, val in zip(group.index, result_values):
+                        # Simple pass/fail check for point
+                        # Z-score = (val - cert) / unc
+                        # Pass if abs(z) <= 3 (default)
+                        z = (val - certified_val) / uncertainty_val if uncertainty_val > 0 else 0
+                        status = "PASS" if abs(z) <= 3 else "FAIL"
+                        
+                        standards_points.append({
+                            "sequence": int(idx), # Using index as proxy for sequence
+                            "value": val,
+                            "status": status,
+                            "crm_id": str(std_name),
+                            "certified_value": certified_val
+                        })
+
             results["standards"] = {
-                "statistics": [{
-                    "element": "Au",
-                    "mean": standards_results.get("mean", 0),
-                    "sd": standards_results.get("std_dev", 0),
-                    "rsd": standards_results.get("rsd", 0),
-                    "pass_rate": 100 if standards_results.get("overall_acceptable", False) else 50,
-                    "count": len(standards_df)
-                }],
-                "data_points": [
-                    {"sequence": i, "value": v, "status": "PASS" if abs(v - 1.0) < 0.1 else "FAIL"}
-                    for i, v in enumerate(standards_df["result"].tolist())
-                ],
+                "statistics": standards_stats,
+                "data_points": standards_points,
                 "flagged_batches": []
             }
         

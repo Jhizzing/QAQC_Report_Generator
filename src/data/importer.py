@@ -113,6 +113,24 @@ class DataImporter:
         pass
 
     # --------------------------- Public API ---------------------------
+    def import_csv(
+        self,
+        path: Union[str, Path],
+        *,
+        delimiter: Optional[str] = None,
+        encoding: str = "utf-8",
+        chunksize: Optional[int] = None,
+        detect_encoding_fallback: bool = False,
+    ) -> pd.DataFrame:
+        """Backward-compatible CSV import wrapper around ``read_table``."""
+        return self.read_table(
+            path,
+            csv_delimiter=delimiter,
+            encoding=encoding,
+            csv_chunksize=chunksize,
+            detect_encoding_fallback=detect_encoding_fallback,
+        )
+
     def read_table(
         self,
         path: Union[str, Path],
