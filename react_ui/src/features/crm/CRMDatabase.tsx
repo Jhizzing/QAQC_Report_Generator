@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Database, X, Filter, Award, Beaker, Zap } from 'lucide-react';
-import { CRM_DATABASE, type CRMValue } from '../../data/crmDatabase';
+import { Search, Database, X, Filter, Award, Beaker, Zap, Plus } from 'lucide-react';
+import { type CRMValue } from '../../data/crmDatabase';
+import { useCRMStore } from '../../stores/crmStore';
+import { CustomCRMForm } from './CustomCRMForm';
 import { CRMCard } from './CRMCard';
 
 type CategoryFilter = 'all' | 'gold' | 'multi-element' | 'pxrf';
@@ -22,25 +24,28 @@ export const CRMDatabase: React.FC<CRMDatabaseProps> = ({ onClose, onNavigateToE
   const [searchQuery, setSearchQuery] = useState('');
   const [elementFilter, setElementFilter] = useState<string>('');
   const [supplierFilter, setSupplierFilter] = useState<string>('');
+  const [isAddingCRM, setIsAddingCRM] = useState(false);
+
+  const allCRMs = useCRMStore(state => state.getAllCRMs());
 
   // Get unique suppliers for filter dropdown
   const suppliers = useMemo(() => {
-    const uniqueSuppliers = [...new Set(CRM_DATABASE.map(crm => crm.supplier))];
+    const uniqueSuppliers = [...new Set(allCRMs.map(crm => crm.supplier))];
     return uniqueSuppliers.sort();
-  }, []);
+  }, [allCRMs]);
 
   // Get unique elements for filter dropdown
   const allElements = useMemo(() => {
     const elements = new Set<string>();
-    CRM_DATABASE.forEach(crm => {
+    allCRMs.forEach(crm => {
       Object.keys(crm.elements).forEach(el => elements.add(el));
     });
     return [...elements].sort();
-  }, []);
+  }, [allCRMs]);
 
   // Filter CRMs (without category filter for tab counts)
   const filteredCRMsAllCategories = useMemo(() => {
-    return CRM_DATABASE.filter(crm => {
+    return allCRMs.filter(crm => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -80,17 +85,17 @@ export const CRMDatabase: React.FC<CRMDatabaseProps> = ({ onClose, onNavigateToE
     if (categoryFilter !== 'all') {
       return { [categoryFilter]: filteredCRMs };
     }
-    
+
     const grouped: Record<string, CRMValue[]> = {
       gold: [],
       'multi-element': [],
       pxrf: [],
     };
-    
+
     filteredCRMs.forEach(crm => {
       grouped[crm.category].push(crm);
     });
-    
+
     return grouped;
   }, [filteredCRMs, categoryFilter]);
 
@@ -120,17 +125,26 @@ export const CRMDatabase: React.FC<CRMDatabaseProps> = ({ onClose, onNavigateToE
               <div>
                 <h1 className="text-2xl font-bold text-slate-50">CRM Database</h1>
                 <p className="text-sm text-slate-400">
-                  {CRM_DATABASE.length} Certified Reference Materials
+                  {allCRMs.length} Certified Reference Materials
                 </p>
               </div>
             </div>
             {onClose && (
-              <button
-                onClick={onClose}
-                className="p-2 rounded-lg hover:bg-surface-light text-slate-400 hover:text-slate-50 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsAddingCRM(true)}
+                  className="flex items-center gap-2 px-3 py-2 bg-primary/20 text-primary hover:bg-primary/30 rounded-lg transition-colors text-sm font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Standard
+                </button>
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-lg hover:bg-surface-light text-slate-400 hover:text-slate-50 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             )}
           </div>
 
@@ -219,10 +233,10 @@ export const CRMDatabase: React.FC<CRMDatabaseProps> = ({ onClose, onNavigateToE
           <div className="flex gap-1 border-b border-transparent overflow-x-auto">
             {CATEGORY_TABS.map((tab) => {
               // Calculate count from all filtered CRMs (not affected by category filter)
-              const count = tab.id === 'all' 
-                ? filteredCRMsAllCategories.length 
+              const count = tab.id === 'all'
+                ? filteredCRMsAllCategories.length
                 : filteredCRMsAllCategories.filter(c => c.category === tab.id).length;
-              
+
               return (
                 <button
                   key={tab.id}
@@ -306,6 +320,13 @@ export const CRMDatabase: React.FC<CRMDatabaseProps> = ({ onClose, onNavigateToE
         )}
       </div>
     </div>
+
+      {
+    isAddingCRM && (
+      <CustomCRMForm onClose={() => setIsAddingCRM(false)} />
+    )
+  }
+    </div >
   );
 };
 

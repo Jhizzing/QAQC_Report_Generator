@@ -7,14 +7,15 @@
  */
 
 import { apiClient, type AnalysisRequest, type AnalysisResult } from '../api/client';
-import { 
-    runQAQCAnalysis as runClientAnalysis, 
+import {
+    runQAQCAnalysis as runClientAnalysis,
     autoDetectColumnMapping,
-    type QAQCAnalysisInput, 
-    type QAQCAnalysisOutput 
+    type QAQCAnalysisInput,
+    type QAQCAnalysisOutput
 } from '../features/analysis/qaqcAnalysis';
 import type { MethodologyConfig } from '../features/analysis/MethodologyWizard';
 import type { QAQCConfig } from '../features/analysis/QAQCRuleConfig';
+import { useCRMStore } from '../stores/crmStore';
 
 export interface AnalysisServiceInput {
     /** Raw data array (for client-side analysis) */
@@ -58,11 +59,11 @@ export async function runAnalysis(
  */
 async function runServerAnalysis(input: AnalysisServiceInput): Promise<AnalysisServiceOutput> {
     const messages: string[] = [];
-    
+
     try {
         // Build API request
         const columnMapping = input.columnMapping || autoDetectColumnMapping(input.data);
-        
+
         const request: AnalysisRequest = {
             file_id: input.fileId!,
             column_mapping: {
@@ -82,16 +83,17 @@ async function runServerAnalysis(input: AnalysisServiceInput): Promise<AnalysisS
                 duplicates_rpd_limit: input.qaqcConfig.duplicates.precisionTarget,
                 duplicates_hard_limit: input.qaqcConfig.duplicates.precisionTarget * 1.5,
             },
+            crms: useCRMStore.getState().getAllCRMs(),
         };
-        
+
         // Call API
         const apiResult = await apiClient.runAnalysis(request);
-        
+
         // Map API response to UI format
         const results = mapApiResultToOutput(apiResult);
-        
+
         messages.push('Analysis completed using Python backend');
-        
+
         return {
             results,
             mode: 'server',
@@ -105,9 +107,9 @@ async function runServerAnalysis(input: AnalysisServiceInput): Promise<AnalysisS
 
         if (error instanceof Error) {
             errorMessage = error.message;
-            
+
             // Network errors - should fallback
-            if (errorMessage.includes('Network error') || 
+            if (errorMessage.includes('Network error') ||
                 errorMessage.includes('Failed to fetch') ||
                 errorMessage.includes('timeout')) {
                 messages.push(`Server unavailable: ${errorMessage}`);
@@ -150,7 +152,7 @@ async function runServerAnalysis(input: AnalysisServiceInput): Promise<AnalysisS
                 );
             }
         }
-        
+
         throw error;
     }
 }
@@ -160,21 +162,21 @@ async function runServerAnalysis(input: AnalysisServiceInput): Promise<AnalysisS
  */
 async function runLocalAnalysis(input: AnalysisServiceInput): Promise<AnalysisServiceOutput> {
     const messages: string[] = [];
-    
+
     try {
         const columnMapping = input.columnMapping || autoDetectColumnMapping(input.data);
-        
+
         const analysisInput: QAQCAnalysisInput = {
             data: input.data,
             methodologyConfig: input.methodologyConfig,
             qaqcConfig: input.qaqcConfig,
             columnMapping,
         };
-        
+
         const results = runClientAnalysis(analysisInput);
-        
+
         messages.push('Analysis completed using client-side engine');
-        
+
         return {
             results,
             mode: 'client',
@@ -182,7 +184,7 @@ async function runLocalAnalysis(input: AnalysisServiceInput): Promise<AnalysisSe
         };
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        
+
         // Provide more specific error messages
         if (errorMessage.includes('data') || errorMessage.includes('column')) {
             throw new Error(
@@ -190,14 +192,14 @@ async function runLocalAnalysis(input: AnalysisServiceInput): Promise<AnalysisSe
                 `Please check that your file contains the required columns (SampleID, Type, Result).`
             );
         }
-        
+
         if (errorMessage.includes('mapping')) {
             throw new Error(
                 `Column mapping failed: ${errorMessage}. ` +
                 `Please verify your column mapping configuration.`
             );
         }
-        
+
         throw new Error(`Client-side analysis failed: ${errorMessage}`);
     }
 }
@@ -209,23 +211,23 @@ function mapApiResultToOutput(apiResult: AnalysisResult): QAQCAnalysisOutput {
     return {
         standards: {
             results: apiResult.standards.data_points.map((dp, index) => ({
-                sampleId: `STD-${index}`,
-                crmId: 'CRM',
+                sampleId: dp.crm_id || `STD-${index}`,
+                crmId: dp.crm_id || 'Unknown',
                 element: 'Au',
                 measuredValue: dp.value,
                 unit: 'ppm',
                 sampleNumber: dp.sequence,
-                certifiedValue: 1.0,
-                uncertainty: 0.05,
-                deviation: dp.value - 1.0,
-                percentDeviation: ((dp.value - 1.0) / 1.0) * 100,
+                certifiedValue: dp.certified_value || 0,
+                uncertainty: 0,
+                deviation: dp.certified_value ? dp.value - dp.certified_value : 0,
+                percentDeviation: dp.certified_value ? ((dp.value - dp.certified_value) / dp.certified_value) * 100 : 0,
                 pass: dp.status === 'PASS',
-                upperLimit: 1.1,
+                upperLimit: 1.1, // TODO: calculate from certified value + tolerance
                 lowerLimit: 0.9,
                 toleranceUsed: 10, // Default tolerance for API results
             })),
             statistics: apiResult.standards.statistics.map(s => ({
-                crm: 'CRM',
+                crm: s.crm || 'Unknown',
                 element: s.element,
                 mean: s.mean,
                 sd: s.sd,
@@ -320,7 +322,7 @@ export async function uploadFileForAnalysis(file: File): Promise<{
     mappingSuggestions: Record<string, { column: string; confidence: number }>;
 }> {
     const response = await apiClient.uploadFile(file);
-    
+
     return {
         fileId: response.file_id,
         columns: response.columns,
@@ -344,11 +346,11 @@ export async function exportResults(
         const blob = format === 'excel'
             ? await apiClient.exportExcel(analysisId)
             : await apiClient.exportPDF(analysisId);
-        
+
         if (!blob || blob.size === 0) {
             throw new Error(`Export generated an empty file. Please try again or contact support.`);
         }
-        
+
         const filename = `qaqc_report_${new Date().toISOString().slice(0, 10)}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
         apiClient.downloadBlob(blob, filename);
     } catch (error) {
@@ -372,7 +374,7 @@ export async function exportResults(
                 );
             }
         }
-        
+
         throw new Error(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
