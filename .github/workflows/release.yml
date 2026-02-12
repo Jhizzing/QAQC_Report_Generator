@@ -182,7 +182,7 @@ jobs:
           retention-days: 30
 
   publish:
-    name: Publish Draft GitHub Release
+    name: Publish GitHub Release
     runs-on: ubuntu-latest
     needs: package-assets
     steps:
@@ -192,7 +192,7 @@ jobs:
           name: release-assets
           path: release_assets
 
-      - name: Create draft release and upload assets
+      - name: Create release and upload assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
@@ -200,7 +200,7 @@ jobs:
           name: ${{ github.ref_name }}
           files: |
             release_assets/*
-          draft: true
+          draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
           make_latest: false
           generate_release_notes: true
