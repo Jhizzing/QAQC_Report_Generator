@@ -94,6 +94,7 @@ jobs:
           PY
 
       - name: Create platform release bundle
+        shell: bash
         env:
           BUNDLE_OS: ${{ matrix.os }}
         run: |
@@ -126,6 +127,7 @@ jobs:
           PY
 
       - name: Upload platform bundle to GitHub release
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
