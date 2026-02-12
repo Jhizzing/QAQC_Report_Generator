@@ -1,5 +1,5 @@
 """
-QAQC Analysis API Server
+LogiQore Reporter API Server.
 
 FastAPI backend that connects the React UI to the Python QAQC analysis engine.
 Provides endpoints for data import, analysis execution, and report generation.
@@ -18,7 +18,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks, R
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, AliasChoices
 import pandas as pd
 
 # Add project root and src directory to path for imports
@@ -54,8 +54,8 @@ from reporting import ExcelReporter, PDFReporter, DOCXReporter, ExcelChartReport
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="QAQC Analysis API",
-    description="Backend API for QAQC Report Generator",
+    title="LogiQore Reporter API",
+    description="Backend API for LogiQore Reporter",
     version="2.0.0"
 )
 
@@ -149,7 +149,11 @@ class MethodologyConfig(BaseModel):
 class QAQCRulesConfig(BaseModel):
     standards_tolerance: float = 2.0  # Standard deviations
     blanks_threshold: float = 0.01
-    duplicates_rpd_limit: float = 10.0
+    # Accept both current and legacy payload keys from older clients/tests.
+    duplicates_rpd_limit: float = Field(
+        default=10.0,
+        validation_alias=AliasChoices("duplicates_rpd_limit", "duplicates_threshold")
+    )
     duplicates_hard_limit: float = 15.0
 
 
@@ -163,7 +167,10 @@ class CRMDefinition(BaseModel):
 class AnalysisRequest(BaseModel):
     file_id: str
     column_mapping: ColumnMapping
-    methodology: MethodologyConfig
+    # Backward-compatible with older request payloads that used `methodology_config`.
+    methodology: MethodologyConfig = Field(
+        validation_alias=AliasChoices("methodology", "methodology_config")
+    )
     qaqc_rules: QAQCRulesConfig
     crms: List[CRMDefinition] = []
 
@@ -184,7 +191,7 @@ class CRMSearchParams(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "message": "QAQC Analysis API v2.0.0"}
+    return {"status": "ok", "message": "LogiQore Reporter API v2.0.0"}
 
 
 @app.get("/health")
@@ -199,6 +206,12 @@ async def health_check():
             "reporters": "ready"
         }
     }
+
+
+@app.get("/api/health")
+async def api_health_check():
+    """Compatibility alias for older clients expecting /api/health."""
+    return await health_check()
 
 
 # ============== Project Management ==============
@@ -439,10 +452,26 @@ async def run_analysis(request: AnalysisRequest):
         df = data_importer.read_table(file_info["path"])
         
         # Apply column mapping
+        result_source_column = request.column_mapping.result
+        if result_source_column not in df.columns:
+            # For multi-element payloads, allow first mapped element as analysis result fallback.
+            if request.column_mapping.elements:
+                fallback_column = next(iter(request.column_mapping.elements.values()))
+                if fallback_column in df.columns:
+                    result_source_column = fallback_column
+                else:
+                    raise ValidationError(
+                        f"Configured result column '{result_source_column}' and fallback '{fallback_column}' were not found in uploaded data"
+                    )
+            else:
+                raise ValidationError(
+                    f"Configured result column '{result_source_column}' was not found in uploaded data"
+                )
+
         mapping = {
             request.column_mapping.sample_id: "sample_id",
             request.column_mapping.sample_type: "sample_type",
-            request.column_mapping.result: "result"
+            result_source_column: "result"
         }
         df = data_importer.apply_mapping(df, mapping)
         df = data_importer.normalize_sample_type(df)
@@ -453,6 +482,7 @@ async def run_analysis(request: AnalysisRequest):
         results = {
             "analysis_id": f"analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
             "file_id": request.file_id,
+            "status": "completed",
             "timestamp": datetime.now().isoformat(),
             "summary": {
                 "total_samples": len(df),
@@ -926,7 +956,7 @@ async def export_excel(analysis_id: str, background_tasks: BackgroundTasks, with
         if with_charts:
             # Use the new ExcelChartReporter with embedded charts
             project_info = {
-                "name": "QAQC Analysis",
+                "name": "LogiQore Reporter",
                 "deposit": "Analysis Project",
                 "commodity": "Gold",
             }
@@ -998,7 +1028,7 @@ async def export_pdf(analysis_id: str):
         
         # Project info for cover page
         project_info = {
-            "name": "QAQC Analysis",
+            "name": "LogiQore Reporter",
             "deposit": "Analysis Project",
             "commodity": "Gold",
         }
@@ -1070,7 +1100,7 @@ async def export_docx(analysis_id: str):
         
         # Project info for cover page
         project_info = {
-            "name": "QAQC Analysis",
+            "name": "LogiQore Reporter",
             "deposit": "Analysis Project",
             "commodity": "Gold",
         }
@@ -1103,4 +1133,3 @@ async def export_docx(analysis_id: str):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
-

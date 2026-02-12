@@ -1,5 +1,5 @@
 """
-QAQC Analysis Automation Application
+LogiQore Reporter
 
 A comprehensive system for automated Quality Assurance/Quality Control analysis
 of drilling assay data, including standards, blanks, and duplicates evaluation.

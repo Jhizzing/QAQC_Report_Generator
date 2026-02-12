@@ -8,9 +8,9 @@ set -euo pipefail
 
 VERSION="${1:-1.0.0-pre}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-GUI_BIN="$ROOT_DIR/dist/gui/QAQC-GUI"
+GUI_BIN="$ROOT_DIR/dist/gui/LogiQore-Reporter-GUI"
 APPDIR="$ROOT_DIR/build/appimage/AppDir"
-OUTPUT="$ROOT_DIR/dist/gui/QAQC-GUI-${VERSION}-x86_64.AppImage"
+OUTPUT="$ROOT_DIR/dist/gui/LogiQore-Reporter-${VERSION}-x86_64.AppImage"
 
 if ! command -v appimagetool >/dev/null 2>&1; then
   echo "appimagetool not found. Install it first: https://appimage.org/"
@@ -26,36 +26,36 @@ fi
 rm -rf "$APPDIR"
 mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/share/applications" "$APPDIR/usr/share/icons/hicolor/256x256/apps"
 
-cp "$GUI_BIN" "$APPDIR/usr/bin/QAQC-GUI"
-chmod +x "$APPDIR/usr/bin/QAQC-GUI"
+cp "$GUI_BIN" "$APPDIR/usr/bin/logiqore-reporter"
+chmod +x "$APPDIR/usr/bin/logiqore-reporter"
 
-cat > "$APPDIR/qaqc.desktop" <<DESKTOP
+cat > "$APPDIR/logiqore-reporter.desktop" <<DESKTOP
 [Desktop Entry]
 Type=Application
-Name=QAQC GUI
+Name=LogiQore Reporter
 Comment=QAQC analysis and reporting application
-Exec=QAQC-GUI
-Icon=qaqc
+Exec=logiqore-reporter
+Icon=logiqore-reporter
 Categories=Science;Education;
 Terminal=false
 DESKTOP
 
-cp "$APPDIR/qaqc.desktop" "$APPDIR/usr/share/applications/qaqc.desktop"
+cp "$APPDIR/logiqore-reporter.desktop" "$APPDIR/usr/share/applications/logiqore-reporter.desktop"
 
 # Minimal launcher expected by AppImage
 cat > "$APPDIR/AppRun" <<'APPRUN'
 #!/usr/bin/env bash
 HERE="$(dirname "$(readlink -f "$0")")"
-exec "$HERE/usr/bin/QAQC-GUI" "$@"
+exec "$HERE/usr/bin/logiqore-reporter" "$@"
 APPRUN
 chmod +x "$APPDIR/AppRun"
 
 # Placeholder icon (replace with branded icon file when available)
 if [[ -f "$ROOT_DIR/assets/icon.png" ]]; then
-  cp "$ROOT_DIR/assets/icon.png" "$APPDIR/qaqc.png"
-  cp "$ROOT_DIR/assets/icon.png" "$APPDIR/usr/share/icons/hicolor/256x256/apps/qaqc.png"
+  cp "$ROOT_DIR/assets/icon.png" "$APPDIR/logiqore-reporter.png"
+  cp "$ROOT_DIR/assets/icon.png" "$APPDIR/usr/share/icons/hicolor/256x256/apps/logiqore-reporter.png"
 else
-  : > "$APPDIR/qaqc.png"
+  : > "$APPDIR/logiqore-reporter.png"
 fi
 
 rm -f "$OUTPUT"

@@ -1,6 +1,6 @@
-# QAQC Pro - React UI
+# LogiQore Reporter - React UI
 
-A modern, web-based interface for the QAQC Report Generator, built with React, TypeScript, and Vite.
+A modern, web-based interface for LogiQore Reporter, built with React, TypeScript, and Vite.
 
 ## 🚀 Getting Started
 

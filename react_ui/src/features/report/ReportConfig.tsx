@@ -56,7 +56,7 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({ config, onCh
                     value={config.reportTitle || ''}
                     onChange={(e) => handleChange('reportTitle', e.target.value)}
                     className="w-full px-4 py-2 bg-surface-light border border-secondary-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-slate-50 placeholder:text-slate-500"
-                    placeholder="QAQC Analysis Report"
+                    placeholder="LogiQore Reporter Analysis Report"
                 />
             </div>
 

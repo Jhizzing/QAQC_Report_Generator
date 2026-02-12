@@ -37,7 +37,7 @@ export const WelcomeModal: React.FC = () => {
                         </div>
                         <div>
                             <h2 className="text-3xl font-bold text-white">Welcome to LogiQore</h2>
-                            <p className="text-gray-300 text-sm mt-1">QAQC Reporter for Geological Data</p>
+                            <p className="text-gray-300 text-sm mt-1">LogiQore Reporter for Geological Data</p>
                         </div>
                     </div>
 

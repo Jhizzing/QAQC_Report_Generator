@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec for QAQC PyQt6 GUI executable (single-file)."""
+"""PyInstaller spec for LogiQore Reporter GUI executable (single-file)."""
 
 import os
 from pathlib import Path
@@ -57,7 +57,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name="QAQC-GUI",
+    name="LogiQore-Reporter-GUI",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

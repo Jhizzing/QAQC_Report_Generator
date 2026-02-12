@@ -3,13 +3,13 @@ import type { Tour } from '../../types/onboarding';
 export const APP_WORKFLOW_TOUR: Tour = {
     id: 'app-workflow',
     name: 'Application Workflow',
-    description: 'Complete walkthrough of the QAQC analysis workflow',
+    description: 'Complete walkthrough of the LogiQore Reporter workflow',
     requiredForFirstTime: true,
     steps: [
         {
             id: 'welcome',
             type: 'modal',
-            title: 'Welcome to LogiQore QAQC Reporter! ⛏️',
+            title: 'Welcome to LogiQore Reporter! ⛏️',
             content: `A powerful tool for geological QAQC analysis and reporting, aligned with JORC Code 2012 guidelines.
 
 Let's walk through the complete workflow together!`,

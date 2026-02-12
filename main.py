@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-QAQC Analysis Automation Application - Main Entry Point
+LogiQore Reporter - Main Entry Point.
 
-This is the main entry point for the QAQC Analysis Automation application.
-It provides comprehensive QAQC analysis including standards, blanks, duplicates,
-and CRM integration with professional reporting capabilities.
+This is the main entry point for LogiQore Reporter. It provides comprehensive
+QAQC analysis including standards, blanks, duplicates, and CRM integration with
+professional reporting capabilities.
 """
 
 import sys
@@ -46,7 +46,7 @@ def load_config(config_file: str) -> Dict:
 def main():
     """Main application entry point."""
     parser = argparse.ArgumentParser(
-        description="QAQC Analysis Automation Application",
+        description="LogiQore Reporter",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -216,7 +216,7 @@ Examples:
     parser.add_argument(
         "--version",
         action="version",
-        version="QAQC Analysis Automation v2.0.0"
+        version="LogiQore Reporter v2.0.0"
     )
 
     args = parser.parse_args()
@@ -250,15 +250,15 @@ def launch_gui():
 
         # Create application
         app = QApplication(sys.argv)
-        app.setApplicationName("QAQC Analysis Application")
+        app.setApplicationName("LogiQore Reporter")
         app.setApplicationVersion("2.0.0")
-        app.setOrganizationName("QAQC Analysis")
+        app.setOrganizationName("LogiQore")
 
         # Create and show main window
         window = QAQCApplication()
         window.show()
 
-        print("QAQC Analysis Application GUI launched!")
+        print("LogiQore Reporter GUI launched!")
         print("Ready for geological data analysis.")
 
         # Run application
@@ -433,7 +433,7 @@ def process_data(args) -> None:
     pdf_reporter = PDFReporter()
 
     if verbose:
-        print("QAQC Analysis Automation v2.0.0")
+        print("LogiQore Reporter v2.0.0")
         print("=" * 50)
 
     # Load and process data

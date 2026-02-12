@@ -80,13 +80,13 @@ export const ProjectEntry: React.FC<ProjectEntryProps> = ({ onProjectLoaded }) =
                             alt="LogiQore"
                             className="h-20 transition-all duration-200 hover:scale-105 hover:drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]"
                         />
-                        <h1 className="text-3xl font-bold text-slate-50 tracking-tight">LogiQore QAQC Reporter</h1>
+                        <h1 className="text-3xl font-bold text-slate-50 tracking-tight">LogiQore Reporter</h1>
                     </div>
 
                     <div className="space-y-4">
                         <h2 className="text-4xl font-extrabold text-slate-50 leading-tight">
                             Secure, Intelligent <br />
-                            <span className="text-primary">QAQC Analysis</span>
+                            <span className="text-primary">Assay QAQC Analysis</span>
                         </h2>
                         <p className="text-lg text-slate-400 max-w-md">
                             Start a new session to analyze your assay data locally. Your data never leaves this device.
@@ -144,7 +144,7 @@ export const ProjectEntry: React.FC<ProjectEntryProps> = ({ onProjectLoaded }) =
                                     <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-4 backdrop-blur-sm group-hover:scale-110 transition-transform">
                                         <Plus className="w-6 h-6 text-slate-50" />
                                     </div>
-                                    <h3 className="text-xl font-bold mb-1">New QAQC Session</h3>
+                                    <h3 className="text-xl font-bold mb-1">New Reporter Session</h3>
                                     <p className="text-primary-light text-sm">Start a fresh analysis project</p>
                                 </div>
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-white/20 transition-colors" />

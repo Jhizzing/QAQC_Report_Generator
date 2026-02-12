@@ -70,7 +70,7 @@ export const CRMDatabase: React.FC<CRMDatabaseProps> = ({ onClose, onNavigateToE
 
       return true;
     });
-  }, [searchQuery, elementFilter, supplierFilter]);
+  }, [allCRMs, searchQuery, elementFilter, supplierFilter]);
 
   // Filter CRMs with category filter applied
   const filteredCRMs = useMemo(() => {
@@ -113,7 +113,8 @@ export const CRMDatabase: React.FC<CRMDatabaseProps> = ({ onClose, onNavigateToE
   const hasActiveFilters = searchQuery || elementFilter || supplierFilter || categoryFilter !== 'all';
 
   return (
-    <div className="min-h-screen bg-background-dark">
+    <>
+      <div className="min-h-screen bg-background-dark">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-surface-dark/95 backdrop-blur-sm border-b border-secondary-dark">
         <div className="max-w-6xl mx-auto px-6 py-4">
@@ -320,13 +321,10 @@ export const CRMDatabase: React.FC<CRMDatabaseProps> = ({ onClose, onNavigateToE
         )}
       </div>
     </div>
-
-      {
-    isAddingCRM && (
-      <CustomCRMForm onClose={() => setIsAddingCRM(false)} />
-    )
-  }
-    </div >
+      {isAddingCRM && (
+        <CustomCRMForm onClose={() => setIsAddingCRM(false)} />
+      )}
+    </>
   );
 };
 

@@ -34,11 +34,11 @@ class Sidebar(QWidget):
         header_layout = QVBoxLayout(header)
         header_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
-        title = QLabel("QAQC Analysis")
+        title = QLabel("LogiQore Reporter")
         title.setObjectName("sidebarTitle")
         header_layout.addWidget(title)
         
-        subtitle = QLabel("Geological Report Generator")
+        subtitle = QLabel("Geological QAQC Platform")
         subtitle.setObjectName("sidebarSubtitle")
         header_layout.addWidget(subtitle)
         

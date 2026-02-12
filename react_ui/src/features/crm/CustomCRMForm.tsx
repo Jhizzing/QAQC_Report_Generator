@@ -72,7 +72,7 @@ export const CustomCRMForm: React.FC<CustomCRMFormProps> = ({ onClose }) => {
                 certified: val,
                 unit: el.unit,
                 uncertainty: unc,
-                method: category === 'pxrf' ? 'pXRF' : category === 'photon' ? 'PhotonAssay' : 'Fire Assay'
+                method: category === 'pxrf' ? 'pXRF' : 'Fire Assay'
             };
         }
 
@@ -86,7 +86,7 @@ export const CustomCRMForm: React.FC<CustomCRMFormProps> = ({ onClose }) => {
             name,
             supplier,
             matrix,
-            category: category as any, // 'photon' is not in the original type union but might be needed? sticking to type
+            category,
             elements: cleanElements,
             notes: notes || 'Custom Standard'
         };

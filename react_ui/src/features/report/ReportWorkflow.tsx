@@ -22,7 +22,7 @@ export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({
     isBackendAvailable,
     analysisId
 }) => {
-    const { settings, updateReportSettings } = useSettingsStore();
+    const { settings, updateReportSettings, updateExportSettings } = useSettingsStore();
     const [reportType, setReportType] = useState<ReportType>('figures');
     const [isExporting, setIsExporting] = useState(false);
     const [exportError, setExportError] = useState<string | null>(null);
@@ -284,7 +284,7 @@ export const ReportWorkflow: React.FC<ReportWorkflowProps> = ({
                                     value={jorcConfig.reportTitle || ''}
                                     onChange={(e) => setJorcConfig(prev => ({ ...prev, reportTitle: e.target.value }))}
                                     className="w-full px-3 py-2 bg-surface-light border border-secondary-light rounded-lg text-slate-200 text-sm focus:ring-2 focus:ring-primary/50 outline-none"
-                                    placeholder="QAQC Analysis Report"
+                                    placeholder="LogiQore Reporter Analysis Report"
                                 />
                             </div>
                             <div className="space-y-1">

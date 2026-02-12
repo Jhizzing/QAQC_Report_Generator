@@ -1,21 +1,21 @@
-; QAQC Windows installer script (Inno Setup 6)
+; LogiQore Reporter Windows installer script (Inno Setup 6)
 ; Usage:
 ;   1) Build executables first: python scripts/build_executables.py --target all --clean
 ;   2) Build installer: ISCC.exe packaging\windows\qaqc.iss
 
-#define MyAppName "QAQC Analysis Application"
+#define MyAppName "LogiQore Reporter"
 #define MyAppVersion "1.0.0-pre"
 #define MyAppPublisher "LogiQore"
-#define MyAppExeName "QAQC-GUI.exe"
-#define MyCliExeName "QAQC-CLI.exe"
+#define MyAppExeName "LogiQore-Reporter-GUI.exe"
+#define MyCliExeName "LogiQore-Reporter-CLI.exe"
 
 [Setup]
 AppId={{E9E8A0D6-8CEB-4B3B-B662-92A2D45C0C0A}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-DefaultDirName={autopf}\QAQC
-DefaultGroupName=QAQC
+DefaultDirName={autopf}\LogiQore Reporter
+DefaultGroupName=LogiQore Reporter
 DisableProgramGroupPage=yes
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma
@@ -41,9 +41,9 @@ Source: "config\*"; DestDir: "{app}\config"; Flags: ignoreversion recursesubdirs
 Source: "mock_data\*"; DestDir: "{app}\mock_data"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{autoprograms}\QAQC GUI"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autoprograms}\QAQC CLI Command Prompt"; Filename: "{cmd}"; Parameters: "/k cd /d \"{app}\""
-Name: "{autodesktop}\QAQC GUI"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autoprograms}\LogiQore Reporter"; Filename: "{app}\{#MyAppExeName}"
+Name: "{autoprograms}\LogiQore Reporter CLI Command Prompt"; Filename: "{cmd}"; Parameters: "/k cd /d \"{app}\""
+Name: "{autodesktop}\LogiQore Reporter"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "Launch QAQC GUI"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "Launch LogiQore Reporter"; Flags: nowait postinstall skipifsilent

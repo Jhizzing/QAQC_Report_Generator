@@ -1,5 +1,5 @@
 /**
- * Export utilities for QAQC Analysis Results
+ * Export utilities for LogiQore Reporter results
  * Supports CSV, PDF, and DOCX export formats
  */
 
@@ -14,11 +14,11 @@ import type { JORCReportConfig, FiguresConfig } from '../features/report/ReportC
 export async function exportFiguresOnly(
     results: QAQCAnalysisOutput,
     config: FiguresConfig,
-    projectName: string = 'QAQC Analysis'
+    projectName: string = 'LogiQore Reporter'
 ): Promise<void> {
     const children: (Paragraph | Table)[] = [
         new Paragraph({
-            text: `${projectName} - QAQC Figures`,
+            text: `${projectName} - Figures`,
             heading: HeadingLevel.HEADING_1,
             spacing: { after: 400 }
         }),
@@ -155,7 +155,7 @@ export async function exportFiguresOnly(
 
     // Generate and save
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, `QAQC_Figures_${new Date().toISOString().split('T')[0]}.docx`);
+    saveAs(blob, `LogiQore-Reporter-Figures_${new Date().toISOString().split('T')[0]}.docx`);
 }
 
 /**
@@ -164,7 +164,7 @@ export async function exportFiguresOnly(
 export async function exportJORCReport(
     results: QAQCAnalysisOutput,
     config: JORCReportConfig,
-    projectName: string = 'QAQC Analysis'
+    projectName: string = 'LogiQore Reporter'
 ): Promise<void> {
     const children: any[] = [];
 
@@ -176,7 +176,7 @@ export async function exportJORCReport(
             spacing: { after: 200 }
         }),
         new Paragraph({
-            text: 'QAQC Analysis Report',
+            text: 'LogiQore Reporter Analysis Report',
             heading: HeadingLevel.HEADING_2,
             spacing: { after: 400 }
         }),
@@ -348,7 +348,7 @@ export async function exportJORCReport(
 
     // Generate and save
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, `QAQC_JORC_Report_${new Date().toISOString().split('T')[0]}.docx`);
+    saveAs(blob, `LogiQore-Reporter-JORC-Report_${new Date().toISOString().split('T')[0]}.docx`);
 }
 
 /**
@@ -377,7 +377,7 @@ export function exportFlaggedSamplesToCSV(results: QAQCAnalysisOutput): void {
 
     const csvContent = rows.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    saveAs(blob, `QAQC_Flagged_Samples_${new Date().toISOString().split('T')[0]}.csv`);
+    saveAs(blob, `LogiQore-Reporter-Flagged-Samples_${new Date().toISOString().split('T')[0]}.csv`);
 }
 
 /**
@@ -411,13 +411,13 @@ export function exportStatisticsToCSV(results: QAQCAnalysisOutput): void {
 
     const csvContent = rows.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    saveAs(blob, `QAQC_Statistics_${new Date().toISOString().split('T')[0]}.csv`);
+    saveAs(blob, `LogiQore-Reporter-Statistics_${new Date().toISOString().split('T')[0]}.csv`);
 }
 
 /**
  * Export all results in multiple formats (legacy function)
  */
-export async function exportAll(results: QAQCAnalysisOutput, _projectName: string = 'QAQC Analysis'): Promise<void> {
+export async function exportAll(results: QAQCAnalysisOutput, _projectName: string = 'LogiQore Reporter'): Promise<void> {
     exportFlaggedSamplesToCSV(results);
     exportStatisticsToCSV(results);
 }

@@ -97,7 +97,6 @@ class TestBackendFileUpload:
         assert "filename" in data
         assert "row_count" in data
         assert data["row_count"] > 0
-        return data["file_id"]
 
     def test_backend_file_upload_invalid_type(self, client):
         """Test file upload with invalid file type."""

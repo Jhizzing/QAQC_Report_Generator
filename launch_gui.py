@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-GUI Launcher for QAQC Analysis Application
+GUI launcher for LogiQore Reporter.
 
-This script launches the graphical user interface for the QAQC Analysis Application,
+This script launches the graphical user interface for LogiQore Reporter,
 designed specifically for geologists working with assay data.
 """
 
@@ -30,7 +30,7 @@ def check_dependencies():
 
 def main():
     """Main entry point for GUI application."""
-    print("QAQC Analysis Application - GUI Launcher")
+    print("LogiQore Reporter - GUI Launcher")
     print("=" * 50)
 
     # Check dependencies
@@ -43,9 +43,9 @@ def main():
 
         # Create application
         app = QApplication(sys.argv)
-        app.setApplicationName("QAQC Analysis Application")
+        app.setApplicationName("LogiQore Reporter")
         app.setApplicationVersion("2.0.0")
-        app.setOrganizationName("QAQC Analysis")
+        app.setOrganizationName("LogiQore")
 
         # Create and show main window
         window = QAQCApplication()

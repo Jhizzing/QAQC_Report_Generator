@@ -1,5 +1,5 @@
 #!/bin/bash
-# Create macOS installer (DMG) for QAQC application
+# Create macOS installer (DMG) for LogiQore Reporter.
 
 set -e
 
@@ -11,7 +11,7 @@ BUILD_DIR="$PROJECT_ROOT/build"
 echo "Creating macOS installer..."
 
 # Check if GUI executable exists
-GUI_EXE="$DIST_DIR/gui/QAQC-GUI"
+GUI_EXE="$DIST_DIR/gui/LogiQore-Reporter-GUI"
 if [ ! -f "$GUI_EXE" ]; then
     echo "Error: GUI executable not found at $GUI_EXE"
     echo "Please build the executable first: python scripts/build_executables.py --target gui"
@@ -19,7 +19,7 @@ if [ ! -f "$GUI_EXE" ]; then
 fi
 
 # Create .app bundle structure
-APP_NAME="QAQC-GUI.app"
+APP_NAME="LogiQore Reporter.app"
 APP_DIR="$DIST_DIR/$APP_NAME"
 APP_CONTENTS="$APP_DIR/Contents"
 APP_MACOS="$APP_CONTENTS/MacOS"
@@ -31,8 +31,8 @@ mkdir -p "$APP_MACOS"
 mkdir -p "$APP_RESOURCES"
 
 # Copy executable
-cp "$GUI_EXE" "$APP_MACOS/QAQC-GUI"
-chmod +x "$APP_MACOS/QAQC-GUI"
+cp "$GUI_EXE" "$APP_MACOS/LogiQore-Reporter-GUI"
+chmod +x "$APP_MACOS/LogiQore-Reporter-GUI"
 
 # Create Info.plist
 cat > "$APP_CONTENTS/Info.plist" <<EOF
@@ -41,11 +41,11 @@ cat > "$APP_CONTENTS/Info.plist" <<EOF
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>QAQC-GUI</string>
+    <string>LogiQore-Reporter-GUI</string>
     <key>CFBundleIdentifier</key>
-    <string>com.qaqc.reportgenerator</string>
+    <string>com.logiqore.reporter</string>
     <key>CFBundleName</key>
-    <string>QAQC Report Generator</string>
+    <string>LogiQore Reporter</string>
     <key>CFBundleVersion</key>
     <string>1.0.0</string>
     <key>CFBundleShortVersionString</key>
@@ -53,7 +53,7 @@ cat > "$APP_CONTENTS/Info.plist" <<EOF
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleSignature</key>
-    <string>QAQC</string>
+    <string>LQRP</string>
     <key>LSMinimumSystemVersion</key>
     <string>10.15</string>
 </dict>
@@ -61,7 +61,7 @@ cat > "$APP_CONTENTS/Info.plist" <<EOF
 EOF
 
 # Create DMG
-DMG_NAME="QAQC-GUI-macos.dmg"
+DMG_NAME="LogiQore-Reporter-macos.dmg"
 DMG_PATH="$DIST_DIR/$DMG_NAME"
 
 echo "Creating DMG..."
@@ -79,7 +79,7 @@ cp -R "$APP_DIR" "$DMG_TEMP/"
 ln -s /Applications "$DMG_TEMP/Applications"
 
 # Create DMG
-hdiutil create -volname "QAQC Report Generator" \
+hdiutil create -volname "LogiQore Reporter" \
     -srcfolder "$DMG_TEMP" \
     -ov -format UDZO \
     "$DMG_PATH"

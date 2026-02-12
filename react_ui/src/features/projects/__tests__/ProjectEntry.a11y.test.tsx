@@ -26,7 +26,7 @@ describe('ProjectEntry accessibility', () => {
   it('has no obvious accessibility violations in select mode', async () => {
     const { container } = render(<ProjectEntry />);
 
-    expect(screen.getByRole('heading', { name: /logiqore qaqc reporter/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /logiqore reporter/i })).toBeInTheDocument();
     const results = await axe(container);
 
     expect(results).toHaveNoViolations();
@@ -35,7 +35,7 @@ describe('ProjectEntry accessibility', () => {
   it('has no obvious accessibility violations in new session form mode', async () => {
     const { container } = render(<ProjectEntry />);
 
-    await userEvent.click(screen.getByRole('button', { name: /new qaqc session/i }));
+    await userEvent.click(screen.getByRole('button', { name: /new reporter session/i }));
 
     expect(screen.getByRole('heading', { name: /new session/i })).toBeInTheDocument();
     const results = await axe(container);

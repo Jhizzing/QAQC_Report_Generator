@@ -1,6 +1,4 @@
-"""
-Setup script for QAQC Analysis Automation Application.
-"""
+"""Setup script for LogiQore Reporter."""
 
 from setuptools import setup, find_packages
 import os
@@ -20,7 +18,7 @@ setup(
     version="1.0.0",
     author="LogiQore",
     author_email="info@logiqore.com",
-    description="Automated QAQC analysis system for drilling assay data",
+    description="LogiQore Reporter for automated QAQC analysis of drilling assay data",
     long_description=read_readme(),
     long_description_content_type="text/markdown",
     url="https://github.com/yourusername/qaqc-report-generator",

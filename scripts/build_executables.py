@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Helper to build QAQC executables via PyInstaller."""
+"""Helper to build LogiQore Reporter executables via PyInstaller."""
 
 from __future__ import annotations
 
@@ -14,6 +14,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SPEC_DIR = PROJECT_ROOT / "packaging" / "pyinstaller"
 DIST_DIR = PROJECT_ROOT / "dist"
 BUILD_DIR = PROJECT_ROOT / "build" / "pyinstaller"
+CLI_EXE_BASENAME = "LogiQore-Reporter-CLI"
+GUI_EXE_BASENAME = "LogiQore-Reporter-GUI"
 
 TARGET_MAP = {
     "cli": SPEC_DIR / "qaqc_cli.spec",
@@ -76,7 +78,7 @@ def _build_target(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Build QAQC CLI and GUI executables using PyInstaller",
+        description="Build LogiQore Reporter CLI and GUI executables using PyInstaller",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -183,9 +185,9 @@ def main() -> None:
             # Verify build
             dist_path = args.dist_dir / target
             if target == "cli":
-                exe_name = "QAQC-CLI.exe" if sys.platform == "win32" else "QAQC-CLI"
+                exe_name = f"{CLI_EXE_BASENAME}.exe" if sys.platform == "win32" else CLI_EXE_BASENAME
             else:
-                exe_name = "QAQC-GUI.exe" if sys.platform == "win32" else "QAQC-GUI"
+                exe_name = f"{GUI_EXE_BASENAME}.exe" if sys.platform == "win32" else GUI_EXE_BASENAME
             
             executable_path = dist_path / exe_name
             if not _verify_build(executable_path):

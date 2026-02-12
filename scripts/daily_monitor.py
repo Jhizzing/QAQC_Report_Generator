@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Daily Monitoring Script for QAQC Analysis Application
+Daily monitoring script for LogiQore Reporter.
 """
 
 import os

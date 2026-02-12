@@ -45,7 +45,7 @@ jobs:
           from pathlib import Path
 
           root = Path.cwd()
-          exe_name = "QAQC-CLI.exe" if os.name == "nt" else "QAQC-CLI"
+          exe_name = "LogiQore-Reporter-CLI.exe" if os.name == "nt" else "LogiQore-Reporter-CLI"
           cli_exe = root / "dist" / "cli" / exe_name
 
           if not cli_exe.exists():
@@ -80,7 +80,7 @@ jobs:
       - name: Upload platform artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: qaqc-${{ matrix.os }}
+          name: logiqore-reporter-${{ matrix.os }}
           path: |
             dist/cli/*
             dist/gui/*
@@ -126,7 +126,7 @@ jobs:
       - name: Upload checksum manifest
         uses: actions/upload-artifact@v4
         with:
-          name: qaqc-checksums
+          name: logiqore-reporter-checksums
           path: |
             artifacts/SHA256SUMS.txt
             artifacts/SHA256SUMS.txt.asc
@@ -138,6 +138,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: checksums
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -148,21 +150,28 @@ jobs:
           set -euo pipefail
           mkdir -p release_assets
 
-          for dir in artifacts/qaqc-*; do
+          for dir in artifacts/logiqore-reporter-*; do
             [ -d "$dir" ] || continue
-            if [ "$(basename "$dir")" = "qaqc-checksums" ]; then
+            if [ "$(basename "$dir")" = "logiqore-reporter-checksums" ]; then
               continue
             fi
             bundle_name="$(basename "$dir").zip"
             (cd "$dir" && zip -r "../../release_assets/$bundle_name" .)
           done
 
-          cp artifacts/qaqc-checksums/SHA256SUMS.txt release_assets/
-          if [ -f artifacts/qaqc-checksums/SHA256SUMS.txt.asc ]; then
-            cp artifacts/qaqc-checksums/SHA256SUMS.txt.asc release_assets/
+          cp artifacts/logiqore-reporter-checksums/SHA256SUMS.txt release_assets/
+          if [ -f artifacts/logiqore-reporter-checksums/SHA256SUMS.txt.asc ]; then
+            cp artifacts/logiqore-reporter-checksums/SHA256SUMS.txt.asc release_assets/
           fi
 
           ls -la release_assets
+
+      - name: Generate beta manifest
+        run: |
+          python scripts/generate_beta_manifest.py \
+            --release-assets-dir release_assets \
+            --output release_assets/logiqore-reporter-beta-manifest.json \
+            --version "${{ github.ref_name }}"
 
       - name: Upload packaged release assets
         uses: actions/upload-artifact@v4

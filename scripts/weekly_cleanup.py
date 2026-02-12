@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Weekly Cleanup Script for QAQC Analysis Application
+Weekly cleanup script for LogiQore Reporter.
 """
 
 import os

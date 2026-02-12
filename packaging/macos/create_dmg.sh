@@ -8,10 +8,10 @@ set -euo pipefail
 VERSION="${1:-1.0.0-pre}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 GUI_DIST_DIR="$ROOT_DIR/dist/gui"
-GUI_BIN="$GUI_DIST_DIR/QAQC-GUI"
-APP_NAME="QAQC-GUI.app"
+GUI_BIN="$GUI_DIST_DIR/LogiQore-Reporter-GUI"
+APP_NAME="LogiQore Reporter.app"
 APP_DIR="$GUI_DIST_DIR/$APP_NAME"
-DMG_PATH="$GUI_DIST_DIR/QAQC-${VERSION}.dmg"
+DMG_PATH="$GUI_DIST_DIR/LogiQore-Reporter-${VERSION}.dmg"
 
 if [[ ! -f "$GUI_BIN" ]]; then
   echo "GUI executable not found: $GUI_BIN"
@@ -22,8 +22,8 @@ fi
 rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
 
-cp "$GUI_BIN" "$APP_DIR/Contents/MacOS/QAQC-GUI"
-chmod +x "$APP_DIR/Contents/MacOS/QAQC-GUI"
+cp "$GUI_BIN" "$APP_DIR/Contents/MacOS/LogiQore-Reporter-GUI"
+chmod +x "$APP_DIR/Contents/MacOS/LogiQore-Reporter-GUI"
 
 cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -31,17 +31,17 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 <plist version="1.0">
 <dict>
   <key>CFBundleName</key>
-  <string>QAQC GUI</string>
+  <string>LogiQore Reporter</string>
   <key>CFBundleDisplayName</key>
-  <string>QAQC GUI</string>
+  <string>LogiQore Reporter</string>
   <key>CFBundleIdentifier</key>
-  <string>com.logiqore.qaqc</string>
+  <string>com.logiqore.reporter</string>
   <key>CFBundleVersion</key>
   <string>${VERSION}</string>
   <key>CFBundleShortVersionString</key>
   <string>${VERSION}</string>
   <key>CFBundleExecutable</key>
-  <string>QAQC-GUI</string>
+  <string>LogiQore-Reporter-GUI</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>LSMinimumSystemVersion</key>
@@ -58,6 +58,6 @@ if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
 fi
 
 rm -f "$DMG_PATH"
-hdiutil create -volname "QAQC ${VERSION}" -srcfolder "$APP_DIR" -ov -format UDZO "$DMG_PATH"
+hdiutil create -volname "LogiQore Reporter ${VERSION}" -srcfolder "$APP_DIR" -ov -format UDZO "$DMG_PATH"
 
 echo "Created DMG: $DMG_PATH"

@@ -1,7 +1,7 @@
 """
 Project Manager Module
 
-Handles the persistence of project state (save/load) for the QAQC Application.
+Handles the persistence of project state (save/load) for LogiQore Reporter.
 """
 import json
 import gzip
@@ -40,7 +40,7 @@ class ProjectManager:
             "meta": {
                 "version": self.VERSION,
                 "created_at": datetime.now().isoformat(),
-                "app_name": "QAQC Analysis Application"
+                "app_name": "LogiQore Reporter"
             },
             "config": state.get("config", {}),
             "results": state.get("results"),

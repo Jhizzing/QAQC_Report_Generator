@@ -1,5 +1,5 @@
 """
-Main Window for QAQC Analysis Application
+Main Window for LogiQore Reporter
 
 This module contains the main application window designed for geologists
 working with assay data. It provides an intuitive interface for data import,
@@ -34,7 +34,7 @@ from src.core.settings_manager import SettingsManager
 
 class QAQCApplication(QMainWindow):
     """
-    Main application window for QAQC Analysis Application.
+    Main application window for LogiQore Reporter.
 
     Designed specifically for geologists and mining engineers working
     with assay data. Provides an intuitive interface for data import,
@@ -63,7 +63,7 @@ class QAQCApplication(QMainWindow):
         self.apply_theme()
 
         # Set window properties
-        self.setWindowTitle("QAQC Analysis Application - Geological Data Analysis")
+        self.setWindowTitle("LogiQore Reporter - Geological Data Analysis")
         self.setMinimumSize(1200, 800)
         self.resize(1400, 900)
 
@@ -249,7 +249,7 @@ class QAQCApplication(QMainWindow):
 
         # About
         about_action = QAction('&About', self)
-        about_action.setStatusTip('About QAQC Analysis Application')
+        about_action.setStatusTip('About LogiQore Reporter')
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
 
@@ -418,7 +418,7 @@ class QAQCApplication(QMainWindow):
             self,
             "Save Project",
             str(default_filename),
-            "QAQC Project Files (*.qaqc)"
+            "LogiQore Project Files (*.qaqc)"
         )
 
         if file_path:
@@ -447,7 +447,7 @@ class QAQCApplication(QMainWindow):
             self,
             "Open Project",
             "",
-            "QAQC Project Files (*.qaqc)"
+            "LogiQore Project Files (*.qaqc)"
         )
 
         if file_path:
@@ -490,7 +490,7 @@ class QAQCApplication(QMainWindow):
             return
 
         dialog = QMessageBox(self)
-        dialog.setWindowTitle("Export QAQC Results")
+        dialog.setWindowTitle("Export Analysis Results")
         dialog.setText("Select the report format to export.")
         excel_button = dialog.addButton("Excel (.xlsx)", QMessageBox.ButtonRole.AcceptRole)
         pdf_button = dialog.addButton("PDF (.pdf)", QMessageBox.ButtonRole.AcceptRole)
@@ -630,9 +630,9 @@ class QAQCApplication(QMainWindow):
         """Show about dialog."""
         QMessageBox.about(
             self,
-            "About QAQC Analysis Application",
+            "About LogiQore Reporter",
             """
-            <h3>QAQC Analysis Application</h3>
+            <h3>LogiQore Reporter</h3>
             <p>Version 2.0.0</p>
             <p>Professional QAQC analysis tool for geologists and mining engineers.</p>
             <p>Designed for assay data analysis with comprehensive reporting capabilities.</p>
@@ -846,9 +846,9 @@ def main():
     from PyQt6.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
-    app.setApplicationName("QAQC Analysis Application")
+    app.setApplicationName("LogiQore Reporter")
     app.setApplicationVersion("2.0.0")
-    app.setOrganizationName("QAQC Analysis")
+    app.setOrganizationName("LogiQore")
 
     window = QAQCApplication()
     window.show()

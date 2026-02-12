@@ -15,12 +15,12 @@ class SettingsManager:
     
     Uses Qt's QSettings for persistent storage across sessions.
     Settings are stored in platform-specific locations:
-    - macOS: ~/Library/Preferences/com.qaqc.application.plist
+    - macOS: ~/Library/Preferences/com.logiqore.reporter.plist
     - Windows: Registry
-    - Linux: ~/.config/QAQC/application.conf
+    - Linux: ~/.config/LogiQore/Reporter.conf
     """
     
-    def __init__(self, organization: str = "QAQC", application: str = "Analysis Application"):
+    def __init__(self, organization: str = "LogiQore", application: str = "Reporter"):
         """Initialize settings manager."""
         self.settings = QSettings(organization, application)
         self._defaults = self._get_default_settings()
@@ -36,7 +36,7 @@ class SettingsManager:
             
             # Data & Files
             "data/input_dir": str(Path.home() / "Documents"),
-            "data/output_dir": str(Path.home() / "Documents" / "QAQC_Output"),
+            "data/output_dir": str(Path.home() / "Documents" / "LogiQore_Reporter_Output"),
             "data/autosave_enabled": False,
             "data/autosave_interval": 10,  # minutes
             "data/recent_files_limit": 10,

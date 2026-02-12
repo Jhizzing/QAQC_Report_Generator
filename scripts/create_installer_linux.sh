@@ -1,5 +1,5 @@
 #!/bin/bash
-# Create Linux installer (AppImage) for QAQC application
+# Create Linux installer (AppImage) for LogiQore Reporter.
 
 set -e
 
@@ -11,7 +11,7 @@ BUILD_DIR="$PROJECT_ROOT/build"
 echo "Creating Linux AppImage..."
 
 # Check if GUI executable exists
-GUI_EXE="$DIST_DIR/gui/QAQC-GUI"
+GUI_EXE="$DIST_DIR/gui/LogiQore-Reporter-GUI"
 if [ ! -f "$GUI_EXE" ]; then
     echo "Error: GUI executable not found at $GUI_EXE"
     echo "Please build the executable first: python scripts/build_executables.py --target gui"
@@ -36,17 +36,17 @@ mkdir -p "$APP_DIR/usr/share/applications"
 mkdir -p "$APP_DIR/usr/share/icons/hicolor/256x256/apps"
 
 # Copy executable
-cp "$GUI_EXE" "$APP_DIR/usr/bin/qaqc-gui"
-chmod +x "$APP_DIR/usr/bin/qaqc-gui"
+cp "$GUI_EXE" "$APP_DIR/usr/bin/logiqore-reporter"
+chmod +x "$APP_DIR/usr/bin/logiqore-reporter"
 
 # Create .desktop file
-cat > "$APP_DIR/usr/share/applications/qaqc-gui.desktop" <<EOF
+cat > "$APP_DIR/usr/share/applications/logiqore-reporter.desktop" <<EOF
 [Desktop Entry]
 Type=Application
-Name=QAQC Report Generator
+Name=LogiQore Reporter
 Comment=Quality Assurance/Quality Control analysis for geochemical data
-Exec=qaqc-gui
-Icon=qaqc-gui
+Exec=logiqore-reporter
+Icon=logiqore-reporter
 Categories=Science;Geology;
 Terminal=false
 EOF
@@ -55,12 +55,12 @@ EOF
 cat > "$APP_DIR/AppRun" <<'EOF'
 #!/bin/bash
 HERE="$(dirname "$(readlink -f "${0}")")"
-exec "${HERE}/usr/bin/qaqc-gui" "$@"
+exec "${HERE}/usr/bin/logiqore-reporter" "$@"
 EOF
 chmod +x "$APP_DIR/AppRun"
 
 # Create AppImage
-APPIMAGE_NAME="QAQC-GUI-x86_64.AppImage"
+APPIMAGE_NAME="LogiQore-Reporter-x86_64.AppImage"
 APPIMAGE_PATH="$DIST_DIR/$APPIMAGE_NAME"
 
 echo "Creating AppImage..."

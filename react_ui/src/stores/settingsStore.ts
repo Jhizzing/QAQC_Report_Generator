@@ -72,7 +72,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     healthCheckInterval: 30,
   },
   report: {
-    defaultTitle: 'QAQC Analysis Report',
+    defaultTitle: 'LogiQore Reporter Analysis Report',
     defaultColorScheme: 'default',
     defaultFontSize: 'medium',
     defaultPageLayout: 'portrait',

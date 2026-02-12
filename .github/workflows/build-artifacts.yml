@@ -51,7 +51,7 @@ jobs:
           from pathlib import Path
 
           root = Path.cwd()
-          exe_name = "QAQC-CLI.exe" if os.name == "nt" else "QAQC-CLI"
+          exe_name = "LogiQore-Reporter-CLI.exe" if os.name == "nt" else "LogiQore-Reporter-CLI"
           cli_exe = root / "dist" / "cli" / exe_name
 
           if not cli_exe.exists():
@@ -86,7 +86,7 @@ jobs:
       - name: Upload executables
         uses: actions/upload-artifact@v4
         with:
-          name: qaqc-${{ matrix.os }}
+          name: logiqore-reporter-${{ matrix.os }}
           path: |
             dist/cli/*
             dist/gui/*
@@ -132,7 +132,7 @@ jobs:
       - name: Upload checksum manifest
         uses: actions/upload-artifact@v4
         with:
-          name: qaqc-checksums
+          name: logiqore-reporter-checksums
           path: |
             artifacts/SHA256SUMS.txt
             artifacts/SHA256SUMS.txt.asc

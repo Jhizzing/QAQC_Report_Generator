@@ -1,4 +1,4 @@
-# QAQC Analysis Automation Application
+# LogiQore Reporter
 
 **Status: 🚀 PRE-RELEASE** - Complete QAQC analysis system with advanced features ready for testing.
 

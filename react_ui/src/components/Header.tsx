@@ -41,7 +41,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '', onSaveProject, o
                         />
                         <div>
                             <h1 className="text-xl font-bold text-slate-50 tracking-tight">
-                                LogiQore QAQC Reporter
+                                LogiQore Reporter
                             </h1>
                             <p className="text-sm text-slate-400 font-medium">
                                 Professional Assay Quality Control Analysis

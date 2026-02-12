@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Health Check Script for QAQC Analysis Application
+Health Check Script for LogiQore Reporter.
 """
 
 import sys
@@ -90,7 +90,7 @@ def run_basic_test():
         return False
 
 if __name__ == "__main__":
-    print("QAQC Analysis Application - Health Check")
+    print("LogiQore Reporter - Health Check")
     print("=" * 50)
     
     checks = [

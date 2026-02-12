@@ -14,7 +14,7 @@ sys.path.insert(0, str(src_path))
 
 def main():
     """Launch the GUI application."""
-    print("QAQC Analysis Application - Simple GUI Launcher")
+    print("LogiQore Reporter - Simple GUI Launcher")
     print("=" * 50)
 
     try:
@@ -26,7 +26,7 @@ def main():
 
         # Create application
         app = QApplication(sys.argv)
-        app.setApplicationName("QAQC Analysis Application")
+        app.setApplicationName("LogiQore Reporter")
         app.setApplicationVersion("2.0.0")
 
         print("✓ Application created")

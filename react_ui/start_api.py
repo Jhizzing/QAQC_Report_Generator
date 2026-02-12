@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-QAQC API Server Launcher
+LogiQore Reporter API server launcher.
 
 Quick script to start the FastAPI backend server.
 Ensures all dependencies are available and runs uvicorn.
@@ -27,7 +27,7 @@ def check_dependencies():
 
 def main():
     print("=" * 50)
-    print("QAQC Analysis API Server")
+    print("LogiQore Reporter API Server")
     print("=" * 50)
     
     # Check dependencies
@@ -66,4 +66,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -264,7 +264,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, isBackendAv
                   text-slate-50 placeholder-slate-500
                   focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
                 "
-                placeholder="QAQC Analysis Report"
+                placeholder="LogiQore Reporter Analysis Report"
               />
             </div>
 
@@ -361,10 +361,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, isBackendAv
           <div className="p-6">
             <div className="flex items-start gap-4">
               <div className="w-16 h-16 bg-primary/20 rounded-xl flex items-center justify-center">
-                <span className="text-2xl font-bold text-primary">QA</span>
+                <span className="text-2xl font-bold text-primary">LR</span>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-slate-50">QAQC Report Generator</h3>
+                <h3 className="text-lg font-semibold text-slate-50">LogiQore Reporter</h3>
                 <p className="text-sm text-slate-400 mt-1">
                   Professional QAQC analysis and reporting tool for geological assay data.
                   Supports JORC/NI 43-101 compliant workflows.
