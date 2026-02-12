@@ -150,7 +150,7 @@ python3 launch_gui.py
 
 ### **File Format**
 - **CSV**: Comma-separated values
-- **Excel**: .xlsx or .xls files
+- **Excel**: .xlsx files
 - **Encoding**: UTF-8 recommended
 
 ### **Required Columns**

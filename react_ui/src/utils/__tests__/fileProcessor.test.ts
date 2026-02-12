@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { processFile } from '../fileProcessor';
 import { createMockFile, createMockExcelFile } from '../../test/utils';
 
@@ -47,24 +47,10 @@ describe('fileProcessor', () => {
             expect(result.rowCount).toBe(0);
         });
 
-        it('should handle file read errors', async () => {
-            const file = createMockFile('test.csv', 'SampleID,Type\nSTD-001,STD', 'text/csv');
-            
-            // Mock FileReader to simulate error
-            const originalFileReader = window.FileReader;
-            window.FileReader = vi.fn().mockImplementation(() => {
-                const reader = new originalFileReader();
-                vi.spyOn(reader, 'readAsBinaryString').mockImplementation(() => {
-                    setTimeout(() => {
-                        (reader as any).onerror(new Error('Read error'));
-                    }, 0);
-                });
-                return reader;
-            }) as any;
-            
-            await expect(processFile(file)).rejects.toThrow();
-            
-            window.FileReader = originalFileReader;
+        it('should reject legacy .xls files', async () => {
+            const file = createMockFile('legacy.xls', 'SampleID,Type\nSTD-001,STD', 'application/vnd.ms-excel');
+
+            await expect(processFile(file)).rejects.toThrow(/legacy \.xls/i);
         });
 
         it('should handle corrupted file data', async () => {

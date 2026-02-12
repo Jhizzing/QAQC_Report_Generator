@@ -1,33 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { processFile } from '../fileProcessor';
 import { createMockFile } from '../../test/utils';
 
 describe('Error Scenarios', () => {
     describe('File Processing Errors', () => {
-        it('should handle network timeout errors', async () => {
-            // Mock FileReader to simulate timeout
-            const originalFileReader = window.FileReader;
-            const mockReader = {
-                readAsBinaryString: vi.fn(),
-                onload: null,
-                onerror: null,
-                abort: vi.fn(),
-            };
+        it('should reject malformed CSV data', async () => {
+            const malformedCsv = createMockFile(
+                'malformed.csv',
+                'SampleID,Type\n"unterminated,STD',
+                'text/csv'
+            );
 
-            window.FileReader = vi.fn(() => mockReader) as any;
-
-            const file = createMockFile('test.csv', 'SampleID,Type\nSTD-001,STD');
-
-            // Simulate timeout
-            setTimeout(() => {
-                if (mockReader.onerror) {
-                    mockReader.onerror({ type: 'error' } as any);
-                }
-            }, 100);
-
-            await expect(processFile(file)).rejects.toThrow();
-
-            window.FileReader = originalFileReader;
+            await expect(processFile(malformedCsv)).rejects.toThrow(/failed to process|parsing/i);
         });
 
         it('should handle file size limit errors', async () => {

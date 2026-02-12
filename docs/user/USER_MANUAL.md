@@ -319,7 +319,7 @@ The typical QAQC analysis workflow follows these steps:
 
 **Supported Formats**:
 - CSV (Comma-Separated Values)
-- Excel (.xlsx, .xls)
+- Excel (.xlsx)
 
 **Smart Column Mapping**:
 - Auto-detects Sample ID, Type, Result columns

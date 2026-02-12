@@ -112,7 +112,7 @@ pip install <module-name>
 
 **Solutions**:
 1. **Check file format**:
-   - Must be CSV (.csv) or Excel (.xlsx, .xls)
+   - Must be CSV (.csv) or Excel (.xlsx)
    - Check file isn't corrupted
    - Verify file encoding (should be UTF-8)
 

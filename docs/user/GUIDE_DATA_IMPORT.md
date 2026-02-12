@@ -38,7 +38,7 @@ UNK-001,UNK,2.45,18.2
 - **Extra commas**: Quote text fields that contain commas
 - **Empty rows**: Remove completely empty rows
 
-### Excel Files (.xlsx, .xls)
+### Excel Files (.xlsx)
 
 **Requirements**:
 - Microsoft Excel format

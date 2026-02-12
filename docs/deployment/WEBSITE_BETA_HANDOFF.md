@@ -53,6 +53,17 @@ Suggested page blocks:
 
 Prefer reading `logiqore-reporter-beta-manifest.json` from the latest GitHub release asset.
 
+If `QAQC_Report_Generator` remains private, configure a public mirror repo for release assets.
+The release workflow supports this via:
+
+1. Repository variable: `PUBLIC_RELEASE_REPO` (for example `Jhizzing/logiqore-reporter-downloads`)
+2. Repository secret: `PUBLIC_RELEASE_TOKEN`
+   - Use a fine-grained PAT scoped only to the public mirror repository
+   - Minimum permission: `Contents: Read and write`
+
+When configured, the `Publish Public Download Mirror` job copies zipped binaries and integrity
+metadata from the private source release to the public mirror release with the same tag.
+
 Fallback:
 
 1. Enumerate release assets by filename pattern

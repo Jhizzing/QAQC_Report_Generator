@@ -68,7 +68,7 @@ python3 launch_gui_simple.py
 
 **A**: 
 - **CSV** (.csv) - Comma-separated values
-- **Excel** (.xlsx, .xls) - Microsoft Excel files
+- **Excel** (.xlsx) - Microsoft Excel files
 
 ### Q: My file won't import. What's wrong?
 

@@ -1,4 +1,0 @@
-sample_id,sample_type,result,qualifier,detection_limit
-A1,CRM,,<,0.02
-A2,BLK,,<,0.001
-A3,DUP,1.5,,

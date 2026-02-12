@@ -204,7 +204,7 @@ Now that you've completed your first analysis, here's what to explore:
 
 ### File Formats Supported
 - **CSV**: Comma-separated values (.csv)
-- **Excel**: Microsoft Excel (.xlsx, .xls)
+- **Excel**: Microsoft Excel (.xlsx)
 
 ### Required Columns
 Your data file must have:

@@ -236,15 +236,14 @@ class QAQCApiClient {
         // Validate file type
         const validTypes = [
             'text/csv',
-            'application/vnd.ms-excel',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ];
-        const validExtensions = ['.csv', '.xlsx', '.xls'];
+        const validExtensions = ['.csv', '.xlsx'];
         const hasValidType = validTypes.includes(file.type);
         const hasValidExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
 
         if (!hasValidType && !hasValidExtension) {
-            throw new Error(`Invalid file type. Please upload a CSV or Excel file (.csv, .xlsx, .xls)`);
+            throw new Error('Invalid file type. Please upload a CSV or Excel file (.csv, .xlsx)');
         }
 
         const formData = new FormData();
@@ -371,4 +370,3 @@ export const apiClient = new QAQCApiClient();
 
 // Export class for custom instances
 export { QAQCApiClient };
-

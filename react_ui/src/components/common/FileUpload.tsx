@@ -23,7 +23,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded }) => {
             const data = await processFile(file);
             onDataLoaded(data);
         } catch (err) {
-            setError('Failed to process file. Please ensure it is a valid Excel or CSV file.');
+            setError('Failed to process file. Please ensure it is a valid .xlsx or .csv file.');
             console.error(err);
         } finally {
             setIsProcessing(false);
@@ -34,7 +34,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded }) => {
         onDrop,
         accept: {
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-            'application/vnd.ms-excel': ['.xls'],
             'text/csv': ['.csv']
         },
         multiple: false
@@ -73,7 +72,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded }) => {
                         <p className="text-sm text-slate-400 max-w-sm mx-auto">
                             Drag and drop your Excel or CSV file here, or click to browse.
                             <br />
-                            <span className="text-xs opacity-75">Supports .xlsx, .xls, .csv</span>
+                            <span className="text-xs opacity-75">Supports .xlsx, .csv</span>
                         </p>
                     </div>
                 </div>
