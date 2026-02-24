@@ -109,29 +109,10 @@ echo.
 
 cd /d "%SCRIPT_DIR%react_ui"
 
-REM Start server in background
-start /b "" %PYTHON% -c "import uvicorn; import os; os.environ['LOGIQORE_PORT']='%PORT%'; uvicorn.run('start_api:create_app', factory=True, host='0.0.0.0', port=%PORT%, reload=False, log_level='info')"
-
-REM ─── Wait for Server Ready ────────────────────────────────
-echo Waiting for server to start...
-set /a "WAITED=0"
-set /a "MAX_WAIT=15"
-
-:wait_loop
-if %WAITED% geq %MAX_WAIT% goto :wait_done
-timeout /t 1 /nobreak >nul 2>&1
-%PYTHON% -c "import urllib.request; urllib.request.urlopen('http://localhost:%PORT%/api/health')" >nul 2>&1
-if %errorlevel% equ 0 goto :wait_done
-set /a "WAITED+=1"
-goto :wait_loop
-
-:wait_done
-
-REM ─── Open Browser ──────────────────────────────────────────
+REM ─── Open Browser (delayed) ────────────────────────────────
 if "%OPEN_BROWSER%"=="1" (
-    echo.
-    echo Opening http://localhost:%PORT% in your browser...
-    start "" "http://localhost:%PORT%"
+    REM Launch a background process that waits a few seconds then opens the browser
+    start /b "" cmd /c "timeout /t 3 /nobreak >nul 2>&1 && start "" http://localhost:%PORT%"
 )
 
 echo.
@@ -141,5 +122,5 @@ echo   Press Ctrl+C to stop the server, or close this window.
 echo ============================================================
 echo.
 
-REM Keep the window open so the server stays running
+REM Run uvicorn in the foreground (single instance, keeps window open)
 %PYTHON% -c "import uvicorn; import os; os.environ['LOGIQORE_PORT']='%PORT%'; uvicorn.run('start_api:create_app', factory=True, host='0.0.0.0', port=%PORT%, reload=False, log_level='info')"

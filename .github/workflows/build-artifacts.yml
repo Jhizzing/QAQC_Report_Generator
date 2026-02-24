@@ -118,8 +118,9 @@ jobs:
           mkdir -p dist/react_ui/dist
           cp -r react_ui/dist/* dist/react_ui/dist/
 
-          # Copy FastAPI launcher
+          # Copy FastAPI launcher and API backend module
           cp react_ui/start_api.py dist/react_ui/
+          cp -r react_ui/api dist/react_ui/api
 
           # Copy launcher scripts to root of dist
           cp logiqore.sh dist/ 2>/dev/null && chmod +x dist/logiqore.sh || true
