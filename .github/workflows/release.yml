@@ -47,6 +47,31 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # ─── React UI Build ─────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: react_ui/package-lock.json
+
+      - name: Install React dependencies
+        working-directory: react_ui
+        run: npm ci
+
+      - name: Build React UI
+        working-directory: react_ui
+        run: npm run build
+
+      - name: Verify React build output
+        shell: bash
+        run: |
+          echo "Checking React build output..."
+          test -f react_ui/dist/index.html || (echo "ERROR: index.html not found" && exit 1)
+          test -d react_ui/dist/assets || (echo "ERROR: assets/ directory not found" && exit 1)
+          echo "React build verified successfully."
+
+      # ─── Desktop Executables ────────────────────────────────
       - name: Build CLI and GUI executables
         run: |
           python scripts/build_executables.py --target all --clean
@@ -93,6 +118,28 @@ jobs:
           print("Release smoke test passed")
           PY
 
+      # ─── Bundle React UI into release ─────────────────────
+      - name: Bundle React UI into release
+        shell: bash
+        run: |
+          # Copy React build into dist for release bundling
+          mkdir -p dist/react_ui/dist
+          cp -r react_ui/dist/* dist/react_ui/dist/
+
+          # Copy FastAPI launcher and API backend module
+          cp react_ui/start_api.py dist/react_ui/
+          cp -r react_ui/api dist/react_ui/api
+
+          # Copy launcher scripts to root of dist
+          cp logiqore.sh dist/ 2>/dev/null && chmod +x dist/logiqore.sh || true
+          cp logiqore.bat dist/ 2>/dev/null || true
+
+          # Copy web requirements and README
+          cp requirements-web.txt dist/ 2>/dev/null || true
+          cp README-Release.md dist/README.md 2>/dev/null || true
+
+          echo "React UI bundled into release."
+
       - name: Create platform release bundle
         shell: bash
         env:
@@ -112,13 +159,20 @@ jobs:
           bundle_path = output_dir / bundle_name
 
           with zipfile.ZipFile(bundle_path, "w", zipfile.ZIP_DEFLATED) as archive:
-              for subdir in ("cli", "gui"):
+              # Bundle desktop executables (CLI + GUI)
+              for subdir in ("cli", "gui", "react_ui"):
                   source_dir = dist_dir / subdir
                   if not source_dir.exists():
                       continue
                   for file_path in source_dir.rglob("*"):
                       if file_path.is_file():
                           archive.write(file_path, file_path.relative_to(dist_dir))
+
+              # Bundle launcher scripts and support files from dist root
+              for fname in ("logiqore.sh", "logiqore.bat", "requirements-web.txt", "README.md"):
+                  fpath = dist_dir / fname
+                  if fpath.exists():
+                      archive.write(fpath, fname)
 
           if not bundle_path.exists() or bundle_path.stat().st_size == 0:
               raise SystemExit(f"Bundle not created correctly: {bundle_path}")
