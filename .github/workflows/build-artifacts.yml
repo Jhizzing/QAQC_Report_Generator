@@ -8,6 +8,7 @@ on:
       - 'scripts/build_executables.py'
       - 'packaging/pyinstaller/**'
       - 'src/**'
+      - 'react_ui/**'
       - 'main.py'
       - 'launch_gui.py'
       - 'requirements.txt'
@@ -36,6 +37,32 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # ─── React UI Build ─────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: react_ui/package-lock.json
+
+      - name: Install React dependencies
+        working-directory: react_ui
+        run: npm ci
+
+      - name: Build React UI
+        working-directory: react_ui
+        run: npm run build
+
+      - name: Verify React build output
+        shell: bash
+        run: |
+          echo "Checking React build output..."
+          ls -la react_ui/dist/
+          test -f react_ui/dist/index.html || (echo "ERROR: index.html not found" && exit 1)
+          test -d react_ui/dist/assets || (echo "ERROR: assets/ directory not found" && exit 1)
+          echo "React build verified successfully."
+
+      # ─── Desktop Executables ────────────────────────────────
       - name: Build CLI and GUI executables
         run: |
           python scripts/build_executables.py --target all --clean
@@ -83,6 +110,28 @@ jobs:
           print("Smoke test passed")
           PY
 
+      # ─── Bundle React UI into release artifact ─────────────
+      - name: Bundle React UI into release
+        shell: bash
+        run: |
+          # Copy React build into dist for release bundling
+          mkdir -p dist/react_ui/dist
+          cp -r react_ui/dist/* dist/react_ui/dist/
+
+          # Copy FastAPI launcher
+          cp react_ui/start_api.py dist/react_ui/
+
+          # Copy launcher scripts to root of dist
+          cp logiqore.sh dist/ 2>/dev/null && chmod +x dist/logiqore.sh || true
+          cp logiqore.bat dist/ 2>/dev/null || true
+
+          # Copy web requirements and README
+          cp requirements-web.txt dist/ 2>/dev/null || true
+          cp README-Release.md dist/README.md 2>/dev/null || true
+
+          echo "React UI bundled into release artifact."
+          ls -la dist/
+
       - name: Upload executables
         uses: actions/upload-artifact@v4
         with:
@@ -90,6 +139,11 @@ jobs:
           path: |
             dist/cli/*
             dist/gui/*
+            dist/react_ui/**
+            dist/logiqore.sh
+            dist/logiqore.bat
+            dist/requirements-web.txt
+            dist/README.md
           if-no-files-found: error
           retention-days: 14
 
