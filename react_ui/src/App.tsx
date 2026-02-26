@@ -370,7 +370,7 @@ function App() {
         hasAnalysis={!!analysisResults}
         completedSteps={completedSteps}
       >
-        <WelcomeModal />
+        <WelcomeModal onNavigate={navigateTo} />
         <OnboardingOverlay />
         <Header onSaveProject={handleSaveProject} />
 
