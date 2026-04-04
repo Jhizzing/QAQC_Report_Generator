@@ -169,6 +169,33 @@ export const OnboardingOverlay: React.FC = () => {
         `;
     };
 
+    // Calculate effective placement with basic collision detection
+    const getEffectivePlacement = (): 'top' | 'bottom' | 'left' | 'right' => {
+        const defaultPlacement = currentStep.placement || 'right';
+        if (currentStep.type === 'modal' || !spotlightRect) return defaultPlacement;
+        
+        const POPOVER_MAX_WIDTH = 400;
+        const POPOVER_GAP = 24;
+        const vw = window.innerWidth;
+
+        let placement = defaultPlacement;
+        
+        if (placement === 'right' && spotlightRect.x + spotlightRect.width + POPOVER_GAP + POPOVER_MAX_WIDTH > vw) {
+            placement = 'left';
+            if (spotlightRect.x - POPOVER_GAP - POPOVER_MAX_WIDTH < 0) {
+                placement = 'bottom';
+            }
+        }
+        
+        if (placement === 'left' && spotlightRect.x - POPOVER_GAP - POPOVER_MAX_WIDTH < 0) {
+            placement = 'right';
+        }
+
+        return placement;
+    };
+
+    const effectivePlacement = getEffectivePlacement();
+
     // Calculate popover position
     const getPopoverStyle = (): React.CSSProperties => {
         if (currentStep.type === 'modal' || !spotlightRect) {
@@ -178,10 +205,12 @@ export const OnboardingOverlay: React.FC = () => {
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
                 zIndex: 10002,
+                maxWidth: '500px',
+                width: 'calc(100% - 32px)',
             };
         }
 
-        const placement = currentStep.placement || 'right';
+        const placement = effectivePlacement;
         const popoverGap = 24;
         const styles: React.CSSProperties = {
             position: 'fixed',
@@ -225,7 +254,7 @@ export const OnboardingOverlay: React.FC = () => {
             return { path: '', visible: false };
         }
 
-        const placement = currentStep.placement || 'right';
+        const placement = effectivePlacement;
         const popoverRect = popoverRef.current.getBoundingClientRect();
 
         let startX: number, startY: number, endX: number, endY: number;
