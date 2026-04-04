@@ -34,7 +34,8 @@ type WorkflowStep = StepperWorkflowStep;
 
 function App() {
   const { currentProject } = useProjectStore();
-  const { addNotification } = useNotificationStore();
+  // Use a selector so App only re-renders when addNotification changes (it never does — stable store action)
+  const addNotification = useNotificationStore(state => state.addNotification);
   const [data, setData] = useState<ProcessedData | null>(null);
   const [fileId, setFileId] = useState<string | null>(null); // Server file ID for backend analysis
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('import');
@@ -45,6 +46,7 @@ function App() {
   const [analysisId, setAnalysisId] = useState<string | null>(null); // Server analysis ID for exports
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [preProjectView, setPreProjectView] = useState<'crm' | 'education' | 'settings' | null>(null);
 
   // Backend service hook
   const backendService = useBackendService();
@@ -98,8 +100,56 @@ function App() {
     });
   }, [currentProject, data, selectedCategory, methodologyConfig, qaqcConfig, analysisResults, workflowStep]);
 
+  // Memoised callbacks for pre-project views to avoid re-render loops
+  const clearPreProjectView = useCallback(() => setPreProjectView(null), []);
+  const navigateToEducationPreProject = useCallback(() => setPreProjectView('education'), []);
+  const handleQuickNavigate = useCallback(
+    (section: 'crm' | 'education' | 'settings') => setPreProjectView(section),
+    []
+  );
+
   if (!currentProject) {
-    return <ProjectEntry onProjectLoaded={handleProjectLoaded} />;
+    // Show standalone views when accessed from project entry quick links
+    if (preProjectView === 'crm') {
+      return (
+        <div className="min-h-screen bg-background-dark">
+          <div className="max-w-7xl mx-auto p-6">
+            <CRMDatabase
+              onClose={clearPreProjectView}
+              onNavigateToEducation={navigateToEducationPreProject}
+            />
+          </div>
+        </div>
+      );
+    }
+    if (preProjectView === 'education') {
+      return (
+        <div className="min-h-screen bg-background-dark">
+          <div className="max-w-7xl mx-auto p-6">
+            <EducationCenter onClose={clearPreProjectView} />
+          </div>
+        </div>
+      );
+    }
+    if (preProjectView === 'settings') {
+      return (
+        <div className="min-h-screen bg-background-dark">
+          <div className="max-w-7xl mx-auto p-6">
+            <SettingsPage
+              onClose={clearPreProjectView}
+              isBackendAvailable={backendService.isAvailable}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <ProjectEntry
+        onProjectLoaded={handleProjectLoaded}
+        onQuickNavigate={handleQuickNavigate}
+      />
+    );
   }
 
   const handleImportComplete = (importedData: ProcessedData, serverFileId?: string) => {

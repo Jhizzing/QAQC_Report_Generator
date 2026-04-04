@@ -1,7 +1,8 @@
 """
 Dark Theme for QAQC Analysis Application
 
-Provides a professional dark mode theme with muted geological colors.
+Deeper variant of the LogiQore theme — uses the same amber gold accent system
+but with even darker backgrounds for OLED/true-dark displays.
 """
 
 from typing import Dict
@@ -10,159 +11,99 @@ from .geological_theme import GeologicalTheme
 
 class DarkTheme(GeologicalTheme):
     """
-    Dark theme variant of the Geological theme.
-    
-    Uses dark backgrounds with light text and muted earth tones
-    for a professional, eye-friendly appearance.
+    Deep dark variant of the LogiQore theme.
+
+    Uses near-black backgrounds with the same amber gold accent system
+    for an even more immersive dark mode experience.
     """
-    
+
     def __init__(self):
-        """Initialize dark theme with custom colors."""
+        """Initialize deep dark theme with custom colors."""
         super().__init__()
-        # Override colors with dark theme palette
+        # Override colors with deeper dark palette
         self.colors = self._define_dark_colors()
-    
+
     def _define_dark_colors(self) -> Dict[str, str]:
-        """Define the dark theme color palette."""
+        """Define the deep dark theme color palette."""
         return {
-            # Primary colors (dark geological theme)
-            'primary': '#4A7C59',      # Muted forest green
-            'primary_light': '#5D9A6E', # Lighter green
-            'primary_dark': '#3A6047',  # Darker green
-            
-            # Secondary colors
-            'secondary': '#A0714F',     # Muted brown
-            'secondary_light': '#B88A6E', # Lighter brown
-            'secondary_dark': '#8A5F3E', # Darker brown
-            
-            # Accent colors
-            'accent': '#D4976D',        # Muted copper
-            'accent_light': '#E5B084',  # Light copper
-            'accent_dark': '#B8805A',   # Dark copper
-            
-            # Background colors (dark grays)
-            'background': '#1E1E1E',   # Very dark gray (main background)
-            'surface': '#252526',      # Dark gray (panels)
-            'surface_alt': '#2D2D30',  # Slightly lighter gray
-            
-            # Text colors (light)
-            'text_primary': '#E0E0E0',  # Light gray (primary text)
-            'text_secondary': '#CCCCCC', # Medium gray
-            'text_light': '#B0B0B0',   # Dimmed gray
-            
-            # Status colors (slightly muted for dark mode)
-            'success': '#4EC9B0',      # Teal
-            'success_light': '#6FD9C3', # Light teal
-            'success_dark': '#3FA88F', # Dark teal
-            
-            'warning': '#D4A34A',      # Muted orange
-            'warning_light': '#E5B96E', # Light orange
-            'warning_dark': '#B88A3E', # Dark orange
-            
-            'error': '#D16969',        # Muted red
-            'error_light': '#E58787',  # Light red
-            'error_dark': '#B85555',   # Dark red
-            
-            'info': '#569CD6',         # Muted blue
-            'info_light': '#74B0E3',   # Light blue
-            'info_dark': '#4682B4',    # Dark blue
-            
-            # Border colors (subtle)
-            'border': '#3E3E42',       # Subtle border
-            'border_dark': '#505055',  # Darker border
-            
+            # Primary colors (same amber gold system)
+            'primary': '#F59E0B',        # Amber-500
+            'primary_light': '#FBBF24',  # Amber-400
+            'primary_dark': '#D97706',   # Amber-600
+
+            # Secondary colors (deeper slate)
+            'secondary': '#1E293B',      # Slate-800
+            'secondary_light': '#334155', # Slate-700
+            'secondary_dark': '#0F172A', # Slate-900
+
+            # Accent colors (same sky blue)
+            'accent': '#0EA5E9',         # Sky-500
+            'accent_light': '#38BDF8',   # Sky-400
+            'accent_dark': '#0284C7',    # Sky-600
+
+            # Background colors (near-black)
+            'background': '#020617',     # Slate-950 (deepest)
+            'surface': '#0F172A',        # Slate-900 (panels)
+            'surface_alt': '#1E293B',    # Slate-800 (alternate)
+
+            # Text colors (same light text)
+            'text_primary': '#F1F5F9',   # Slate-100
+            'text_secondary': '#CBD5E1', # Slate-300
+            'text_light': '#94A3B8',     # Slate-400
+
+            # Status colors (same)
+            'success': '#10B981',
+            'success_light': '#34D399',
+            'success_dark': '#059669',
+
+            'warning': '#F59E0B',
+            'warning_light': '#FBBF24',
+            'warning_dark': '#D97706',
+
+            'error': '#EF4444',
+            'error_light': '#F87171',
+            'error_dark': '#DC2626',
+
+            'info': '#3B82F6',
+            'info_light': '#60A5FA',
+            'info_dark': '#2563EB',
+
+            # Border colors (subtler)
+            'border': '#1E293B',
+            'border_dark': '#334155',
+
             # Hover colors
-            'hover': '#333337',       # Subtle hover
-            'hover_dark': '#3E3E42',  # Darker hover
-            
+            'hover': '#1E293B',
+            'hover_dark': '#334155',
+
             # Selection colors
-            'selection': '#264F78',    # Dark blue selection
-            'selection_light': '#37537A', # Light selection
+            'selection': '#F59E0B',
+            'selection_light': '#2A1F0A',
         }
-    
+
     def get_main_style(self) -> str:
-        """Get the dark theme stylesheet."""
-        # Get base stylesheet from parent
+        """Get the deep dark theme stylesheet."""
+        # Get base stylesheet from parent (uses the overridden colors)
         base_style = super().get_main_style()
-        
-        # Add dark theme specific overrides
+
+        # Add deep dark specific overrides
         dark_overrides = f"""
-        /* Dark Theme Specific Overrides */
-        
-        /* Scrollbar styling for dark theme */
-        QScrollBar:vertical {{
-            background-color: {self.colors['background']};
-        }}
-        
-        QScrollBar::handle:vertical {{
-            background-color: {self.colors['border_dark']};
-        }}
-        
-        QScrollBar::handle:vertical:hover {{
-            background-color: {self.colors['text_light']};
-        }}
-        
-        QScrollBar:horizontal {{
-            background-color: {self.colors['background']};
-        }}
-        
-        QScrollBar::handle:horizontal {{
-            background-color: {self.colors['border_dark']};
-        }}
-        
-        QScrollBar::handle:horizontal:hover {{
-            background-color: {self.colors['text_light']};
-        }}
-        
-        /* Combo box dropdown items - darker */
-        QComboBox QAbstractItemView {{
-            background-color: {self.colors['surface_alt']};
-            border: 1px solid {self.colors['border']};
-        }}
-        
-        QComboBox QAbstractItemView::item:selected {{
-            background-color: {self.colors['selection']};
-            color: {self.colors['text_primary']};
-        }}
-        
-        QComboBox QAbstractItemView::item:hover {{
-            background-color: {self.colors['selection_light']};
-        }}
-        
-        /* Table styling for dark theme */
-        QTableWidget::item:alternate {{
-            background-color: {self.colors['surface']};
-        }}
-        
-        QTableWidget::item:selected {{
-            background-color: {self.colors['selection']};
-            color: {self.colors['text_primary']};
-        }}
-        
-        QTableWidget::item:selected:hover {{
-            background-color: {self.colors['selection_light']};
-        }}
-        
-        /* Input fields - darker backgrounds */
-        QLineEdit, QTextEdit, QPlainTextEdit {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
-        }}
-        
-        QLineEdit:focus, QTextEdit:focus {{
-            background-color: {self.colors['surface_alt']};
-        }}
-        
-        /* Sidebar for dark theme */
+        /* Deep Dark Theme Overrides */
+
         QWidget#sidebar {{
-            background-color: {self.colors['surface']};
+            background-color: #020617;
             border-right: 1px solid {self.colors['border']};
         }}
-        
+
         QFrame#sidebarHeader {{
-            background-color: {self.colors['background']};
+            background-color: #020617;
             border-bottom: 1px solid {self.colors['primary']};
         }}
+
+        QFrame#sidebarFooter {{
+            background-color: #020617;
+            border-top: 1px solid {self.colors['border']};
+        }}
         """
-        
+
         return base_style + dark_overrides

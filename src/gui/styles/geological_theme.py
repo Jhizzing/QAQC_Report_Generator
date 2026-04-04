@@ -1,8 +1,8 @@
 """
-Geological Theme for QAQC Analysis Application
+LogiQore Theme for QAQC Analysis Application
 
-This module provides a professional geological theme with earth tones
-and colors that appeal to geologists and mining engineers.
+Provides a modern dark slate + amber gold theme matching the React web UI.
+Professional appearance for geologists and mining engineers.
 """
 
 from typing import Dict, Any
@@ -10,88 +10,89 @@ from typing import Dict, Any
 
 class GeologicalTheme:
     """
-    Geological theme for the QAQC Analysis Application.
+    LogiQore theme for the QAQC Analysis Application.
 
-    Provides a professional color scheme and styling that appeals to
-    geologists and mining engineers working with assay data.
+    Dark slate backgrounds with amber gold accents — matches the React web UI
+    for visual parity across desktop and web interfaces.
     """
 
     def __init__(self):
-        """Initialize the geological theme."""
+        """Initialize the LogiQore theme."""
         self.colors = self._define_colors()
         self.fonts = self._define_fonts()
         self.sizes = self._define_sizes()
 
     def _define_colors(self) -> Dict[str, str]:
-        """Define the geological color palette."""
+        """Define the LogiQore color palette (dark slate + amber gold)."""
         return {
-            # Primary colors (geological theme)
-            'primary': '#2E5266',      # Deep blue (geological)
-            'primary_light': '#4A7C59', # Forest green
-            'primary_dark': '#1A3A4A',  # Darker blue
+            # Primary colors (amber gold — matches React #F59E0B)
+            'primary': '#F59E0B',        # Amber-500 (vibrant gold)
+            'primary_light': '#FBBF24',  # Amber-400
+            'primary_dark': '#D97706',   # Amber-600
 
-            # Secondary colors
-            'secondary': '#8B4513',     # Saddle brown
-            'secondary_light': '#A0522D', # Sienna
-            'secondary_dark': '#654321', # Dark brown
+            # Secondary colors (slate)
+            'secondary': '#334155',      # Slate-700
+            'secondary_light': '#475569', # Slate-600
+            'secondary_dark': '#1E293B', # Slate-800
 
-            # Accent colors
-            'accent': '#D2691E',        # Chocolate
-            'accent_light': '#F4A460',  # Sandy brown
-            'accent_dark': '#B8860B',   # Dark goldenrod
+            # Accent colors (sky blue)
+            'accent': '#0EA5E9',         # Sky-500
+            'accent_light': '#38BDF8',   # Sky-400
+            'accent_dark': '#0284C7',    # Sky-600
 
-            # Background colors
-            'background': '#F5F5F5',   # Light gray
-            'surface': '#FFFFFF',      # White
-            'surface_alt': '#F8F9FA',  # Light gray alternative
+            # Background colors (deep slate)
+            'background': '#0F172A',     # Slate-900 (main background)
+            'surface': '#1E293B',        # Slate-800 (panels/cards)
+            'surface_alt': '#334155',    # Slate-700 (alternate)
 
-            # Text colors (improved contrast)
-            'text_primary': '#1A1A1A',  # Very dark gray for maximum readability
-            'text_secondary': '#2C3E50', # Dark blue-gray (was too light)
-            'text_light': '#495057',   # Medium gray (was too light)
+            # Text colors (light on dark)
+            'text_primary': '#F1F5F9',   # Slate-100 (high contrast)
+            'text_secondary': '#CBD5E1', # Slate-300
+            'text_light': '#94A3B8',     # Slate-400 (muted)
 
-            # Status colors
-            'success': '#27AE60',      # Green
-            'success_light': '#58D68D', # Light green
-            'success_dark': '#1E8449', # Dark green
+            # Status colors (matching React UI)
+            'success': '#10B981',        # Emerald-500
+            'success_light': '#34D399',  # Emerald-400
+            'success_dark': '#059669',   # Emerald-600
 
-            'warning': '#F39C12',      # Orange
-            'warning_light': '#F7DC6F', # Light orange
-            'warning_dark': '#D68910', # Dark orange
+            'warning': '#F59E0B',        # Amber-500
+            'warning_light': '#FBBF24',  # Amber-400
+            'warning_dark': '#D97706',   # Amber-600
 
-            'error': '#E74C3C',        # Red
-            'error_light': '#F1948A',  # Light red
-            'error_dark': '#C0392B',   # Dark red
+            'error': '#EF4444',          # Red-500
+            'error_light': '#F87171',    # Red-400
+            'error_dark': '#DC2626',     # Red-600
 
-            'info': '#3498DB',         # Blue
-            'info_light': '#85C1E9',   # Light blue
-            'info_dark': '#2980B9',    # Dark blue
+            'info': '#3B82F6',           # Blue-500
+            'info_light': '#60A5FA',     # Blue-400
+            'info_dark': '#2563EB',      # Blue-600
 
             # Border colors
-            'border': '#DEE2E6',       # Light border
-            'border_dark': '#ADB5BD',  # Dark border
+            'border': '#334155',         # Slate-700
+            'border_dark': '#475569',    # Slate-600
 
             # Hover colors
-            'hover': '#E9ECEF',       # Light hover
-            'hover_dark': '#DEE2E6',  # Dark hover
+            'hover': '#334155',          # Slate-700
+            'hover_dark': '#475569',     # Slate-600
 
-            # Selection colors (more subtle for better text visibility)
-            'selection': '#3498DB',    # Blue selection
-            'selection_light': '#E3F2FD', # Very light blue selection (subtle)
+            # Selection colors
+            'selection': '#F59E0B',      # Primary amber
+            'selection_light': '#422006', # Amber tint on dark
         }
 
     def _define_fonts(self) -> Dict[str, str]:
         """Define the font family."""
         return {
-            'primary': 'Segoe UI, Arial, sans-serif',
-            'monospace': 'Consolas, Monaco, monospace',
-            'heading': 'Segoe UI, Arial, sans-serif',
+            'primary': 'Inter, Segoe UI, Arial, sans-serif',
+            'monospace': 'JetBrains Mono, Consolas, Monaco, monospace',
+            'heading': 'Inter, Segoe UI, Arial, sans-serif',
         }
 
     def _define_sizes(self) -> Dict[str, str]:
         """Define size constants."""
         return {
-            'border_radius': '4px',
+            'border_radius': '6px',
+            'border_radius_lg': '8px',
             'border_width': '1px',
             'padding_small': '4px',
             'padding_medium': '8px',
@@ -103,260 +104,283 @@ class GeologicalTheme:
 
     def get_main_style(self) -> str:
         """Get the main application stylesheet."""
+        # Convenience aliases
+        c = self.colors
+        f = self.fonts
+        s = self.sizes
+        # Button text on amber background
+        btn_text = '#0F172A'  # Dark text for contrast on gold
+
         return f"""
-        /* Main Application Styles */
+        /* ═══════════════════════════════════════════════════════════
+           LogiQore Theme — Dark Slate + Amber Gold
+           Matches the React web UI for visual parity
+           ═══════════════════════════════════════════════════════════ */
+
+        /* Main Application */
         QMainWindow {{
-            background-color: {self.colors['background']};
-            color: {self.colors['text_primary']};
-            font-family: {self.fonts['primary']};
+            background-color: {c['background']};
+            color: {c['text_primary']};
+            font-family: {f['primary']};
         }}
 
-        /* Window Title */
         QMainWindow::title {{
-            color: {self.colors['text_primary']};
+            color: {c['text_primary']};
             font-weight: bold;
         }}
 
-        /* Menu Bar */
+        /* ── Menu Bar ── */
         QMenuBar {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
-            border-bottom: {self.sizes['border_width']} solid {self.colors['border']};
-            padding: {self.sizes['padding_small']};
+            background-color: {c['surface']};
+            color: {c['text_primary']};
+            border-bottom: {s['border_width']} solid {c['border']};
+            padding: {s['padding_small']};
             font-weight: bold;
         }}
 
         QMenuBar::item {{
             background-color: transparent;
-            color: {self.colors['text_primary']};
-            padding: {self.sizes['padding_small']} {self.sizes['padding_medium']};
-            border-radius: {self.sizes['border_radius']};
+            color: {c['text_secondary']};
+            padding: {s['padding_small']} {s['padding_medium']};
+            border-radius: {s['border_radius']};
             font-weight: bold;
         }}
 
         QMenuBar::item:selected {{
-            background-color: {self.colors['primary']};
-            color: {self.colors['surface']};
+            background-color: {c['primary']};
+            color: {btn_text};
         }}
 
         QMenuBar::item:pressed {{
-            background-color: {self.colors['primary_dark']};
-            color: {self.colors['surface']};
+            background-color: {c['primary_dark']};
+            color: {btn_text};
         }}
 
-        /* Menu */
+        /* ── Menus ── */
         QMenu {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
-            border: {self.sizes['border_width']} solid {self.colors['border']};
-            border-radius: {self.sizes['border_radius']};
-            padding: {self.sizes['padding_small']};
+            background-color: {c['surface']};
+            color: {c['text_primary']};
+            border: {s['border_width']} solid {c['border']};
+            border-radius: {s['border_radius']};
+            padding: {s['padding_small']};
         }}
 
         QMenu::item {{
             background-color: transparent;
-            color: {self.colors['text_primary']};
-            padding: {self.sizes['padding_small']} {self.sizes['padding_medium']};
-            border-radius: {self.sizes['border_radius']};
+            color: {c['text_primary']};
+            padding: 6px {s['padding_medium']};
+            border-radius: {s['border_radius']};
         }}
 
         QMenu::item:selected {{
-            background-color: {self.colors['primary']};
-            color: {self.colors['surface']};
+            background-color: {c['primary']};
+            color: {btn_text};
         }}
 
         QMenu::separator {{
-            height: {self.sizes['border_width']};
-            background-color: {self.colors['border']};
-            margin: {self.sizes['margin_small']} 0;
+            height: {s['border_width']};
+            background-color: {c['border']};
+            margin: {s['margin_small']} 0;
         }}
 
-        /* Tool Bar */
+        /* ── Toolbar ── */
         QToolBar {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
-            border-bottom: {self.sizes['border_width']} solid {self.colors['border']};
-            padding: {self.sizes['padding_small']};
-            spacing: {self.sizes['margin_small']};
+            background-color: {c['surface']};
+            color: {c['text_primary']};
+            border-bottom: {s['border_width']} solid {c['border']};
+            padding: {s['padding_small']};
+            spacing: {s['margin_small']};
         }}
 
         QToolBar QToolButton {{
-            color: {self.colors['text_primary']};
+            color: {c['text_primary']};
             font-weight: bold;
+            background-color: transparent;
+            border: none;
+            border-radius: {s['border_radius']};
+            padding: 4px 8px;
+        }}
+
+        QToolBar QToolButton:hover {{
+            background-color: {c['hover']};
         }}
 
         QToolBar::separator {{
-            background-color: {self.colors['border']};
-            width: {self.sizes['border_width']};
-            margin: {self.sizes['margin_small']} {self.sizes['margin_medium']};
+            background-color: {c['border']};
+            width: {s['border_width']};
+            margin: {s['margin_small']} {s['margin_medium']};
         }}
 
-        /* Status Bar */
+        /* ── Status Bar ── */
         QStatusBar {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
-            border-top: {self.sizes['border_width']} solid {self.colors['border']};
-            padding: {self.sizes['padding_small']};
+            background-color: {c['surface']};
+            color: {c['text_secondary']};
+            border-top: {s['border_width']} solid {c['border']};
+            padding: {s['padding_small']};
         }}
 
         QStatusBar QLabel {{
-            color: {self.colors['text_primary']};
+            color: {c['text_secondary']};
             font-weight: bold;
         }}
 
-        /* Buttons */
+        /* ══════════════ Buttons ══════════════ */
         QPushButton {{
-            background-color: {self.colors['primary']};
-            color: {self.colors['surface']};
-            border: {self.sizes['border_width']} solid {self.colors['primary']};
-            border-radius: {self.sizes['border_radius']};
-            padding: {self.sizes['padding_small']} {self.sizes['padding_medium']};
+            background-color: {c['primary']};
+            color: {btn_text};
+            border: {s['border_width']} solid {c['primary']};
+            border-radius: {s['border_radius']};
+            padding: 6px {s['padding_large']};
             font-weight: bold;
             font-size: 11px;
         }}
 
         QPushButton QLabel {{
-            color: {self.colors['surface']};
+            color: {btn_text};
             font-weight: bold;
         }}
 
         QPushButton:hover {{
-            background-color: {self.colors['primary_light']};
-            border-color: {self.colors['primary_light']};
-            color: {self.colors['surface']};
+            background-color: {c['primary_light']};
+            border-color: {c['primary_light']};
+            color: {btn_text};
         }}
 
         QPushButton:pressed {{
-            background-color: {self.colors['primary_dark']};
-            border-color: {self.colors['primary_dark']};
-            color: {self.colors['surface']};
+            background-color: {c['primary_dark']};
+            border-color: {c['primary_dark']};
+            color: {btn_text};
         }}
 
         QPushButton:disabled {{
-            background-color: {self.colors['border']};
-            color: {self.colors['text_primary']};
-            border-color: {self.colors['border']};
+            background-color: {c['secondary']};
+            color: {c['text_light']};
+            border-color: {c['secondary']};
         }}
 
         /* Secondary Buttons */
         QPushButton[class="secondary"] {{
-            background-color: {self.colors['secondary']};
-            border-color: {self.colors['secondary']};
-            color: {self.colors['surface']};
+            background-color: {c['secondary']};
+            border-color: {c['secondary_light']};
+            color: {c['text_primary']};
         }}
 
         QPushButton[class="secondary"]:hover {{
-            background-color: {self.colors['secondary_light']};
-            border-color: {self.colors['secondary_light']};
-            color: {self.colors['surface']};
+            background-color: {c['secondary_light']};
+            border-color: {c['secondary_light']};
+            color: {c['text_primary']};
         }}
 
         /* Success Buttons */
         QPushButton[class="success"] {{
-            background-color: {self.colors['success']};
-            border-color: {self.colors['success']};
-            color: {self.colors['surface']};
+            background-color: {c['success']};
+            border-color: {c['success']};
+            color: #FFFFFF;
         }}
 
         QPushButton[class="success"]:hover {{
-            background-color: {self.colors['success_light']};
-            border-color: {self.colors['success_light']};
-            color: {self.colors['surface']};
+            background-color: {c['success_light']};
+            border-color: {c['success_light']};
+            color: #FFFFFF;
         }}
 
         /* Warning Buttons */
         QPushButton[class="warning"] {{
-            background-color: {self.colors['warning']};
-            border-color: {self.colors['warning']};
-            color: {self.colors['surface']};
+            background-color: {c['warning']};
+            border-color: {c['warning']};
+            color: {btn_text};
         }}
 
         QPushButton[class="warning"]:hover {{
-            background-color: {self.colors['warning_light']};
-            border-color: {self.colors['warning_light']};
-            color: {self.colors['surface']};
+            background-color: {c['warning_light']};
+            border-color: {c['warning_light']};
+            color: {btn_text};
         }}
 
         /* Error Buttons */
         QPushButton[class="error"] {{
-            background-color: {self.colors['error']};
-            border-color: {self.colors['error']};
-            color: {self.colors['surface']};
+            background-color: {c['error']};
+            border-color: {c['error']};
+            color: #FFFFFF;
         }}
 
         QPushButton[class="error"]:hover {{
-            background-color: {self.colors['error_light']};
-            border-color: {self.colors['error_light']};
-            color: {self.colors['surface']};
+            background-color: {c['error_light']};
+            border-color: {c['error_light']};
+            color: #FFFFFF;
         }}
 
-        /* Line Edits */
+        /* ══════════════ Inputs ══════════════ */
         QLineEdit {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
-            border: {self.sizes['border_width']} solid {self.colors['border']};
-            border-radius: {self.sizes['border_radius']};
-            padding: {self.sizes['padding_small']};
+            background-color: {c['surface']};
+            color: {c['text_primary']};
+            border: {s['border_width']} solid {c['border']};
+            border-radius: {s['border_radius']};
+            padding: 6px 8px;
+            selection-background-color: {c['primary']};
+            selection-color: {btn_text};
         }}
 
         QLineEdit:focus {{
-            border-color: {self.colors['primary']};
+            border-color: {c['primary']};
         }}
 
         QLineEdit:disabled {{
-            background-color: {self.colors['surface_alt']};
-            color: {self.colors['text_secondary']};
+            background-color: {c['surface_alt']};
+            color: {c['text_light']};
         }}
 
-        /* Spin Boxes (QSpinBox, QDoubleSpinBox) */
+        /* ── Spin Boxes ── */
         QSpinBox, QDoubleSpinBox {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
-            border: {self.sizes['border_width']} solid {self.colors['border']};
-            border-radius: {self.sizes['border_radius']};
-            padding: {self.sizes['padding_small']};
+            background-color: {c['surface']};
+            color: {c['text_primary']};
+            border: {s['border_width']} solid {c['border']};
+            border-radius: {s['border_radius']};
+            padding: 6px 8px;
             min-height: 28px;
+            selection-background-color: {c['primary']};
+            selection-color: {btn_text};
         }}
 
         QSpinBox:focus, QDoubleSpinBox:focus {{
-            border-color: {self.colors['primary']};
+            border-color: {c['primary']};
         }}
 
         QSpinBox:disabled, QDoubleSpinBox:disabled {{
-            background-color: {self.colors['surface_alt']};
-            color: {self.colors['text_secondary']};
+            background-color: {c['surface_alt']};
+            color: {c['text_light']};
         }}
 
         QSpinBox::up-button, QDoubleSpinBox::up-button {{
-            background-color: {self.colors['surface']};
+            background-color: {c['surface']};
             border: none;
-            border-left: 1px solid {self.colors['border']};
-            border-top-right-radius: {self.sizes['border_radius']};
+            border-left: 1px solid {c['border']};
+            border-top-right-radius: {s['border_radius']};
             width: 20px;
         }}
 
         QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover {{
-            background-color: {self.colors['hover']};
+            background-color: {c['hover']};
         }}
 
         QSpinBox::up-button:pressed, QDoubleSpinBox::up-button:pressed {{
-            background-color: {self.colors['border']};
+            background-color: {c['primary']};
         }}
 
         QSpinBox::down-button, QDoubleSpinBox::down-button {{
-            background-color: {self.colors['surface']};
+            background-color: {c['surface']};
             border: none;
-            border-left: 1px solid {self.colors['border']};
-            border-bottom-right-radius: {self.sizes['border_radius']};
+            border-left: 1px solid {c['border']};
+            border-bottom-right-radius: {s['border_radius']};
             width: 20px;
         }}
 
         QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {{
-            background-color: {self.colors['hover']};
+            background-color: {c['hover']};
         }}
 
         QSpinBox::down-button:pressed, QDoubleSpinBox::down-button:pressed {{
-            background-color: {self.colors['border']};
+            background-color: {c['primary']};
         }}
 
         QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {{
@@ -364,7 +388,7 @@ class GeologicalTheme:
             height: 8px;
             border-left: 4px solid transparent;
             border-right: 4px solid transparent;
-            border-bottom: 4px solid {self.colors['text_primary']};
+            border-bottom: 4px solid {c['text_light']};
         }}
 
         QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {{
@@ -372,41 +396,53 @@ class GeologicalTheme:
             height: 8px;
             border-left: 4px solid transparent;
             border-right: 4px solid transparent;
-            border-top: 4px solid {self.colors['text_primary']};
+            border-top: 4px solid {c['text_light']};
         }}
 
-        /* Text Edits */
+        /* ── Text Edits ── */
         QTextEdit {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
-            border: {self.sizes['border_width']} solid {self.colors['border']};
-            border-radius: {self.sizes['border_radius']};
-            padding: {self.sizes['padding_small']};
+            background-color: {c['surface']};
+            color: {c['text_primary']};
+            border: {s['border_width']} solid {c['border']};
+            border-radius: {s['border_radius']};
+            padding: {s['padding_small']};
+            selection-background-color: {c['primary']};
+            selection-color: {btn_text};
         }}
 
         QTextEdit:focus {{
-            border-color: {self.colors['primary']};
+            border-color: {c['primary']};
         }}
 
-        /* Combo Boxes - Redesigned (Button Style) */
+        QPlainTextEdit {{
+            background-color: {c['surface']};
+            color: {c['text_primary']};
+            border: {s['border_width']} solid {c['border']};
+            border-radius: {s['border_radius']};
+            padding: {s['padding_small']};
+            selection-background-color: {c['primary']};
+            selection-color: {btn_text};
+        }}
+
+        /* ── Combo Boxes ── */
         QComboBox {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
-            border: {self.sizes['border_width']} solid {self.colors['border']};
-            border-radius: {self.sizes['border_radius']};
-            padding: 6px 10px;  /* Symmetric padding */
+            background-color: {c['surface']};
+            color: {c['text_primary']};
+            border: {s['border_width']} solid {c['border']};
+            border-radius: {s['border_radius']};
+            padding: 6px 10px;
             min-height: 30px;
             text-align: center;
         }}
 
         QComboBox:focus {{
-            border-color: {self.colors['primary']};
-            background-color: {self.colors['surface']};
+            border-color: {c['primary']};
+            background-color: {c['surface']};
         }}
 
         QComboBox:hover {{
-            border-color: {self.colors['border_dark']};
-            background-color: #FAFBFC;
+            border-color: {c['border_dark']};
+            background-color: {c['surface_alt']};
         }}
 
         QComboBox::drop-down {{
@@ -422,115 +458,118 @@ class GeologicalTheme:
             height: 0;
         }}
 
-        /* Combo Box Dropdown Items - light and clean */
+        /* Combo Box Dropdown Items */
         QComboBox QAbstractItemView {{
-            background-color: {self.colors['surface']};
-            border: 1px solid {self.colors['border']};
-            border-radius: 6px;
+            background-color: {c['surface']};
+            border: 1px solid {c['border']};
+            border-radius: {s['border_radius']};
             padding: 4px;
-            selection-background-color: #F8FAFB;
-            selection-color: {self.colors['text_primary']};
+            selection-background-color: {c['secondary']};
+            selection-color: {c['text_primary']};
             outline: none;
         }}
 
         QComboBox QAbstractItemView::item {{
             min-height: 30px;
             padding: 8px 12px;
-            color: {self.colors['text_primary']};
+            color: {c['text_primary']};
             background-color: transparent;
             border-radius: 4px;
         }}
 
         QComboBox QAbstractItemView::item:selected {{
-            background-color: #EDF2F7;
-            color: {self.colors['text_primary']};
+            background-color: {c['selection_light']};
+            color: {c['primary']};
         }}
 
         QComboBox QAbstractItemView::item:hover {{
-            background-color: #F7FAFC;
-            color: {self.colors['text_primary']};
+            background-color: {c['hover']};
+            color: {c['text_primary']};
         }}
+
+        /* ══════════════ Controls ══════════════ */
 
         /* Check Boxes */
         QCheckBox {{
-            color: {self.colors['text_primary']};
-            spacing: {self.sizes['padding_small']};
+            color: {c['text_primary']};
+            spacing: {s['padding_small']};
         }}
 
         QCheckBox::indicator {{
             width: 18px;
             height: 18px;
-            border: 2px solid {self.colors['border_dark']};
-            border-radius: {self.sizes['border_radius']};
-            background-color: {self.colors['surface']};
+            border: 2px solid {c['border_dark']};
+            border-radius: {s['border_radius']};
+            background-color: {c['surface']};
         }}
 
         QCheckBox::indicator:checked {{
-            background-color: {self.colors['success']};
-            border-color: {self.colors['success']};
+            background-color: {c['primary']};
+            border-color: {c['primary']};
         }}
 
         QCheckBox::indicator:checked:hover {{
-            background-color: {self.colors['success_light']};
-            border-color: {self.colors['success_light']};
+            background-color: {c['primary_light']};
+            border-color: {c['primary_light']};
         }}
 
         QCheckBox::indicator:hover {{
-            border-color: {self.colors['success']};
+            border-color: {c['primary']};
         }}
 
         /* Radio Buttons */
         QRadioButton {{
-            color: {self.colors['text_primary']};
-            spacing: {self.sizes['padding_small']};
+            color: {c['text_primary']};
+            spacing: {s['padding_small']};
         }}
 
         QRadioButton::indicator {{
             width: 16px;
             height: 16px;
-            border: {self.sizes['border_width']} solid {self.colors['border']};
+            border: {s['border_width']} solid {c['border']};
             border-radius: 8px;
-            background-color: {self.colors['surface']};
+            background-color: {c['surface']};
         }}
 
         QRadioButton::indicator:checked {{
-            background-color: {self.colors['primary']};
-            border-color: {self.colors['primary']};
+            background-color: {c['primary']};
+            border-color: {c['primary']};
         }}
 
         QRadioButton::indicator:hover {{
-            border-color: {self.colors['primary']};
+            border-color: {c['primary']};
         }}
 
         /* Progress Bars */
         QProgressBar {{
-            background-color: {self.colors['surface_alt']};
-            border: {self.sizes['border_width']} solid {self.colors['border']};
-            border-radius: {self.sizes['border_radius']};
+            background-color: {c['surface_alt']};
+            border: {s['border_width']} solid {c['border']};
+            border-radius: {s['border_radius']};
             text-align: center;
+            color: {c['text_primary']};
         }}
 
         QProgressBar::chunk {{
-            background-color: {self.colors['primary']};
-            border-radius: {self.sizes['border_radius']};
+            background-color: {c['primary']};
+            border-radius: {s['border_radius']};
         }}
 
-        /* Dialog Boxes and Message Boxes */
+        /* ══════════════ Dialogs ══════════════ */
         QDialog {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
+            background-color: {c['surface']};
+            color: {c['text_primary']};
         }}
 
         QMessageBox {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
+            background-color: {c['surface']};
+            color: {c['text_primary']};
         }}
 
         QMessageBox QPushButton {{
-            background-color: {self.colors['primary']};
-            color: {self.colors['surface']};
-            border: 2px solid {self.colors['primary']};
-            border-radius: {self.sizes['border_radius']};
+            background-color: {c['primary']};
+            color: {btn_text};
+            border: 2px solid {c['primary']};
+            border-radius: {s['border_radius']};
             padding: 8px 16px;
             font-weight: bold;
             font-size: 12px;
@@ -539,187 +578,169 @@ class GeologicalTheme:
         }}
 
         QMessageBox QPushButton:hover {{
-            background-color: {self.colors['primary_light']};
-            border-color: {self.colors['primary_light']};
-            color: {self.colors['surface']};
+            background-color: {c['primary_light']};
+            border-color: {c['primary_light']};
+            color: {btn_text};
         }}
 
         QMessageBox QPushButton:pressed {{
-            background-color: {self.colors['primary_dark']};
-            border-color: {self.colors['primary_dark']};
-            color: {self.colors['surface']};
+            background-color: {c['primary_dark']};
+            border-color: {c['primary_dark']};
+            color: {btn_text};
         }}
 
-        /* File Dialog and Other Dialogs */
         QFileDialog {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
+            background-color: {c['surface']};
+            color: {c['text_primary']};
         }}
 
         QFileDialog QPushButton {{
-            background-color: {self.colors['primary']};
-            color: {self.colors['surface']};
-            border: {self.sizes['border_width']} solid {self.colors['primary']};
-            border-radius: {self.sizes['border_radius']};
-            padding: {self.sizes['padding_small']} {self.sizes['padding_medium']};
+            background-color: {c['primary']};
+            color: {btn_text};
+            border: {s['border_width']} solid {c['primary']};
+            border-radius: {s['border_radius']};
+            padding: {s['padding_small']} {s['padding_medium']};
             font-weight: bold;
         }}
 
         QFileDialog QPushButton:hover {{
-            background-color: {self.colors['primary_light']};
-            border-color: {self.colors['primary_light']};
-            color: {self.colors['surface']};
+            background-color: {c['primary_light']};
+            border-color: {c['primary_light']};
+            color: {btn_text};
         }}
 
         QFileDialog QPushButton:pressed {{
-            background-color: {self.colors['primary_dark']};
-            border-color: {self.colors['primary_dark']};
-            color: {self.colors['surface']};
+            background-color: {c['primary_dark']};
+            border-color: {c['primary_dark']};
+            color: {btn_text};
         }}
 
-        /* Labels */
+        /* ══════════════ Labels ══════════════ */
         QLabel {{
-            color: {self.colors['text_primary']};
+            color: {c['text_primary']};
             font-weight: bold;
         }}
 
-        /* Placeholder text styling */
         QLabel[class="placeholder"] {{
-            color: {self.colors['text_secondary']};
+            color: {c['text_light']};
             font-weight: normal;
             font-style: italic;
         }}
 
-        /* Status text styling */
         QLabel[class="status"] {{
-            color: {self.colors['text_secondary']};
+            color: {c['text_secondary']};
             font-weight: bold;
-        }}
-
-        /* Text areas and status displays */
-        QTextEdit {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
-            border: {self.sizes['border_width']} solid {self.colors['border']};
-            border-radius: {self.sizes['border_radius']};
-            padding: {self.sizes['padding_small']};
-        }}
-
-        QPlainTextEdit {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
-            border: {self.sizes['border_width']} solid {self.colors['border']};
-            border-radius: {self.sizes['border_radius']};
-            padding: {self.sizes['padding_small']};
         }}
 
         QLabel[class="heading"] {{
             font-weight: bold;
             font-size: 14px;
-            color: {self.colors['text_primary']};
+            color: {c['text_primary']};
         }}
 
         QLabel[class="subheading"] {{
             font-weight: bold;
             font-size: 12px;
-            color: {self.colors['text_primary']};
+            color: {c['text_secondary']};
         }}
 
-        /* Group Boxes */
+        /* ══════════════ Group Boxes ══════════════ */
         QGroupBox {{
-            color: {self.colors['text_primary']};
-            border: {self.sizes['border_width']} solid {self.colors['border']};
-            border-radius: {self.sizes['border_radius']};
-            margin-top: {self.sizes['margin_medium']};
-            padding-top: {self.sizes['padding_medium']};
+            color: {c['text_primary']};
+            border: {s['border_width']} solid {c['border']};
+            border-radius: {s['border_radius']};
+            margin-top: {s['margin_medium']};
+            padding-top: {s['padding_medium']};
+            background-color: {c['surface']};
         }}
 
         QGroupBox::title {{
             subcontrol-origin: margin;
-            left: {self.sizes['padding_medium']};
-            padding: 0 {self.sizes['padding_small']} 0 {self.sizes['padding_small']};
-            color: {self.colors['text_primary']};
+            left: {s['padding_medium']};
+            padding: 0 {s['padding_small']} 0 {s['padding_small']};
+            color: {c['primary']};
             font-weight: bold;
             font-size: 12px;
         }}
 
-        /* Tabs */
+        /* ══════════════ Tabs ══════════════ */
         QTabWidget::pane {{
-            border: {self.sizes['border_width']} solid {self.colors['border']};
-            border-radius: {self.sizes['border_radius']};
-            background-color: {self.colors['surface']};
+            border: {s['border_width']} solid {c['border']};
+            border-radius: {s['border_radius']};
+            background-color: {c['surface']};
         }}
 
         QTabBar::tab {{
-            background-color: {self.colors['surface_alt']};
-            color: {self.colors['text_primary']};
-            border: {self.sizes['border_width']} solid {self.colors['border']};
+            background-color: {c['surface_alt']};
+            color: {c['text_light']};
+            border: {s['border_width']} solid {c['border']};
             border-bottom: none;
-            border-radius: {self.sizes['border_radius']} {self.sizes['border_radius']} 0 0;
-            padding: {self.sizes['padding_small']} {self.sizes['padding_medium']};
-            margin-right: {self.sizes['border_width']};
+            border-radius: {s['border_radius']} {s['border_radius']} 0 0;
+            padding: 6px {s['padding_large']};
+            margin-right: {s['border_width']};
         }}
 
         QTabBar::tab:selected {{
-            background-color: {self.colors['surface']};
-            border-bottom: {self.sizes['border_width']} solid {self.colors['surface']};
+            background-color: {c['surface']};
+            color: {c['primary']};
+            border-bottom: 2px solid {c['primary']};
         }}
 
         QTabBar::tab:hover {{
-            background-color: {self.colors['hover']};
+            background-color: {c['hover']};
+            color: {c['text_primary']};
         }}
 
-        /* Tables */
+        /* ══════════════ Tables ══════════════ */
         QTableWidget {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
-            border: {self.sizes['border_width']} solid {self.colors['border']};
-            border-radius: {self.sizes['border_radius']};
-            gridline-color: {self.colors['border']};
-            alternate-background-color: {self.colors['surface_alt']};
+            background-color: {c['surface']};
+            color: {c['text_primary']};
+            border: {s['border_width']} solid {c['border']};
+            border-radius: {s['border_radius']};
+            gridline-color: {c['border']};
+            alternate-background-color: {c['surface_alt']};
         }}
 
         QTableWidget::item {{
             padding: 6px 8px;
             border: none;
-            background-color: {self.colors['surface']};
+            background-color: {c['surface']};
         }}
 
         QTableWidget::item:alternate {{
-            background-color: {self.colors['surface_alt']};
+            background-color: #253347;
         }}
 
         QTableWidget::item:selected {{
-            background-color: {self.colors['selection_light']};
-            color: {self.colors['text_primary']};
+            background-color: {c['selection_light']};
+            color: {c['primary']};
         }}
 
         QTableWidget::item:hover {{
-            background-color: {self.colors['hover']};
+            background-color: {c['hover']};
         }}
 
         QTableWidget::item:selected:hover {{
-            background-color: #D1E7F0;
-            color: {self.colors['text_primary']};
+            background-color: #3D2A08;
+            color: {c['primary_light']};
         }}
 
-        /* Empty cells - make them invisible/transparent */
         QTableWidget::item:empty {{
             background-color: transparent;
             border: none;
         }}
 
-        /* Header styling - cleaner and less clunky */
+        /* Table Headers */
         QHeaderView {{
-            background-color: {self.colors['surface']};
+            background-color: {c['surface']};
         }}
 
         QHeaderView::section {{
-            background-color: {self.colors['surface']};
-            color: {self.colors['text_primary']};
+            background-color: {c['surface']};
+            color: {c['text_secondary']};
             border: none;
-            border-bottom: 2px solid {self.colors['border_dark']};
-            border-right: 1px solid {self.colors['border']};
+            border-bottom: 2px solid {c['primary']};
+            border-right: 1px solid {c['border']};
             padding: 8px 10px;
             font-weight: 600;
             font-size: 11px;
@@ -734,41 +755,42 @@ class GeologicalTheme:
         }}
 
         QHeaderView::section:hover {{
-            background-color: {self.colors['hover']};
+            background-color: {c['hover']};
+            color: {c['primary']};
         }}
 
-        /* Splitter */
+        /* ══════════════ Splitter ══════════════ */
         QSplitter::handle {{
-            background-color: {self.colors['border']};
+            background-color: {c['border']};
         }}
 
         QSplitter::handle:horizontal {{
-            width: {self.sizes['border_width']};
+            width: {s['border_width']};
         }}
 
         QSplitter::handle:vertical {{
-            height: {self.sizes['border_width']};
+            height: {s['border_width']};
         }}
 
         QSplitter::handle:hover {{
-            background-color: {self.colors['primary']};
+            background-color: {c['primary']};
         }}
 
-        /* Scroll Bars */
+        /* ══════════════ Scroll Bars ══════════════ */
         QScrollBar:vertical {{
-            background-color: {self.colors['surface_alt']};
-            width: 12px;
-            border-radius: 6px;
+            background-color: {c['background']};
+            width: 10px;
+            border-radius: 5px;
         }}
 
         QScrollBar::handle:vertical {{
-            background-color: {self.colors['border_dark']};
-            border-radius: 6px;
+            background-color: {c['secondary']};
+            border-radius: 5px;
             min-height: 20px;
         }}
 
         QScrollBar::handle:vertical:hover {{
-            background-color: {self.colors['primary']};
+            background-color: {c['primary']};
         }}
 
         QScrollBar::add-line:vertical,
@@ -777,19 +799,19 @@ class GeologicalTheme:
         }}
 
         QScrollBar:horizontal {{
-            background-color: {self.colors['surface_alt']};
-            height: 12px;
-            border-radius: 6px;
+            background-color: {c['background']};
+            height: 10px;
+            border-radius: 5px;
         }}
 
         QScrollBar::handle:horizontal {{
-            background-color: {self.colors['border_dark']};
-            border-radius: 6px;
+            background-color: {c['secondary']};
+            border-radius: 5px;
             min-width: 20px;
         }}
 
         QScrollBar::handle:horizontal:hover {{
-            background-color: {self.colors['primary']};
+            background-color: {c['primary']};
         }}
 
         QScrollBar::add-line:horizontal,
@@ -797,25 +819,25 @@ class GeologicalTheme:
             width: 0px;
         }}
 
-        /* Sidebar Styles */
+        /* ══════════════ Sidebar ══════════════ */
         QWidget#sidebar {{
-            background-color: #2E5266; /* Primary Dark */
-            border-right: 1px solid #1A3A4A;
+            background-color: #0F172A;
+            border-right: 1px solid {c['border']};
         }}
 
         QFrame#sidebarHeader {{
-            background-color: #1A3A4A;
-            border-bottom: 1px solid #4A7C59;
+            background-color: #020617;
+            border-bottom: 1px solid {c['primary']};
         }}
 
         QLabel#sidebarTitle {{
-            color: #FFFFFF;
+            color: {c['primary']};
             font-size: 18px;
             font-weight: bold;
         }}
 
         QLabel#sidebarSubtitle {{
-            color: #A0C1B8;
+            color: {c['text_light']};
             font-size: 12px;
             font-style: italic;
         }}
@@ -831,57 +853,59 @@ class GeologicalTheme:
             border: none;
             border-radius: 0px;
             background-color: transparent;
-            color: #E0E0E0;
+            color: {c['text_secondary']};
             font-size: 14px;
             border-left: 4px solid transparent;
         }}
 
         QWidget#sidebar QPushButton:hover {{
-            background-color: #3A6378;
-            color: #FFFFFF;
-            border-left: 4px solid #4A7C59; /* Primary Light accent */
+            background-color: {c['surface']};
+            color: {c['text_primary']};
+            border-left: 4px solid {c['accent']};
         }}
 
         QWidget#sidebar QPushButton:checked {{
-            background-color: #1A3A4A;
-            color: #FFFFFF;
-            border-left: 4px solid #D2691E; /* Accent color */
+            background-color: {c['surface']};
+            color: {c['primary']};
+            border-left: 4px solid {c['primary']};
             font-weight: bold;
         }}
 
         QFrame#sidebarFooter {{
-            background-color: #1A3A4A;
-            border-top: 1px solid #2E5266;
+            background-color: #020617;
+            border-top: 1px solid {c['border']};
         }}
 
         QLabel#sidebarVersion {{
-            color: #607D8B;
+            color: {c['text_light']};
             font-size: 10px;
         }}
         """
 
     def get_widget_style(self, widget_type: str) -> str:
         """Get specific widget styling."""
+        c = self.colors
+        s = self.sizes
         styles = {
             'data_panel': f"""
                 QWidget {{
-                    background-color: {self.colors['surface']};
-                    border: {self.sizes['border_width']} solid {self.colors['border']};
-                    border-radius: {self.sizes['border_radius']};
+                    background-color: {c['surface']};
+                    border: {s['border_width']} solid {c['border']};
+                    border-radius: {s['border_radius']};
                 }}
             """,
             'analysis_panel': f"""
                 QWidget {{
-                    background-color: {self.colors['surface']};
-                    border: {self.sizes['border_width']} solid {self.colors['border']};
-                    border-radius: {self.sizes['border_radius']};
+                    background-color: {c['surface']};
+                    border: {s['border_width']} solid {c['border']};
+                    border-radius: {s['border_radius']};
                 }}
             """,
             'visualization_panel': f"""
                 QWidget {{
-                    background-color: {self.colors['surface']};
-                    border: {self.sizes['border_width']} solid {self.colors['border']};
-                    border-radius: {self.sizes['border_radius']};
+                    background-color: {c['surface']};
+                    border: {s['border_width']} solid {c['border']};
+                    border-radius: {s['border_radius']};
                 }}
             """,
         }
@@ -890,7 +914,7 @@ class GeologicalTheme:
 
     def get_color(self, color_name: str) -> str:
         """Get a specific color from the theme."""
-        return self.colors.get(color_name, "#000000")
+        return self.colors.get(color_name, "#F1F5F9")
 
     def get_colors(self) -> Dict[str, str]:
         """Get all theme colors."""

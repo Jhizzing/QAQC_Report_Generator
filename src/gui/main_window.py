@@ -23,9 +23,14 @@ from .widgets.data_panel import DataPanel
 from .widgets.analysis_panel import AnalysisPanel
 from .widgets.visualization_panel import VisualizationPanel
 from .widgets.sidebar import Sidebar
+from .widgets.results_dashboard import ResultsDashboard
+from .widgets.toast_notification import ToastNotification
+from .widgets.workflow_stepper import WorkflowStepper
 from .styles.geological_theme import GeologicalTheme
 from .styles.dark_theme import DarkTheme
 from .dialogs.settings_dialog import SettingsDialog
+from .dialogs.crm_database_dialog import CRMDatabaseDialog
+from .dialogs.report_config_dialog import ReportConfigDialog
 from .utils.gui_helpers import GuiHelpers
 from src.reporting import ExcelReporter, PDFReporter
 from src.core.project_manager import ProjectManager
@@ -76,8 +81,21 @@ class QAQCApplication(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        # Create main layout (Horizontal: Sidebar + Content)
-        main_layout = QHBoxLayout(central_widget)
+        # Outer vertical layout: stepper on top, then sidebar + content below
+        outer_layout = QVBoxLayout(central_widget)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(0)
+
+        # Workflow stepper bar
+        self.workflow_stepper = WorkflowStepper()
+        self.workflow_stepper.setStyleSheet(
+            "background-color: #0F172A; border-bottom: 1px solid #334155;"
+        )
+        outer_layout.addWidget(self.workflow_stepper)
+
+        # Horizontal: Sidebar + Content
+        body_widget = QWidget()
+        main_layout = QHBoxLayout(body_widget)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
@@ -89,20 +107,28 @@ class QAQCApplication(QMainWindow):
         self.content_area = QStackedWidget()
         main_layout.addWidget(self.content_area)
 
+        outer_layout.addWidget(body_widget, stretch=1)
+
         # Create panels
         self.data_panel = DataPanel()
         self.analysis_panel = AnalysisPanel()
         self.visualization_panel = VisualizationPanel()
+        self.results_dashboard = ResultsDashboard()
 
-        # Add panels to stacked widget
-        self.content_area.addWidget(self.data_panel)
-        self.content_area.addWidget(self.analysis_panel)
-        self.content_area.addWidget(self.visualization_panel)
+        # Add panels to stacked widget (index 0-3)
+        self.content_area.addWidget(self.data_panel)          # 0
+        self.content_area.addWidget(self.analysis_panel)      # 1
+        self.content_area.addWidget(self.visualization_panel) # 2
+        self.content_area.addWidget(self.results_dashboard)   # 3
 
         # Add buttons to sidebar
         self.sidebar.add_button("Data Management", index=0)
         self.sidebar.add_button("Analysis Configuration", index=1)
         self.sidebar.add_button("Visualization & Reporting", index=2)
+        self.sidebar.add_button("Results Dashboard", index=3)
+
+        # Toast notification overlay
+        self.toast = ToastNotification(self)
 
         # Create menu bar
         self.create_menu_bar()
@@ -131,7 +157,6 @@ class QAQCApplication(QMainWindow):
         open_action = QAction('&Open Data File...', self)
         open_action.setShortcut(QKeySequence.StandardKey.Open)
         open_action.setStatusTip('Open assay data file')
-        open_action.triggered.connect(self.open_file)
         open_action.triggered.connect(self.open_file)
         file_menu.addAction(open_action)
 
@@ -207,10 +232,9 @@ class QAQCApplication(QMainWindow):
         tools_menu = menubar.addMenu('&Tools')
         
         # CRM Management
-        crm_action = QAction('&CRM Management...', self)
-        crm_action.setStatusTip('Manage Certified Reference Materials')
-        # crm_action.triggered.connect(self.manage_crms) # TODO: Implement CRM manager
-        crm_action.setEnabled(False) # Disable until implemented
+        crm_action = QAction('&CRM Database...', self)
+        crm_action.setStatusTip('Browse Certified Reference Materials')
+        crm_action.triggered.connect(self.manage_crms)
         tools_menu.addAction(crm_action)
         
         tools_menu.addSeparator()
@@ -323,6 +347,12 @@ class QAQCApplication(QMainWindow):
         # Connect sidebar signals
         self.sidebar.navigation_changed.connect(self.on_navigation_changed)
 
+        # Connect workflow stepper
+        self.workflow_stepper.step_clicked.connect(self._on_stepper_clicked)
+
+        # Connect results dashboard
+        self.results_dashboard.navigate_to_detail.connect(self._on_dashboard_navigate)
+
     def apply_theme(self):
         """Apply the geological theme to the application."""
         # Apply theme from settings
@@ -345,14 +375,14 @@ class QAQCApplication(QMainWindow):
         """Get specific styling for dialogs."""
         return """
         QMessageBox {
-            background-color: #FFFFFF;
-            color: #1A1A1A;
+            background-color: #1E293B;
+            color: #F1F5F9;
         }
         QMessageBox QPushButton {
-            background-color: #2E5266;
-            color: #FFFFFF;
-            border: 2px solid #2E5266;
-            border-radius: 4px;
+            background-color: #F59E0B;
+            color: #0F172A;
+            border: 2px solid #F59E0B;
+            border-radius: 6px;
             padding: 8px 16px;
             font-weight: bold;
             font-size: 12px;
@@ -360,14 +390,14 @@ class QAQCApplication(QMainWindow):
             min-height: 30px;
         }
         QMessageBox QPushButton:hover {
-            background-color: #4A7C59;
-            border-color: #4A7C59;
-            color: #FFFFFF;
+            background-color: #FBBF24;
+            border-color: #FBBF24;
+            color: #0F172A;
         }
         QMessageBox QPushButton:pressed {
-            background-color: #1A3A4A;
-            border-color: #1A3A4A;
-            color: #FFFFFF;
+            background-color: #D97706;
+            border-color: #D97706;
+            color: #0F172A;
         }
         """
 
@@ -481,7 +511,7 @@ class QAQCApplication(QMainWindow):
                 self.status_label.setText("Error loading project")
 
     def export_results(self):
-        """Export analysis results."""
+        """Export analysis results with JORC report configuration."""
         if not self.analysis_results:
             QMessageBox.warning(self, "No Results", "No analysis results to export.")
             return
@@ -489,37 +519,76 @@ class QAQCApplication(QMainWindow):
             QMessageBox.warning(self, "No Data", "Raw data is unavailable for export.")
             return
 
-        dialog = QMessageBox(self)
-        dialog.setWindowTitle("Export Analysis Results")
-        dialog.setText("Select the report format to export.")
-        excel_button = dialog.addButton("Excel (.xlsx)", QMessageBox.ButtonRole.AcceptRole)
-        pdf_button = dialog.addButton("PDF (.pdf)", QMessageBox.ButtonRole.AcceptRole)
-        both_button = dialog.addButton("Excel + PDF", QMessageBox.ButtonRole.AcceptRole)
-        cancel_button = dialog.addButton(QMessageBox.StandardButton.Cancel)
-        dialog.exec()
+        # Open report configuration dialog
+        report_dialog = ReportConfigDialog(self, self.config.get('report_config'))
+        report_dialog.config_accepted.connect(self._on_report_config_accepted)
+        report_dialog.exec()
 
-        clicked = dialog.clickedButton()
-        if clicked == cancel_button or clicked is None:
-            return
-
-        export_excel = clicked in (excel_button, both_button)
-        export_pdf = clicked in (pdf_button, both_button)
+    def _on_report_config_accepted(self, report_config: dict):
+        """Handle report config accepted — run export."""
+        self.config['report_config'] = report_config
+        export_format = report_config.get('export_format', 'both')
 
         exported_paths = []
 
-        if export_excel:
+        if export_format in ('excel', 'both'):
             path = self._export_excel_report()
             if path:
                 exported_paths.append(path)
 
-        if export_pdf:
+        if export_format in ('pdf', 'both'):
             path = self._export_pdf_report()
+            if path:
+                exported_paths.append(path)
+
+        if export_format == 'docx':
+            path = self._export_docx_report()
             if path:
                 exported_paths.append(path)
 
         if exported_paths:
             message = "Export completed successfully:\n\n" + "\n".join(exported_paths)
             QMessageBox.information(self, "Export Successful", message)
+
+    def _export_docx_report(self) -> Optional[str]:
+        """Export Word document report."""
+        default_filename = self.output_dir / "qaqc_report.docx"
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Word Report",
+            str(default_filename),
+            "Word Document (*.docx)"
+        )
+        if not filename:
+            return None
+
+        filename_path = Path(filename)
+        if filename_path.suffix.lower() != ".docx":
+            filename_path = filename_path.with_suffix(".docx")
+
+        try:
+            from src.reporting import DOCXReporter
+            docx_reporter = DOCXReporter({
+                'include_plots': True,
+                'report_config': self.config.get('report_config', {})
+            })
+            generated_path = docx_reporter.generate_docx_report(
+                self.analysis_results,
+                filename=str(filename_path)
+            )
+            return generated_path
+        except ImportError:
+            QMessageBox.warning(
+                self, "Not Available",
+                "Word export requires python-docx. Install with: pip install python-docx"
+            )
+            return None
+        except Exception as exc:
+            QMessageBox.critical(
+                self, "Export Failed",
+                f"Failed to generate Word report:\n{exc}"
+            )
+            return None
 
     def _export_excel_report(self) -> Optional[str]:
         """Export Excel report and return generated path."""
@@ -607,24 +676,72 @@ class QAQCApplication(QMainWindow):
         self.analysis_panel.run_analysis()
 
     def configure_analysis(self):
-        """Configure analysis parameters."""
-        # TODO: Implement analysis configuration dialog
-        QMessageBox.information(self, "Configure Analysis", "Analysis configuration not yet implemented.")
+        """Navigate to the analysis configuration panel."""
+        self.sidebar.set_active_index(1)
 
     def manage_crms(self):
-        """Manage Certified Reference Materials."""
-        # TODO: Implement CRM management dialog
-        QMessageBox.information(self, "CRM Management", "CRM management not yet implemented.")
+        """Open CRM Database browser dialog."""
+        dialog = CRMDatabaseDialog(self)
+        dialog.crm_selected.connect(self.on_crm_selected_from_browser)
+        dialog.exec()
+
+    def on_crm_selected_from_browser(self, crm: dict):
+        """Handle CRM selected from the browser dialog."""
+        name = crm.get('name', 'Unknown')
+        value = crm.get('certified_value', '')
+        units = crm.get('units', 'g/t')
+        self.config['selected_crm'] = crm
+        self.status_label.setText(f"CRM selected: {name} ({value} {units})")
 
     def show_settings(self):
         """Show application settings."""
-        # TODO: Implement settings dialog
-        QMessageBox.information(self, "Settings", "Settings dialog not yet implemented.")
+        self.open_settings()
 
     def show_user_guide(self):
-        """Show user guide."""
-        # TODO: Implement user guide
-        QMessageBox.information(self, "User Guide", "User guide not yet implemented.")
+        """Show a basic user guide dialog."""
+        from PyQt6.QtWidgets import QDialog, QTextBrowser
+        dialog = QDialog(self)
+        dialog.setWindowTitle("LogiQore Reporter — User Guide")
+        dialog.setMinimumSize(600, 500)
+        layout = QVBoxLayout(dialog)
+        browser = QTextBrowser()
+        browser.setOpenExternalLinks(True)
+        browser.setHtml("""
+        <h2 style="color: #F59E0B;">LogiQore Reporter User Guide</h2>
+        <h3>Quick Start</h3>
+        <ol>
+            <li><b>Import Data</b> — Open a CSV or Excel file containing assay data
+                with columns for sample ID, sample type, and results.</li>
+            <li><b>Map Columns</b> — Verify the auto-detected column mapping
+                (sample_id, sample_type, result).</li>
+            <li><b>Configure Analysis</b> — Select analysis types (Standards, Blanks,
+                Duplicates) and set thresholds on the Analysis panel.</li>
+            <li><b>Run Analysis</b> — Press <i>Run QAQC Analysis</i> or <kbd>F5</kbd>.</li>
+            <li><b>Review Results</b> — Check the results summary and plots on the
+                Visualization panel.</li>
+            <li><b>Export</b> — Generate PDF, Excel, or Word reports via
+                <i>File → Export Results</i>.</li>
+        </ol>
+        <h3>Key Concepts</h3>
+        <ul>
+            <li><b>CRMs (Standards)</b> — Certified Reference Materials used to
+                monitor analytical accuracy. Z-scores and recovery rates are
+                calculated against certified values.</li>
+            <li><b>Blanks</b> — Samples with no target analyte used to detect
+                contamination and carry-over effects.</li>
+            <li><b>Duplicates</b> — Repeat analyses to assess precision. RPD
+                (Relative Percent Difference) and the hyperbolic envelope method
+                account for nugget effects at low grades.</li>
+            <li><b>JORC Compliance</b> — The JORC Code requires minimum insertion
+                rates (typically ≥5% each for standards, blanks, and duplicates,
+                ≥20% total QAQC).</li>
+            <li><b>Westgard Rules</b> — Process-control rules (1-3s, 2-2s, R-4s,
+                10-x) that flag systematic drift or shifts in standards data.</li>
+        </ul>
+        """)
+        layout.addWidget(browser)
+        dialog.setStyleSheet(self.get_dialog_style())
+        dialog.exec()
 
     def show_about(self):
         """Show about dialog."""
@@ -639,25 +756,18 @@ class QAQCApplication(QMainWindow):
             """
         )
 
-    # Panel visibility handlers
-    def toggle_data_panel(self, visible):
-        """Toggle data panel visibility."""
-        self.data_panel.setVisible(visible)
-
-    def toggle_analysis_panel(self, visible):
-        """Toggle analysis panel visibility."""
-        self.analysis_panel.setVisible(visible)
-
-    def toggle_visualization_panel(self, visible):
-        """Toggle visualization panel visibility."""
-        self.visualization_panel.setVisible(visible)
-
     # Signal handlers
     def on_data_loaded(self, data_info):
         """Handle data loaded signal."""
         self.current_data = data_info
         self.update_data_info()
         self.status_label.setText("Data loaded successfully")
+        # Advance stepper to Configure and show toast
+        if hasattr(self, 'workflow_stepper'):
+            self.workflow_stepper.set_step(1)
+        if hasattr(self, 'toast'):
+            count = data_info.get('sample_count', 0) if data_info else 0
+            self.toast.show_toast(f"Loaded {count} samples", level="success")
 
         # Pass data to analysis panel
         if hasattr(self, 'analysis_panel'):
@@ -704,26 +814,48 @@ class QAQCApplication(QMainWindow):
         self.config = configuration
 
     def on_analysis_results(self, results):
-        """Handle analysis results and update visualization panel."""
+        """Handle analysis results and update visualization panel + dashboard."""
         self.analysis_results = results
         if hasattr(self, 'visualization_panel'):
             self.visualization_panel.set_analysis_results(results)
+        if hasattr(self, 'results_dashboard'):
+            self.results_dashboard.set_results(results)
         self.status_label.setText("Analysis results available")
+        # Update stepper to Review step and show toast
+        if hasattr(self, 'workflow_stepper'):
+            self.workflow_stepper.set_step(3)
+        if hasattr(self, 'toast'):
+            self.toast.show_toast("Analysis complete — results ready", level="success")
 
     def on_plot_requested(self, plot_type):
-        """Handle plot requested signal."""
-        # TODO: Implement plot generation
-        pass
+        """Handle plot requested signal — switch to visualization and generate."""
+        self.sidebar.set_active_index(2)
+        if hasattr(self.visualization_panel, 'generate_plot'):
+            self.visualization_panel.generate_plot(plot_type)
 
     def on_export_requested(self, export_type):
-        """Handle export requested signal."""
-        # TODO: Implement export functionality
-        pass
+        """Handle export requested signal — delegate to export_results."""
+        self.export_results()
 
     def on_navigation_changed(self, index, name):
         """Handle sidebar navigation changes."""
         self.content_area.setCurrentIndex(index)
         self.status_label.setText(f"Switched to {name}")
+        # Keep stepper in sync (map sidebar index → stepper step)
+        stepper_map = {0: 0, 1: 1, 2: 3, 3: 3}  # Import, Configure, -, Review
+        if hasattr(self, 'workflow_stepper') and index in stepper_map:
+            self.workflow_stepper.set_step(stepper_map[index])
+
+    def _on_stepper_clicked(self, step_index: int):
+        """Handle workflow stepper step click."""
+        # Map stepper steps → sidebar panel indices
+        panel_map = {0: 0, 1: 1, 2: 1, 3: 3, 4: 2}
+        panel_idx = panel_map.get(step_index, 0)
+        self.sidebar.set_active_index(panel_idx)
+
+    def _on_dashboard_navigate(self, analysis_type: str):
+        """Handle dashboard card click — navigate to visualization."""
+        self.sidebar.set_active_index(2)
 
     # Panel visibility handlers
     def toggle_data_panel(self, visible):
@@ -743,23 +875,10 @@ class QAQCApplication(QMainWindow):
 
     # Helper methods
     def load_data_file(self, file_path):
-        """Load data from file."""
-        try:
-            self.status_label.setText("Loading data...")
-            self.progress_bar.setVisible(True)
-            self.progress_bar.setRange(0, 0)  # Indeterminate progress
-
-            # TODO: Implement actual data loading
-            # This would integrate with the existing DataImporter
-
-            self.current_file = file_path
-            self.status_label.setText("Data loaded successfully")
-            self.progress_bar.setVisible(False)
-
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to load data: {str(e)}")
-            self.status_label.setText("Error loading data")
-            self.progress_bar.setVisible(False)
+        """Load data from file via the data panel."""
+        self.current_file = file_path
+        self.sidebar.set_active_index(0)
+        self.data_panel.load_data_file(file_path)
 
     def run_analysis_with_config(self, configuration):
         """Run analysis with given configuration."""
@@ -792,6 +911,10 @@ class QAQCApplication(QMainWindow):
         self.data_panel.reset()
         self.analysis_panel.reset()
         self.visualization_panel.reset()
+        if hasattr(self, 'results_dashboard'):
+            self.results_dashboard.reset()
+        if hasattr(self, 'workflow_stepper'):
+            self.workflow_stepper.reset()
 
         # Update status
         self.status_label.setText("Ready")
@@ -819,9 +942,13 @@ class QAQCApplication(QMainWindow):
         elif theme_setting == "light":
             theme = GeologicalTheme()
         elif theme_setting == "auto":
-            # TODO: Detect system theme preference
-            # For now, default to light
-            theme = GeologicalTheme()
+            # Detect system dark mode via palette brightness
+            from PyQt6.QtWidgets import QApplication
+            app = QApplication.instance()
+            if app and app.palette().window().color().lightness() < 128:
+                theme = DarkTheme()
+            else:
+                theme = GeologicalTheme()
         else:
             theme = GeologicalTheme()
             
@@ -836,9 +963,27 @@ class QAQCApplication(QMainWindow):
                 pass
 
     def ask_save_changes(self):
-        """Ask user if they want to save changes."""
-        # TODO: Implement change detection and save prompt
-        return True
+        """Ask user if they want to save unsaved changes."""
+        # Consider dirty if we have data or results that could be lost
+        has_unsaved = self.current_data is not None or self.analysis_results is not None
+        if not has_unsaved:
+            return True
+
+        reply = QMessageBox.question(
+            self,
+            "Unsaved Changes",
+            "You have unsaved work. Do you want to save before continuing?",
+            QMessageBox.StandardButton.Save |
+            QMessageBox.StandardButton.Discard |
+            QMessageBox.StandardButton.Cancel
+        )
+        if reply == QMessageBox.StandardButton.Save:
+            self.save_project()
+            return True
+        elif reply == QMessageBox.StandardButton.Discard:
+            return True
+        else:
+            return False
 
 
 def main():

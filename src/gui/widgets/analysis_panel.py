@@ -268,17 +268,17 @@ class AnalysisPanel(QWidget):
         # Analysis type checkboxes (using custom green checkboxes with visible ticks)
         self.standards_check = GreenCheckBox("Standards Analysis")
         self.standards_check.setChecked(True)
-        self.standards_check.setStyleSheet("font-weight: bold; color: #2E5266;")
+        self.standards_check.setStyleSheet("font-weight: bold; color: #F59E0B;")
         config_layout.addWidget(self.standards_check)
 
         self.blanks_check = GreenCheckBox("Blanks Analysis")
         self.blanks_check.setChecked(True)
-        self.blanks_check.setStyleSheet("font-weight: bold; color: #2E5266;")
+        self.blanks_check.setStyleSheet("font-weight: bold; color: #F59E0B;")
         config_layout.addWidget(self.blanks_check)
 
         self.duplicates_check = GreenCheckBox("Duplicates Analysis")
         self.duplicates_check.setChecked(True)
-        self.duplicates_check.setStyleSheet("font-weight: bold; color: #2E5266;")
+        self.duplicates_check.setStyleSheet("font-weight: bold; color: #F59E0B;")
         config_layout.addWidget(self.duplicates_check)
 
         layout.addWidget(self.config_group)
@@ -313,17 +313,17 @@ class AnalysisPanel(QWidget):
         self.run_button.setMinimumHeight(40)
         self.run_button.setStyleSheet("""
             QPushButton {
-                background-color: #2E5266;
-                color: white;
+                background-color: #F59E0B;
+                color: #0F172A;
                 font-weight: bold;
                 font-size: 14px;
                 border-radius: 6px;
             }
             QPushButton:hover {
-                background-color: #4A7C59;
+                background-color: #FBBF24;
             }
             QPushButton:disabled {
-                background-color: #ADB5BD;
+                background-color: #475569;
             }
         """)
         exec_layout.addWidget(self.run_button)
@@ -335,7 +335,7 @@ class AnalysisPanel(QWidget):
 
         # Status label
         self.status_label = QLabel("Ready to run analysis")
-        self.status_label.setStyleSheet("color: #27AE60; font-weight: bold;")
+        self.status_label.setStyleSheet("color: #10B981; font-weight: bold;")
         exec_layout.addWidget(self.status_label)
 
         layout.addWidget(self.execution_group)
@@ -350,8 +350,8 @@ class AnalysisPanel(QWidget):
         self.results_display.setReadOnly(True)
         self.results_display.setStyleSheet("""
             QTextEdit {
-                background-color: #F8F9FA;
-                border: 1px solid #DEE2E6;
+                background-color: #334155;
+                border: 1px solid #334155;
                 border-radius: 4px;
                 padding: 8px;
                 font-family: Consolas, monospace;
@@ -539,7 +539,7 @@ class AnalysisPanel(QWidget):
 
         # Add info label
         info_label = QLabel("Rules: 1-3s, 2-2s,\nR-4s, 10-x")
-        info_label.setStyleSheet("color: #607D8B; font-size: 10px; font-style: italic;")
+        info_label.setStyleSheet("color: #94A3B8; font-size: 10px; font-style: italic;")
         westgard_layout.addWidget(info_label)
         westgard_layout.addStretch()
 
@@ -576,14 +576,6 @@ class AnalysisPanel(QWidget):
         layout.addLayout(bottom_layout)
         layout.addStretch()
         
-        return tab
-        self.hyperbolic_c_spin.setDecimals(2)
-        self.hyperbolic_c_spin.setToolTip("Intercept parameter for hyperbolic curve")
-        precision_layout.addRow("Hyperbolic C:", self.hyperbolic_c_spin)
-
-        layout.addWidget(precision_group)
-
-        layout.addStretch()
         return tab
 
     def set_jorc_defaults(self):
@@ -633,13 +625,13 @@ class AnalysisPanel(QWidget):
         """Run QAQC analysis using real analysis modules."""
         if not self.standards_check.isChecked() and not self.blanks_check.isChecked() and not self.duplicates_check.isChecked():
             self.status_label.setText("Please select at least one analysis type")
-            self.status_label.setStyleSheet("color: #E74C3C; font-weight: bold;")
+            self.status_label.setStyleSheet("color: #EF4444; font-weight: bold;")
             return
 
         # Check if data is available
         if not hasattr(self, 'data_info') or not self.data_info or 'dataframe' not in self.data_info:
             self.status_label.setText("Please load data before running analysis")
-            self.status_label.setStyleSheet("color: #E74C3C; font-weight: bold;")
+            self.status_label.setStyleSheet("color: #EF4444; font-weight: bold;")
             return
 
         # Get current configuration
@@ -650,7 +642,7 @@ class AnalysisPanel(QWidget):
 
         # Start analysis thread with real analysis
         self.status_label.setText("Starting analysis...")
-        self.status_label.setStyleSheet("color: #F39C12; font-weight: bold;")
+        self.status_label.setStyleSheet("color: #F59E0B; font-weight: bold;")
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
         self.run_button.setEnabled(False)
@@ -663,38 +655,6 @@ class AnalysisPanel(QWidget):
         self.analysis_thread.error_occurred.connect(self.on_analysis_error)
         self.analysis_thread.start()
 
-    def simulate_analysis_completion(self):
-        """Simulate analysis completion for demonstration."""
-        # This is a placeholder - in real implementation, this would be handled by the analysis thread
-
-        # Simulate results
-        results = {
-            'standards': {
-                'enabled': self.standards_check.isChecked(),
-                'status': 'PASS',
-                'z_scores': [0.5, -0.8, 1.2, -0.3, 0.7],
-                'bias': 0.02,
-                'recovery': 98.5,
-                'precision': 2.1
-            },
-            'blanks': {
-                'enabled': self.blanks_check.isChecked(),
-                'status': 'FAIL',
-                'contamination_count': 2,
-                'carryover_detected': True,
-                'mdl': 0.008
-            },
-            'duplicates': {
-                'enabled': self.duplicates_check.isChecked(),
-                'status': 'PASS',
-                'rpd_values': [5.2, 8.1, 3.7, 6.9],
-                'precision': 7.1,
-                'correlation': 0.95
-            }
-        }
-
-        self.on_analysis_completed(results)
-
     def on_analysis_completed(self, results: Dict[str, Any]):
         """Handle analysis completion."""
         self.current_results = results
@@ -704,7 +664,7 @@ class AnalysisPanel(QWidget):
 
         # Update status
         self.status_label.setText("Analysis completed successfully")
-        self.status_label.setStyleSheet("color: #27AE60; font-weight: bold;")
+        self.status_label.setStyleSheet("color: #10B981; font-weight: bold;")
         self.progress_bar.setVisible(False)
         self.run_button.setEnabled(True)
 
@@ -788,7 +748,7 @@ class AnalysisPanel(QWidget):
     def on_analysis_error(self, error_message: str):
         """Handle analysis error."""
         self.status_label.setText(f"Analysis error: {error_message[:50]}...")
-        self.status_label.setStyleSheet("color: #E74C3C; font-weight: bold;")
+        self.status_label.setStyleSheet("color: #EF4444; font-weight: bold;")
         self.progress_bar.setVisible(False)
         self.run_button.setEnabled(True)
 
@@ -867,6 +827,6 @@ class AnalysisPanel(QWidget):
         # Reset display
         self.results_display.clear()
         self.status_label.setText("Ready to run analysis")
-        self.status_label.setStyleSheet("color: #27AE60; font-weight: bold;")
+        self.status_label.setStyleSheet("color: #10B981; font-weight: bold;")
         self.progress_bar.setVisible(False)
         self.run_button.setEnabled(True)

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Plus, FolderOpen, ArrowRight, ShieldCheck, Loader2, AlertCircle, ChevronDown } from 'lucide-react';
+import { Plus, FolderOpen, ArrowRight, ShieldCheck, Loader2, AlertCircle, ChevronDown, Database, GraduationCap, Settings } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore';
 import { selectProjectFile, loadProjectFromFile, type QAQCProjectFile } from '../../utils/projectFile';
 
 interface ProjectEntryProps {
     /** Callback when a project file is loaded - passes the full project state */
     onProjectLoaded?: (projectFile: QAQCProjectFile) => void;
+    /** Navigate to a section without creating a project first */
+    onQuickNavigate?: (section: 'crm' | 'education' | 'settings') => void;
 }
 
 // Common commodities for quick selection
@@ -20,7 +22,7 @@ const COMMON_COMMODITIES = [
     { value: 'Li', label: 'Lithium (Li)' },
 ];
 
-export const ProjectEntry: React.FC<ProjectEntryProps> = ({ onProjectLoaded }) => {
+export const ProjectEntry: React.FC<ProjectEntryProps> = ({ onProjectLoaded, onQuickNavigate }) => {
     const { createProject, recentProjects, openProject, loadFromFile } = useProjectStore();
     const [mode, setMode] = useState<'select' | 'create'>('select');
     const [isLoading, setIsLoading] = useState(false);
@@ -119,6 +121,33 @@ export const ProjectEntry: React.FC<ProjectEntryProps> = ({ onProjectLoaded }) =
                             )}
                         </div>
                     </div>
+
+                    {/* Quick Access Links */}
+                    {onQuickNavigate && (
+                        <div className="flex items-center gap-3 pt-4 border-t border-secondary-dark">
+                            <button
+                                onClick={() => onQuickNavigate('crm')}
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface border border-secondary-dark hover:border-primary hover:bg-primary/5 transition-all group"
+                            >
+                                <Database className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
+                                <span className="text-sm text-slate-300 group-hover:text-slate-50 transition-colors">CRM Database</span>
+                            </button>
+                            <button
+                                onClick={() => onQuickNavigate('education')}
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface border border-secondary-dark hover:border-primary hover:bg-primary/5 transition-all group"
+                            >
+                                <GraduationCap className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
+                                <span className="text-sm text-slate-300 group-hover:text-slate-50 transition-colors">Learn</span>
+                            </button>
+                            <button
+                                onClick={() => onQuickNavigate('settings')}
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface border border-secondary-dark hover:border-primary hover:bg-primary/5 transition-all group"
+                            >
+                                <Settings className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
+                                <span className="text-sm text-slate-300 group-hover:text-slate-50 transition-colors">Settings</span>
+                            </button>
+                        </div>
+                    )}
 
                     {/* Security Badge */}
                     <div className="flex items-center gap-2 pt-4">

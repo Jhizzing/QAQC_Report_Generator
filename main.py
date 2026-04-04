@@ -32,6 +32,173 @@ try:
 except Exception:  # pragma: no cover
     yaml = None
 
+# ─── Rich Console Setup ─────────────────────────────────────────────────────
+try:
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
+    from rich.text import Text
+    from rich.theme import Theme
+    from rich import box
+
+    # LogiQore branded theme
+    logiqore_theme = Theme({
+        "primary": "bold #F59E0B",
+        "accent": "#0EA5E9",
+        "surface": "#1E293B",
+        "success": "bold #10B981",
+        "warning": "bold #F59E0B",
+        "error": "bold #EF4444",
+        "info": "bold #3B82F6",
+        "muted": "#94A3B8",
+        "heading": "bold #F1F5F9",
+        "pass_status": "bold #10B981",
+        "fail_status": "bold #EF4444",
+        "warn_status": "bold #F59E0B",
+    })
+
+    console = Console(theme=logiqore_theme)
+    RICH_AVAILABLE = True
+
+except ImportError:
+    RICH_AVAILABLE = False
+    console = None
+
+
+def _strip_markup(text: str) -> str:
+    """Strip Rich markup tags like [bold], [muted], [/] etc. from text."""
+    import re
+    return re.sub(r'\[/?[^\]]*\]', '', text)
+
+
+def rprint(*args, **kwargs):
+    """Print using Rich if available, else fallback to plain print."""
+    if RICH_AVAILABLE and console:
+        console.print(*args, **kwargs)
+    else:
+        plain = " ".join(str(a) for a in args)
+        print(_strip_markup(plain))
+
+
+def show_banner():
+    """Display the LogiQore branded banner."""
+    if not RICH_AVAILABLE:
+        print("=" * 58)
+        print("  LogiQore Reporter v2.0.0")
+        print("  Secure, Intelligent Assay QAQC Analysis")
+        print("=" * 58)
+        return
+
+    banner_text = Text()
+    banner_text.append("  LogiQore Reporter", style="bold #F59E0B")
+    banner_text.append("  v2.0.0\n", style="#94A3B8")
+    banner_text.append("  Secure, Intelligent Assay QAQC Analysis", style="#CBD5E1")
+
+    console.print()
+    console.print(Panel(
+        banner_text,
+        border_style="#F59E0B",
+        box=box.DOUBLE_EDGE,
+        padding=(1, 2),
+    ))
+    console.print()
+
+
+def show_status(label: str, status: str, detail: str = ""):
+    """Show a status line with pass/fail/warning indicators."""
+    if not RICH_AVAILABLE:
+        icon = {"PASS": "[PASS]", "FAIL": "[FAIL]", "WARN": "[WARN]", "SKIP": "[SKIP]", "INFO": "[INFO]"}.get(status, "[----]")
+        suffix = f" -- {detail}" if detail else ""
+        print(f"  {icon} {label}{suffix}")
+        return
+
+    icon_map = {
+        "PASS": ("[bold #10B981]OK[/]", "pass_status"),
+        "FAIL": ("[bold #EF4444]FAIL[/]", "fail_status"),
+        "WARN": ("[bold #F59E0B]WARN[/]", "warn_status"),
+        "SKIP": ("[#94A3B8]SKIP[/]", "muted"),
+        "INFO": ("[bold #3B82F6]INFO[/]", "info"),
+    }
+    icon, style = icon_map.get(status, ("[#94A3B8]--[/]", "muted"))
+    suffix = f"  [muted]{detail}[/]" if detail else ""
+    console.print(f"  {icon}  [{style}]{label}[/]{suffix}")
+
+
+def show_summary_table(analysis_results: Dict, output_dir: Path):
+    """Display a rich summary table of analysis results."""
+    if not RICH_AVAILABLE:
+        print("\n--- Analysis Summary ---")
+        for key, val in analysis_results.items():
+            if isinstance(val, dict) and 'overall_acceptable' in val:
+                status = "PASS" if val['overall_acceptable'] else "FAIL"
+                print(f"  {key}: {status}")
+        return
+
+    table = Table(
+        title="QAQC Analysis Summary",
+        title_style="primary",
+        border_style="#334155",
+        box=box.ROUNDED,
+        show_header=True,
+        header_style="heading",
+        padding=(0, 2),
+    )
+    table.add_column("Analysis", style="heading", min_width=18)
+    table.add_column("Status", justify="center", min_width=10)
+    table.add_column("Details", style="muted", min_width=30)
+
+    for analysis_type in ['standards', 'blanks', 'duplicates']:
+        if analysis_type in analysis_results and isinstance(analysis_results[analysis_type], dict):
+            result = analysis_results[analysis_type]
+            passed = result.get('overall_acceptable', False)
+            status_text = "[pass_status]PASS[/]" if passed else "[fail_status]FAIL[/]"
+
+            details = []
+            if 'mean_z_score' in result:
+                details.append(f"Z={result['mean_z_score']:.2f}")
+            if 'mean_recovery' in result:
+                details.append(f"Rec={result['mean_recovery']:.1f}%")
+            if 'mean_rpd' in result:
+                details.append(f"RPD={result['mean_rpd']:.1f}%")
+            if 'count' in result:
+                details.append(f"n={result['count']}")
+
+            table.add_row(
+                analysis_type.capitalize(),
+                status_text,
+                ", ".join(details) if details else "--"
+            )
+        else:
+            table.add_row(
+                analysis_type.capitalize(),
+                "[muted]SKIP[/]",
+                "[muted]Not analysed[/]"
+            )
+
+    total = analysis_results.get('total_samples', 0)
+    table.add_section()
+    table.add_row("Total Samples", f"[primary]{total}[/]", f"Output: {output_dir}")
+
+    console.print()
+    console.print(table)
+    console.print()
+
+
+def create_progress():
+    """Create a Rich progress bar context manager."""
+    if not RICH_AVAILABLE:
+        return None
+
+    return Progress(
+        SpinnerColumn(style="#F59E0B"),
+        TextColumn("[primary]{task.description}[/]"),
+        BarColumn(bar_width=30, style="#334155", complete_style="#F59E0B", finished_style="#10B981"),
+        TextColumn("[muted]{task.percentage:>3.0f}%[/]"),
+        TimeElapsedColumn(),
+        console=console,
+    )
+
 
 def load_config(config_file: str) -> Dict:
     config_path = resolve_runtime_path(config_file)
@@ -46,7 +213,7 @@ def load_config(config_file: str) -> Dict:
 def main():
     """Main application entry point."""
     parser = argparse.ArgumentParser(
-        description="LogiQore Reporter",
+        description="LogiQore Reporter -- Secure, Intelligent Assay QAQC Analysis",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -67,159 +234,49 @@ Examples:
         """
     )
 
-    parser.add_argument(
-        "--input", "-i",
-        type=str,
-        help="Input data file or directory (CSV, XLSX, or XLS, or a folder containing them)"
-    )
-
-    parser.add_argument(
-        "--output", "-o",
-        type=str,
-        default="output",
-        help="Output directory for reports and plots (default: output)"
-    )
-
-    parser.add_argument(
-        "--config", "-c",
-        type=str,
-        default="config.yaml",
-        help="Configuration file (default: config.yaml)"
-    )
+    parser.add_argument("--input", "-i", type=str, help="Input data file or directory (CSV, XLSX, or XLS)")
+    parser.add_argument("--output", "-o", type=str, default="output", help="Output directory for reports (default: output)")
+    parser.add_argument("--config", "-c", type=str, default="config.yaml", help="Configuration file (default: config.yaml)")
 
     # Mapping / normalization flags
-    parser.add_argument(
-        "--mapping",
-        type=str,
-        help="Path to a YAML column mapping file to apply"
-    )
-    parser.add_argument(
-        "--infer-mapping",
-        action="store_true",
-        help="Infer column mapping from headers using synonyms and fuzzy matching"
-    )
-    parser.add_argument(
-        "--yes",
-        action="store_true",
-        help="Auto-accept inferred mapping if confidence is sufficient"
-    )
-    parser.add_argument(
-        "--normalize-results",
-        action="store_true",
-        help="Parse qualifiers and detection limits into normalized columns"
-    )
-    parser.add_argument(
-        "--csv-delimiter",
-        type=str,
-        help="CSV delimiter (e.g., ',' or ';'). If omitted, pandas will infer."
-    )
-    parser.add_argument(
-        "--encoding",
-        type=str,
-        default="utf-8",
-        help="Text encoding for CSV files (default: utf-8). Use 'utf-8-sig' for BOM CSVs."
-    )
-    parser.add_argument(
-        "--sheet",
-        type=str,
-        help="Excel sheet name to read (alternative to --sheet-index)"
-    )
-    parser.add_argument(
-        "--sheet-index",
-        type=int,
-        help="Excel sheet index to read (0-based; default 0)"
-    )
-    parser.add_argument(
-        "--save-mapping",
-        type=str,
-        help="If provided, save the accepted mapping to this YAML file for reuse"
-    )
-    parser.add_argument(
-        "--csv-chunksize",
-        type=int,
-        help="If set, stream CSV in chunks of this many rows and concatenate (memory-friendly)"
-    )
-    parser.add_argument(
-        "--detect-encoding-fallback",
-        action="store_true",
-        help="On CSV read error, try common encodings (utf-8-sig, cp1252, latin1)"
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Show actions without writing output files"
-    )
+    parser.add_argument("--mapping", type=str, help="Path to a YAML column mapping file to apply")
+    parser.add_argument("--infer-mapping", action="store_true", help="Infer column mapping from headers using synonyms and fuzzy matching")
+    parser.add_argument("--yes", action="store_true", help="Auto-accept inferred mapping if confidence is sufficient")
+    parser.add_argument("--normalize-results", action="store_true", help="Parse qualifiers and detection limits into normalized columns")
+    parser.add_argument("--csv-delimiter", type=str, help="CSV delimiter (e.g., ',' or ';'). If omitted, pandas will infer.")
+    parser.add_argument("--encoding", type=str, default="utf-8", help="Text encoding for CSV files (default: utf-8)")
+    parser.add_argument("--sheet", type=str, help="Excel sheet name to read (alternative to --sheet-index)")
+    parser.add_argument("--sheet-index", type=int, help="Excel sheet index to read (0-based; default 0)")
+    parser.add_argument("--save-mapping", type=str, help="Save the accepted mapping to this YAML file for reuse")
+    parser.add_argument("--csv-chunksize", type=int, help="Stream CSV in chunks of this many rows (memory-friendly)")
+    parser.add_argument("--detect-encoding-fallback", action="store_true", help="On CSV read error, try common encodings (utf-8-sig, cp1252, latin1)")
+    parser.add_argument("--dry-run", action="store_true", help="Show actions without writing output files")
 
     # CRM and Analysis options
-    parser.add_argument(
-        "--crm-database",
-        type=str,
-        help="Path to CRM database YAML file (default: crm_database.yaml)"
-    )
-    parser.add_argument(
-        "--crm-name",
-        type=str,
-        help="Specific CRM to use for standards analysis (e.g., 'NIST SRM 2709a')"
-    )
-    parser.add_argument(
-        "--auto-crm",
-        action="store_true",
-        help="Automatically select appropriate CRM based on sample concentrations"
-    )
-    parser.add_argument(
-        "--skip-standards",
-        action="store_true",
-        help="Skip standards analysis"
-    )
-    parser.add_argument(
-        "--skip-blanks",
-        action="store_true",
-        help="Skip blanks analysis"
-    )
-    parser.add_argument(
-        "--skip-duplicates",
-        action="store_true",
-        help="Skip duplicates analysis"
-    )
+    parser.add_argument("--crm-database", type=str, help="Path to CRM database YAML file (default: crm_database.yaml)")
+    parser.add_argument("--crm-name", type=str, help="Specific CRM to use for standards analysis (e.g., 'NIST SRM 2709a')")
+    parser.add_argument("--auto-crm", action="store_true", help="Automatically select appropriate CRM based on sample concentrations")
+    parser.add_argument("--skip-standards", action="store_true", help="Skip standards analysis")
+    parser.add_argument("--skip-blanks", action="store_true", help="Skip blanks analysis")
+    parser.add_argument("--skip-duplicates", action="store_true", help="Skip duplicates analysis")
 
     # Output format options
-    parser.add_argument(
-        "--output-format",
-        choices=["excel", "pdf", "both"],
-        default="both",
-        help="Output format: excel, pdf, or both (default: both)"
-    )
-    parser.add_argument(
-        "--include-plots",
-        action="store_true",
-        help="Generate visualization plots"
-    )
-    parser.add_argument(
-        "--plot-format",
-        choices=["png", "pdf", "svg"],
-        default="png",
-        help="Plot file format (default: png)"
-    )
+    parser.add_argument("--output-format", choices=["excel", "pdf", "both"], default="both", help="Output format (default: both)")
+    parser.add_argument("--include-plots", action="store_true", help="Generate visualization plots")
+    parser.add_argument("--plot-format", choices=["png", "pdf", "svg"], default="png", help="Plot file format (default: png)")
 
-    parser.add_argument(
-        "--gui", "-g",
-        action="store_true",
-        help="Launch GUI interface"
-    )
-
-    parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Enable verbose output"
-    )
-
-    parser.add_argument(
-        "--version",
-        action="version",
-        version="LogiQore Reporter v2.0.0"
-    )
+    parser.add_argument("--gui", "-g", action="store_true", help="Launch GUI interface")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
+    parser.add_argument("--no-color", action="store_true", help="Disable colored output")
+    parser.add_argument("--version", action="version", version="LogiQore Reporter v2.0.0")
 
     args = parser.parse_args()
+
+    # Disable rich if --no-color
+    global RICH_AVAILABLE, console
+    if args.no_color:
+        RICH_AVAILABLE = False
+        console = None
 
     # Launch GUI if requested
     if args.gui:
@@ -228,17 +285,28 @@ Examples:
 
     # Command line processing
     if not args.input:
-        print("Error: Input file or directory is required for command line processing.")
-        print("Use --help for usage information or --gui for GUI interface.")
+        show_banner()
+        if RICH_AVAILABLE:
+            console.print("[error]Error:[/] Input file or directory is required for command line processing.")
+            console.print("[muted]Use [primary]--help[/primary] for usage information or [primary]--gui[/primary] for the GUI interface.[/]")
+        else:
+            print("Error: Input file or directory is required for command line processing.")
+            print("Use --help for usage information or --gui for GUI interface.")
         sys.exit(1)
 
     try:
+        show_banner()
         process_data(args)
     except Exception as e:  # noqa: BLE001
-        print(f"Error processing data: {e}")
-        if args.verbose:
-            import traceback
-            traceback.print_exc()
+        if RICH_AVAILABLE:
+            console.print(f"\n[error]Error processing data:[/] {e}")
+            if args.verbose:
+                console.print_exception()
+        else:
+            print(f"Error processing data: {e}")
+            if args.verbose:
+                import traceback
+                traceback.print_exc()
         sys.exit(1)
 
 
@@ -248,31 +316,25 @@ def launch_gui():
         from PyQt6.QtWidgets import QApplication
         from src.gui.main_window import QAQCApplication
 
-        # Create application
         app = QApplication(sys.argv)
         app.setApplicationName("LogiQore Reporter")
         app.setApplicationVersion("2.0.0")
         app.setOrganizationName("LogiQore")
 
-        # Create and show main window
         window = QAQCApplication()
         window.show()
 
-        print("LogiQore Reporter GUI launched!")
-        print("Ready for geological data analysis.")
+        rprint("[primary]LogiQore Reporter[/primary] GUI launched!")
+        rprint("[muted]Ready for geological data analysis.[/]")
 
-        # Run application
         return app.exec()
 
     except ImportError as e:
-        print(f"GUI dependencies not available: {e}")
-        print("Please install PyQt6: pip install PyQt6")
-        print("Falling back to command line interface...")
-        print("Use --help for command line options.")
+        rprint(f"[error]GUI dependencies not available:[/] {e}")
+        rprint("[muted]Please install PyQt6: pip install PyQt6[/]")
     except Exception as e:
-        print(f"Error launching GUI: {e}")
-        print("Falling back to command line interface...")
-        print("Use --help for command line options.")
+        rprint(f"[error]Error launching GUI:[/] {e}")
+        rprint("[muted]Falling back to command line interface...[/]")
 
 
 def _review_and_build_mapping(
@@ -285,11 +347,10 @@ def _review_and_build_mapping(
     threshold: float = 0.85,
 ) -> Dict[str, str]:
     """Load mapping or infer and review with confidence; enforce acceptance policy."""
-    # If mapping file provided, load and return directly
     if mapping_path:
         mapping = importer.load_mapping_yaml(mapping_path)
         if verbose:
-            print(f"Loaded mapping from {mapping_path}: {mapping}")
+            show_status(f"Loaded mapping from {mapping_path}", "INFO", f"{len(mapping)} fields")
         return mapping
 
     if not infer:
@@ -297,17 +358,41 @@ def _review_and_build_mapping(
 
     suggestions = importer.suggest_mapping(list(df.columns), threshold=threshold)
 
-    # Build proposed mapping from suggestions above threshold
     proposed: Dict[str, str] = {}
     low_conf_required: List[str] = []
     missing_required: List[str] = []
-
     required_fields = ("sample_id", "sample_type", "result")
 
-    # Print a simple review table
-    if verbose:
+    # Print a rich mapping review table
+    if verbose and RICH_AVAILABLE:
+        table = Table(
+            title="Column Mapping Suggestions",
+            title_style="primary",
+            border_style="#334155",
+            box=box.SIMPLE_HEAD,
+            show_header=True,
+            header_style="heading",
+        )
+        table.add_column("Canonical Field", style="heading", min_width=16)
+        table.add_column("Mapped Header", min_width=20)
+        table.add_column("Confidence", justify="right", min_width=12)
+        table.add_column("Status", justify="center", min_width=10)
+
+        for canonical, (header, score) in suggestions.items():
+            is_required = canonical in required_fields
+            needs_review = is_required and (header is None or score < threshold)
+
+            header_str = str(header) if header else "[muted]--[/]"
+            conf_style = "pass_status" if score >= threshold else ("warn_status" if score >= 0.5 else "fail_status")
+            conf_str = f"[{conf_style}]{score:.0%}[/]"
+            status = "[fail_status]REVIEW[/]" if needs_review else ("[pass_status]OK[/]" if score >= threshold else "[muted]low[/]")
+
+            table.add_row(canonical, header_str, conf_str, status)
+
+        console.print(table)
+
+    elif verbose:
         print("Suggested column mapping (confidence):")
-        print("  canonical_field -> header (confidence)")
         for canonical, (header, score) in suggestions.items():
             tag = ""
             if canonical in required_fields and (header is None or score < threshold):
@@ -323,20 +408,19 @@ def _review_and_build_mapping(
             elif score < threshold:
                 low_conf_required.append(canonical)
 
-    # Enforce acceptance policy
     if (missing_required or low_conf_required) and not auto_accept:
-        print("\nMapping requires review:")
+        rprint("\n[warning]Mapping requires review:[/]")
         if missing_required:
-            print("  Missing required fields:", ", ".join(missing_required))
+            rprint(f"  [error]Missing required fields:[/] {', '.join(missing_required)}")
         if low_conf_required:
-            print("  Low-confidence required fields:", ", ".join(low_conf_required))
-        print("\nRe-run with either:")
-        print("  --mapping path/to/mapping.yaml   (to provide explicit mapping)")
-        print("  --infer-mapping --yes            (to auto-accept suggestions)")
+            rprint(f"  [warning]Low-confidence required fields:[/] {', '.join(low_conf_required)}")
+        rprint("\n[muted]Re-run with either:[/]")
+        rprint("  [primary]--mapping path/to/mapping.yaml[/]   (to provide explicit mapping)")
+        rprint("  [primary]--infer-mapping --yes[/]            (to auto-accept suggestions)")
         sys.exit(2)
 
     if verbose and auto_accept:
-        print("Auto-accepted inferred mapping:", proposed)
+        show_status("Auto-accepted inferred mapping", "PASS", f"{len(proposed)} fields mapped")
 
     return proposed
 
@@ -361,7 +445,7 @@ def _write_provenance(
 ) -> None:
     provenance = {
         "timestamp": _dt.datetime.now(_dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
-        "appVersion": "1.0.0",
+        "appVersion": "2.0.0",
         "python": platform.python_version(),
         "input": {
             "path": str(src),
@@ -393,7 +477,10 @@ def _write_provenance(
 
     prov_path = out_path.with_suffix(".provenance.json")
     if dry_run:
-        print(json.dumps(provenance, indent=2))
+        if RICH_AVAILABLE:
+            console.print_json(json.dumps(provenance))
+        else:
+            print(json.dumps(provenance, indent=2))
     else:
         with open(prov_path, "w", encoding="utf-8") as f:
             json.dump(provenance, f, indent=2)
@@ -406,60 +493,45 @@ def process_data(args) -> None:
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load configuration
     config = load_config(args.config)
     default_dl = None
     try:
-        default_dl = (
-            config.get("data", {})
-            .get("cleaning", {})
-            .get("default_detection_limit")
-        )
+        default_dl = config.get("data", {}).get("cleaning", {}).get("default_detection_limit")
     except Exception:
         default_dl = None
 
-    # Initialize components
     importer = DataImporter()
     crm_manager = CRMManager(args.crm_database) if args.crm_database else CRMManager()
-
-    # Initialize analyzers
     standards_analyzer = StandardsAnalyzer()
     blanks_analyzer = BlanksAnalyzer()
     duplicates_analyzer = DuplicatesAnalyzer()
     plot_generator = PlotGenerator()
-
-    # Initialize reporters
     excel_reporter = ExcelReporter()
     pdf_reporter = PDFReporter()
 
-    if verbose:
-        print("LogiQore Reporter v2.0.0")
-        print("=" * 50)
+    rprint(f"  [muted]Input:[/]  [heading]{input_path}[/]")
+    rprint(f"  [muted]Output:[/] [heading]{output_dir}[/]")
+    if args.dry_run:
+        rprint("  [warning]DRY RUN -- no files will be written[/]\n")
 
-    # Load and process data
-    if input_path.is_dir():
-        frames = importer.read_from_directory(
-            input_path,
-            csv_delimiter=args.csv_delimiter,
-            encoding=args.encoding,
-            sheet_name=(args.sheet if args.sheet is not None else (args.sheet_index if args.sheet_index is not None else 0)),
-            csv_chunksize=args.csv_chunksize,
-            detect_encoding_fallback=bool(args.detect_encoding_fallback),
-        )
+    # Load data
+    sheet = args.sheet if args.sheet is not None else (args.sheet_index if args.sheet_index is not None else 0)
+    read_kwargs = dict(
+        csv_delimiter=args.csv_delimiter,
+        encoding=args.encoding,
+        sheet_name=sheet,
+        csv_chunksize=args.csv_chunksize,
+        detect_encoding_fallback=bool(args.detect_encoding_fallback),
+    )
+
+    progress = create_progress()
+    if progress:
+        with progress:
+            task = progress.add_task("Loading data...", total=100)
+            frames = _load_frames(importer, input_path, read_kwargs)
+            progress.update(task, completed=100)
     else:
-        frames = [
-            type("_tmp", (), {
-                "dataframe": importer.read_table(
-                    input_path,
-                    csv_delimiter=args.csv_delimiter,
-                    encoding=args.encoding,
-                    sheet_name=(args.sheet if args.sheet is not None else (args.sheet_index if args.sheet_index is not None else 0)),
-                    csv_chunksize=args.csv_chunksize,
-                    detect_encoding_fallback=bool(args.detect_encoding_fallback),
-                ),
-                "source_path": input_path,
-            })()
-        ]
+        frames = _load_frames(importer, input_path, read_kwargs)
 
     # Process each file
     all_analysis_results = []
@@ -471,15 +543,11 @@ def process_data(args) -> None:
         df_before_cols = list(df.columns)
         df_before_rows = len(df)
 
-        if verbose:
-            print(f"\nProcessing: {src.name}")
-            print(f"  Rows: {df_before_rows}, Columns: {len(df_before_cols)}")
+        show_status(f"Processing {src.name}", "INFO", f"{df_before_rows:,} rows x {len(df_before_cols)} cols")
 
-        # Apply column mapping
         mapping_source = "none"
         mapping = _review_and_build_mapping(
-            importer,
-            df,
+            importer, df,
             infer=bool(args.infer_mapping),
             mapping_path=args.mapping,
             auto_accept=bool(args.yes),
@@ -497,82 +565,79 @@ def process_data(args) -> None:
                 try:
                     importer.save_mapping_yaml(mapping, args.save_mapping)
                     if verbose:
-                        print(f"  Saved mapping to {args.save_mapping}")
+                        show_status(f"Saved mapping to {args.save_mapping}", "INFO")
                 except Exception as e:
-                    print(f"  Warning: failed to save mapping: {e}")
+                    show_status(f"Failed to save mapping: {e}", "WARN")
 
-        # Validate required columns
         required = ("sample_id", "sample_type", "result")
         missing = importer.validate_required({k: k if k in df.columns else None for k in required})
         if missing:
-            print(f"Error: missing required columns after mapping: {missing}")
-            print("Available columns:", ", ".join(df.columns))
+            rprint(f"[error]Error:[/] missing required columns after mapping: {missing}")
+            rprint(f"[muted]Available columns:[/] {', '.join(df.columns)}")
             sys.exit(2)
 
-        # Normalize results if requested
         used_per_row_dl = False
         if args.normalize_results:
             used_per_row_dl = "detection_limit" in df.columns
             df = importer.normalize_results(
-                df,
-                result_col="result",
-                qualifier_col="qualifier",
-                dl_col="detection_limit",
-                default_dl=default_dl,
+                df, result_col="result", qualifier_col="qualifier",
+                dl_col="detection_limit", default_dl=default_dl,
             )
+            if verbose:
+                show_status("Normalized results", "PASS", "Qualifiers and DL processed")
 
-        # Perform QAQC analysis
+        rprint("  [muted]Running QAQC analysis...[/]")
         analysis_results = perform_qaqc_analysis(
-            df, crm_manager, standards_analyzer, blanks_analyzer, duplicates_analyzer,
-            args, verbose
+            df, crm_manager, standards_analyzer, blanks_analyzer,
+            duplicates_analyzer, args, verbose
         )
 
-        # Generate plots if requested
         if args.include_plots:
             plots = generate_plots(df, analysis_results, plot_generator, args, verbose)
             all_plots.update(plots)
 
-        # Store results
-        all_analysis_results.append({
-            'file': src.name,
-            'results': analysis_results,
-            'data': df
-        })
+        all_analysis_results.append({'file': src.name, 'results': analysis_results, 'data': df})
 
-        # Write cleaned CSV
         out_name = f"{src.stem}_clean.csv"
         out_path = output_dir / out_name
         if not args.dry_run:
             df.to_csv(out_path, index=False)
             if verbose:
-                print(f"  Wrote cleaned data: {out_path}")
+                show_status(f"Wrote cleaned data: {out_path}", "INFO")
 
-        # Write provenance
         _write_provenance(
-            out_path=out_path,
-            src=src,
-            df_before_cols=df_before_cols,
-            df_before_rows=df_before_rows,
-            df_after=df,
-            mapping_used=mapping,
-            mapping_source=mapping_source,
-            confidence_threshold=0.85,
-            normalize_enabled=bool(args.normalize_results),
-            default_dl=default_dl,
-            used_per_row_dl=used_per_row_dl,
-            csv_delimiter=args.csv_delimiter,
-            encoding=args.encoding,
-            sheet_name=(args.sheet if args.sheet is not None else (args.sheet_index if args.sheet_index is not None else 0)),
-            dry_run=bool(args.dry_run),
+            out_path=out_path, src=src,
+            df_before_cols=df_before_cols, df_before_rows=df_before_rows,
+            df_after=df, mapping_used=mapping, mapping_source=mapping_source,
+            confidence_threshold=0.85, normalize_enabled=bool(args.normalize_results),
+            default_dl=default_dl, used_per_row_dl=used_per_row_dl,
+            csv_delimiter=args.csv_delimiter, encoding=args.encoding,
+            sheet_name=sheet, dry_run=bool(args.dry_run),
         )
 
-    # Generate comprehensive reports
     if all_analysis_results and not args.dry_run:
         generate_reports(all_analysis_results, all_plots, excel_reporter, pdf_reporter,
                         output_dir, args, verbose)
 
-    if verbose:
-        print(f"\nAnalysis complete! Results saved to: {output_dir}")
+    if all_analysis_results:
+        combined = all_analysis_results[-1]['results']
+        show_summary_table(combined, output_dir)
+
+    rprint("[success]Analysis complete![/]")
+    rprint(f"[muted]Results saved to:[/] [heading]{output_dir}[/]\n")
+
+
+def _load_frames(importer, input_path, read_kwargs):
+    """Load data frames from file or directory."""
+    if input_path.is_dir():
+        return importer.read_from_directory(input_path, **read_kwargs)
+    else:
+        return [
+            type("_tmp", (), {
+                "dataframe": importer.read_table(input_path, **read_kwargs),
+                "source_path": input_path,
+            })()
+        ]
 
 
 def perform_qaqc_analysis(df, crm_manager, standards_analyzer, blanks_analyzer,
@@ -580,85 +645,78 @@ def perform_qaqc_analysis(df, crm_manager, standards_analyzer, blanks_analyzer,
     """Perform comprehensive QAQC analysis on the dataset."""
     analysis_results = {}
 
-    if verbose:
-        print("  Performing QAQC analysis...")
-
-    # Standards analysis
     if not args.skip_standards:
         standards_data = prepare_standards_data(df, crm_manager, args, verbose)
         if standards_data:
             analysis_results['standards'] = standards_analyzer.analyze_standards(standards_data)
-            if verbose:
-                status = "PASS" if analysis_results['standards']['overall_acceptable'] else "FAIL"
-                print(f"    Standards Analysis: {status}")
+            passed = analysis_results['standards']['overall_acceptable']
+            show_status("Standards Analysis", "PASS" if passed else "FAIL")
+        else:
+            show_status("Standards Analysis", "SKIP", "No standards data available")
+    else:
+        show_status("Standards Analysis", "SKIP", "Skipped by user")
 
-    # Blanks analysis
     if not args.skip_blanks:
         blanks_data = prepare_blanks_data(df, verbose)
         if blanks_data:
             analysis_results['blanks'] = blanks_analyzer.analyze_blanks(blanks_data)
-            if verbose:
-                status = "PASS" if analysis_results['blanks']['overall_acceptable'] else "FAIL"
-                print(f"    Blanks Analysis: {status}")
+            passed = analysis_results['blanks']['overall_acceptable']
+            show_status("Blanks Analysis", "PASS" if passed else "FAIL")
+        else:
+            show_status("Blanks Analysis", "SKIP", "No blanks data available")
+    else:
+        show_status("Blanks Analysis", "SKIP", "Skipped by user")
 
-    # Duplicates analysis
     if not args.skip_duplicates:
         duplicates_data = prepare_duplicates_data(df, verbose)
         if duplicates_data:
             analysis_results['duplicates'] = duplicates_analyzer.analyze_duplicates(duplicates_data)
-            if verbose:
-                status = "PASS" if analysis_results['duplicates']['overall_acceptable'] else "FAIL"
-                print(f"    Duplicates Analysis: {status}")
+            passed = analysis_results['duplicates']['overall_acceptable']
+            show_status("Duplicates Analysis", "PASS" if passed else "FAIL")
+        else:
+            show_status("Duplicates Analysis", "SKIP", "No duplicate pairs found")
+    else:
+        show_status("Duplicates Analysis", "SKIP", "Skipped by user")
 
-    # Add summary information
     analysis_results['total_samples'] = len(df)
     analysis_results['analysis_date'] = _dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
     return analysis_results
 
 
 def prepare_standards_data(df, crm_manager, args, verbose):
     """Prepare data for standards analysis."""
-    # Filter standards samples
     standards_df = df[df['sample_type'].str.upper() == 'STANDARD'].copy()
     if len(standards_df) == 0:
-        if verbose:
-            print("    No standards found in dataset")
         return None
 
-    # Ensure result column is numeric
     standards_df['result'] = pd.to_numeric(standards_df['result'], errors='coerce')
 
-    # Get CRM information
     crm_name = None
     if args.crm_name:
         crm_name = args.crm_name
     elif args.auto_crm:
-        # Auto-select CRM based on concentration
         mean_conc = standards_df['result'].mean()
         crm_name = select_appropriate_crm(crm_manager, mean_conc, verbose)
 
     if not crm_name:
         if verbose:
-            print("    No CRM specified for standards analysis")
+            show_status("No CRM specified for standards", "WARN")
         return None
 
-    # Validate CRM selection
     is_valid, message = crm_manager.validate_crm_selection(crm_name, standards_df['result'].mean())
     if not is_valid:
         if verbose:
-            print(f"    CRM validation failed: {message}")
+            show_status(f"CRM validation failed: {message}", "WARN")
         return None
 
-    # Get CRM data
     crm_info = crm_manager.get_crm_info(crm_name)
     if not crm_info:
         if verbose:
-            print(f"    CRM '{crm_name}' not found in database")
+            show_status(f"CRM '{crm_name}' not found in database", "FAIL")
         return None
 
     if verbose:
-        print(f"    Using CRM: {crm_name} ({crm_info['certified_value']} ± {crm_info['uncertainty']} g/t)")
+        show_status(f"Using CRM: {crm_name}", "INFO", f"{crm_info['certified_value']} +/- {crm_info['uncertainty']} g/t")
 
     return {
         'measured': standards_df['result'].tolist(),
@@ -669,20 +727,18 @@ def prepare_standards_data(df, crm_manager, args, verbose):
 
 def select_appropriate_crm(crm_manager, concentration, verbose):
     """Select appropriate CRM based on concentration."""
-    # Find CRMs within 50-200% of concentration
     min_conc = concentration * 0.5
     max_conc = concentration * 2.0
 
     suitable_crms = crm_manager.get_crms_by_concentration_range(min_conc, max_conc)
     if not suitable_crms:
         if verbose:
-            print(f"    No suitable CRMs found for concentration {concentration:.2f} g/t")
+            show_status(f"No suitable CRMs for concentration {concentration:.2f} g/t", "WARN")
         return None
 
-    # Select the CRM closest to the concentration
     best_crm = min(suitable_crms, key=lambda x: abs(x['certified_value'] - concentration))
     if verbose:
-        print(f"    Auto-selected CRM: {best_crm['name']} ({best_crm['certified_value']} g/t)")
+        show_status(f"Auto-selected CRM: {best_crm['name']}", "INFO", f"{best_crm['certified_value']} g/t")
 
     return best_crm['name']
 
@@ -691,32 +747,20 @@ def prepare_blanks_data(df, verbose):
     """Prepare data for blanks analysis."""
     blanks_df = df[df['sample_type'].str.upper() == 'BLANK'].copy()
     if len(blanks_df) == 0:
-        if verbose:
-            print("    No blanks found in dataset")
         return None
 
-    # Ensure result column is numeric
     blanks_df['result'] = pd.to_numeric(blanks_df['result'], errors='coerce')
-
-    # Get previous samples for carry-over analysis
     all_samples = df.sort_values('sample_id') if 'sample_id' in df.columns else df
     previous_samples = all_samples[all_samples.index < blanks_df.index.min()]['result'].tolist()
 
-    return {
-        'blanks': blanks_df['result'].tolist(),
-        'previous_samples': previous_samples
-    }
+    return {'blanks': blanks_df['result'].tolist(), 'previous_samples': previous_samples}
 
 
 def prepare_duplicates_data(df, verbose):
     """Prepare data for duplicates analysis."""
-    # Find duplicate pairs (same sample_id, different analysis)
     if 'sample_id' not in df.columns:
-        if verbose:
-            print("    No sample_id column for duplicates analysis")
         return None
 
-    # Ensure result column is numeric
     df = df.copy()
     df['result'] = pd.to_numeric(df['result'], errors='coerce')
 
@@ -728,108 +772,80 @@ def prepare_duplicates_data(df, verbose):
             duplicates.append(values)
 
     if not duplicates:
-        if verbose:
-            print("    No duplicate pairs found in dataset")
         return None
-
     return {'duplicates': duplicates}
 
 
 def generate_plots(df, analysis_results, plot_generator, args, verbose):
     """Generate visualization plots."""
     plots = {}
+    show_status("Generating plots...", "INFO")
 
-    if verbose:
-        print("  Generating plots...")
-
-    # Ensure result column is numeric for plotting
     df = df.copy()
     df['result'] = pd.to_numeric(df['result'], errors='coerce')
 
-    # Standards control chart
     if 'standards' in analysis_results:
         standards_df = df[df['sample_type'].str.upper() == 'STANDARD']
         if len(standards_df) > 0:
-            plot_data = plot_generator.create_control_chart(
-                standards_df['result'].tolist(),
-                title="Standards Control Chart"
+            plots['standards_control'] = plot_generator.create_control_chart(
+                standards_df['result'].tolist(), title="Standards Control Chart"
             )
-            plots['standards_control'] = plot_data
 
-    # Duplicates scatter plot
     if 'duplicates' in analysis_results:
         duplicates_data = prepare_duplicates_data(df, False)
         if duplicates_data and duplicates_data['duplicates']:
             x_data = [pair[0] for pair in duplicates_data['duplicates']]
             y_data = [pair[1] for pair in duplicates_data['duplicates']]
-            plot_data = plot_generator.create_scatter_plot(
+            plots['duplicates_scatter'] = plot_generator.create_scatter_plot(
                 x_data, y_data, "Duplicates Scatter Plot"
             )
-            plots['duplicates_scatter'] = plot_data
 
-    # Results histogram
     if len(df) > 0:
-        plot_data = plot_generator.create_histogram(
-            df['result'].tolist(),
-            title="Results Distribution"
+        plots['results_histogram'] = plot_generator.create_histogram(
+            df['result'].tolist(), title="Results Distribution"
         )
-        plots['results_histogram'] = plot_data
 
+    show_status(f"Generated {len(plots)} plots", "PASS")
     return plots
 
 
 def generate_reports(all_analysis_results, all_plots, excel_reporter, pdf_reporter,
                     output_dir, args, verbose):
     """Generate comprehensive reports."""
-    if verbose:
-        print("\nGenerating reports...")
+    rprint("\n  [muted]Generating reports...[/]")
 
-    # Combine all analysis results
     combined_results = {
-        'standards': {},
-        'blanks': {},
-        'duplicates': {},
+        'standards': {}, 'blanks': {}, 'duplicates': {},
         'total_samples': 0,
         'analysis_date': _dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
 
-    # Aggregate results from all files
     for file_result in all_analysis_results:
         results = file_result['results']
         combined_results['total_samples'] += results.get('total_samples', 0)
-
-        # Merge analysis results (take the last one for now)
         for analysis_type in ['standards', 'blanks', 'duplicates']:
             if analysis_type in results:
                 combined_results[analysis_type] = results[analysis_type]
 
-    # Generate Excel report
     if args.output_format in ['excel', 'both']:
         excel_filename = output_dir / f"qaqc_report_{_dt.datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         excel_reporter.generate_excel_report(combined_results, filename=str(excel_filename))
-        if verbose:
-            print(f"  Excel report: {excel_filename}")
+        show_status(f"Excel report: {excel_filename.name}", "PASS")
 
-    # Generate PDF report
     if args.output_format in ['pdf', 'both']:
         pdf_filename = output_dir / f"qaqc_report_{_dt.datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         pdf_reporter.generate_pdf_report(combined_results, all_plots, filename=str(pdf_filename))
-        if verbose:
-            print(f"  PDF report: {pdf_filename}")
+        show_status(f"PDF report: {pdf_filename.name}", "PASS")
 
-    # Save plots
     if all_plots and args.include_plots:
         from src.visualization import PlotGenerator
-        plot_generator = PlotGenerator()
-
+        pg = PlotGenerator()
         plots_dir = output_dir / "plots"
         plots_dir.mkdir(exist_ok=True)
-
         for plot_name, plot_data in all_plots.items():
             plot_filename = plots_dir / f"{plot_name}.{args.plot_format}"
-            plot_generator.save_plot(plot_data, str(plot_filename), args.plot_format)
-            if verbose:
-                print(f"  Plot: {plot_filename}")
+            pg.save_plot(plot_data, str(plot_filename), args.plot_format)
+        show_status(f"Saved {len(all_plots)} plots to plots/", "PASS")
 
 
 if __name__ == "__main__":

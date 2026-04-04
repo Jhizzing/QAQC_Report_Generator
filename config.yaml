@@ -93,13 +93,13 @@ visualization:
   dpi: 300
   style: "seaborn-v0_8"
 
-  # Color schemes
+  # Color schemes (LogiQore theme — dark slate + amber gold)
   colors:
-    pass: "#2E8B57"      # Sea Green
-    warning: "#FFD700"   # Gold
-    fail: "#DC143C"      # Crimson
-    primary: "#1f77b4"   # Blue
-    secondary: "#ff7f0e" # Orange
+    pass: "#10B981"      # Emerald-500
+    warning: "#F59E0B"   # Amber-500
+    fail: "#EF4444"      # Red-500
+    primary: "#F59E0B"   # Amber Gold
+    secondary: "#0EA5E9" # Sky Blue
 
   # Control chart settings
   control_charts:

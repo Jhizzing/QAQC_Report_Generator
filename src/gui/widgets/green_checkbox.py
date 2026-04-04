@@ -1,8 +1,8 @@
 """
-Custom Green Checkbox Widget
+Custom Themed Checkbox Widget
 
-A custom checkbox widget that displays a green background with a white checkmark
-when checked, designed for the QAQC Analysis Application.
+A custom checkbox widget that displays an amber gold background with a dark checkmark
+when checked, matching the LogiQore theme for the QAQC Analysis Application.
 """
 
 from PyQt6.QtWidgets import QCheckBox, QStyleOptionButton, QStyle
@@ -45,9 +45,9 @@ class GreenCheckBox(QCheckBox):
 
         # Draw checkbox background
         if self.isChecked():
-            # Green background when checked
-            painter.setBrush(QColor(self.theme.get_color('success')))
-            painter.setPen(QColor(self.theme.get_color('success')))
+            # Amber gold background when checked (matches LogiQore theme)
+            painter.setBrush(QColor(self.theme.get_color('primary')))
+            painter.setPen(QColor(self.theme.get_color('primary')))
         else:
             # White background when unchecked
             painter.setBrush(QColor(self.theme.get_color('surface')))
@@ -60,8 +60,8 @@ class GreenCheckBox(QCheckBox):
 
         # Draw checkmark if checked
         if self.isChecked():
-            # Draw white checkmark (✓) - bold and clearly visible
-            pen = QPen(QColor("#FFFFFF"))  # Pure white color
+            # Draw dark checkmark (✓) on amber background - bold and clearly visible
+            pen = QPen(QColor("#0F172A"))  # Dark slate for contrast on gold
             pen.setWidth(3)  # Thicker line for better visibility
             pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)

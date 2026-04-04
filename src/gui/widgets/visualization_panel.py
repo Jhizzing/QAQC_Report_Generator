@@ -49,13 +49,13 @@ class PlotCanvas(FigureCanvas):
 
         # Custom colors for geological theme
         self.colors = {
-            'primary': '#2E5266',
-            'secondary': '#4A7C59',
-            'accent': '#8B4513',
-            'success': '#27AE60',
-            'warning': '#F39C12',
-            'error': '#E74C3C',
-            'info': '#3498DB'
+            'primary': '#F59E0B',
+            'secondary': '#0EA5E9',
+            'accent': '#334155',
+            'success': '#10B981',
+            'warning': '#F59E0B',
+            'error': '#EF4444',
+            'info': '#3B82F6'
         }
 
         # Set default colors
@@ -135,13 +135,13 @@ class VisualizationPanel(QWidget):
         self.generate_button.setMinimumHeight(35)
         self.generate_button.setStyleSheet("""
             QPushButton {
-                background-color: #2E5266;
-                color: white;
+                background-color: #F59E0B;
+                color: #0F172A;
                 font-weight: bold;
                 border-radius: 6px;
             }
             QPushButton:hover {
-                background-color: #4A7C59;
+                background-color: #FBBF24;
             }
         """)
         controls_layout.addWidget(self.generate_button)
@@ -152,16 +152,16 @@ class VisualizationPanel(QWidget):
         self.export_button.setEnabled(False)
         self.export_button.setStyleSheet("""
             QPushButton {
-                background-color: #8B4513;
-                color: white;
+                background-color: #334155;
+                color: #F1F5F9;
                 font-weight: bold;
                 border-radius: 6px;
             }
             QPushButton:hover {
-                background-color: #A0522D;
+                background-color: #475569;
             }
             QPushButton:disabled {
-                background-color: #ADB5BD;
+                background-color: #475569;
             }
         """)
         controls_layout.addWidget(self.export_button)
@@ -209,11 +209,11 @@ class VisualizationPanel(QWidget):
         self.plot_info_label.setWordWrap(True)
         self.plot_info_label.setStyleSheet("""
             QLabel {
-                color: #6C757D;
+                color: #94A3B8;
                 font-style: italic;
                 padding: 8px;
-                background-color: #F8F9FA;
-                border: 1px solid #DEE2E6;
+                background-color: #334155;
+                border: 1px solid #334155;
                 border-radius: 4px;
             }
         """)
@@ -240,13 +240,13 @@ class VisualizationPanel(QWidget):
         msg.setIcon(QMessageBox.Icon.Warning)
         msg.setStyleSheet("""
             QMessageBox {
-                background-color: #FFFFFF;
-                color: #1A1A1A;
+                background-color: #1E293B;
+                color: #F1F5F9;
             }
             QMessageBox QPushButton {
-                background-color: #2E5266;
-                color: #FFFFFF;
-                border: 2px solid #2E5266;
+                background-color: #F59E0B;
+                color: #0F172A;
+                border: 2px solid #F59E0B;
                 border-radius: 4px;
                 padding: 8px 16px;
                 font-weight: bold;
@@ -255,14 +255,14 @@ class VisualizationPanel(QWidget):
                 min-height: 30px;
             }
             QMessageBox QPushButton:hover {
-                background-color: #4A7C59;
-                border-color: #4A7C59;
-                color: #FFFFFF;
+                background-color: #FBBF24;
+                border-color: #FBBF24;
+                color: #0F172A;
             }
             QMessageBox QPushButton:pressed {
-                background-color: #1A3A4A;
-                border-color: #1A3A4A;
-                color: #FFFFFF;
+                background-color: #D97706;
+                border-color: #D97706;
+                color: #0F172A;
             }
         """)
         return msg.exec()
@@ -306,11 +306,11 @@ class VisualizationPanel(QWidget):
                 self.plot_info_label.setText(summary)
                 self.plot_info_label.setStyleSheet("""
                     QLabel {
-                        color: #1A1A1A;
+                        color: #F1F5F9;
                         font-weight: bold;
                         padding: 8px;
-                        background-color: #E7F5EE;
-                        border: 1px solid #B6E0C2;
+                        background-color: #022C22;
+                        border: 1px solid #064E3B;
                         border-radius: 4px;
                     }
                 """)
@@ -318,11 +318,11 @@ class VisualizationPanel(QWidget):
                 self.plot_info_label.setText(f"Generated: {plot_type}")
                 self.plot_info_label.setStyleSheet("""
                     QLabel {
-                        color: #27AE60;
+                        color: #10B981;
                         font-weight: bold;
                         padding: 8px;
-                        background-color: #F8F9FA;
-                        border: 1px solid #DEE2E6;
+                        background-color: #334155;
+                        border: 1px solid #334155;
                         border-radius: 4px;
                     }
                 """)
@@ -334,11 +334,11 @@ class VisualizationPanel(QWidget):
             self.plot_info_label.setText(f"Error: {str(e)}")
             self.plot_info_label.setStyleSheet("""
                 QLabel {
-                    color: #E74C3C;
+                    color: #EF4444;
                     font-weight: bold;
                     padding: 8px;
-                    background-color: #F8F9FA;
-                    border: 1px solid #DEE2E6;
+                    background-color: #334155;
+                    border: 1px solid #334155;
                     border-radius: 4px;
                 }
             """)
@@ -875,11 +875,11 @@ class VisualizationPanel(QWidget):
                 self.plot_info_label.setText(summary)
                 self.plot_info_label.setStyleSheet("""
                     QLabel {
-                        color: #1A1A1A;
+                        color: #F1F5F9;
                         font-weight: bold;
                         padding: 8px;
-                        background-color: #E7F5EE;
-                        border: 1px solid #B6E0C2;
+                        background-color: #022C22;
+                        border: 1px solid #064E3B;
                         border-radius: 4px;
                     }
                 """)
@@ -900,11 +900,11 @@ class VisualizationPanel(QWidget):
         self.plot_info_label.setText("No plot generated")
         self.plot_info_label.setStyleSheet("""
             QLabel {
-                color: #6C757D;
+                color: #94A3B8;
                 font-style: italic;
                 padding: 8px;
-                background-color: #F8F9FA;
-                border: 1px solid #DEE2E6;
+                background-color: #334155;
+                border: 1px solid #334155;
                 border-radius: 4px;
             }
         """)

@@ -1,570 +1,575 @@
 """
 Visualization utilities for QAQC application.
+
+Produces publication-quality plots styled with the LogiQore dark-on-white
+report theme. Every chart is designed to be pasted directly into a
+JORC-compliant QAQC report at 300 DPI.
 """
+
+import numpy as np
+
+# ── LogiQore Report Colour Palette ──────────────────────────────────────────
+_COLORS = {
+    'primary':    '#D97706',   # Amber-600  – data points, main series
+    'accent':     '#0369A1',   # Sky-700    – secondary series
+    'success':    '#059669',   # Emerald-600
+    'danger':     '#DC2626',   # Red-600
+    'warning':    '#D97706',   # Amber-600
+    'info':       '#2563EB',   # Blue-600
+    'muted':      '#64748B',   # Slate-500
+    'grid':       '#E2E8F0',   # Slate-200
+    'bg':         '#FFFFFF',   # White
+    'text':       '#1E293B',   # Slate-800
+    'text_light': '#64748B',   # Slate-500
+    'sigma2':     '#F59E0B',   # Amber-500   ±2σ warning
+    'sigma3':     '#EF4444',   # Red-500     ±3σ action
+    'fill_pass':  '#D1FAE5',   # Emerald-100
+    'fill_warn':  '#FEF3C7',   # Amber-100
+    'fill_fail':  '#FEE2E2',   # Red-100
+}
+
+# Shared rcParams applied once per figure
+_RC = {
+    'font.family':      'sans-serif',
+    'font.sans-serif':  ['Inter', 'Helvetica Neue', 'Arial', 'sans-serif'],
+    'font.size':        10,
+    'axes.titlesize':   13,
+    'axes.titleweight': 'bold',
+    'axes.labelsize':   11,
+    'axes.labelweight': 'medium',
+    'axes.linewidth':   0.8,
+    'axes.edgecolor':   _COLORS['muted'],
+    'axes.facecolor':   _COLORS['bg'],
+    'figure.facecolor': _COLORS['bg'],
+    'figure.dpi':       300,
+    'xtick.labelsize':  9,
+    'ytick.labelsize':  9,
+    'xtick.color':      _COLORS['text'],
+    'ytick.color':      _COLORS['text'],
+    'legend.fontsize':  9,
+    'legend.framealpha': 0.9,
+    'legend.edgecolor': _COLORS['grid'],
+    'grid.color':       _COLORS['grid'],
+    'grid.linewidth':   0.6,
+    'grid.alpha':       0.7,
+    'savefig.dpi':      300,
+    'savefig.bbox':     'tight',
+    'savefig.pad_inches': 0.15,
+}
+
+
+def _apply_style(fig, ax):
+    """Apply consistent report styling to an axes object."""
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_color(_COLORS['muted'])
+    ax.spines['bottom'].set_color(_COLORS['muted'])
+    ax.tick_params(axis='both', which='both', length=4, width=0.8,
+                   colors=_COLORS['text'])
+    ax.grid(True, which='major', axis='both', linewidth=0.5,
+            color=_COLORS['grid'], alpha=0.7)
+    ax.set_axisbelow(True)
+    fig.tight_layout()
+
+
+def _stat_box(ax, text, loc='upper left'):
+    """Add a small statistics text-box."""
+    props = dict(boxstyle='round,pad=0.4', facecolor='#F8FAFC',
+                 edgecolor=_COLORS['grid'], alpha=0.95)
+    xy = {'upper left': (0.03, 0.97), 'upper right': (0.97, 0.97),
+          'lower right': (0.97, 0.03)}
+    x, y = xy.get(loc, (0.03, 0.97))
+    ha = 'right' if 'right' in loc else 'left'
+    va = 'bottom' if 'lower' in loc else 'top'
+    ax.text(x, y, text, transform=ax.transAxes, fontsize=8.5,
+            verticalalignment=va, horizontalalignment=ha, bbox=props,
+            color=_COLORS['text'], family='monospace')
+
 
 class PlotGenerator:
     """
-    Generates plots for QAQC analysis.
+    Generates publication-quality QAQC plots.
 
     Key plot types:
-    - Control charts (Shewhart, CUSUM)
+    - Control charts (Shewhart with ±2σ/±3σ, CUSUM)
     - Scatter plots for duplicates
     - Histograms for distributions
-    - Time series plots
+    - Bland-Altman bias plots
+    - RPD scatter with hyperbolic envelope
     """
 
     def __init__(self, config: dict = None) -> None:
-        """
-        Initialize with plotting configuration.
-
-        Args:
-            config: Dictionary with plot settings
-        """
         self.config = config or {}
-        self.figure_size = self.config.get('figure_size', (10, 6))
-        self.dpi = self.config.get('dpi', 100)
+        self.figure_size = self.config.get('figure_size', (8, 5))
+        self.dpi = self.config.get('dpi', 300)
         self.style = self.config.get('style', 'seaborn-v0_8')
 
-    def create_control_chart(self, data: list, limits: dict = None, title: str = "Control Chart") -> dict:
-        """
-        Create a Shewhart control chart.
+    # ── Control Chart ───────────────────────────────────────────────────────
 
-        Args:
-            data: List of measured values
-            limits: Dictionary with 'ucl', 'lcl', 'center' keys
-            title: Chart title
-
-        Returns:
-            Dictionary with plot data and metadata
+    def create_control_chart(self, data: list, limits: dict = None,
+                             title: str = "Control Chart") -> dict:
         """
+        Shewhart control chart with ±2σ (warning) and ±3σ (action) limits.
+        """
+        import matplotlib
+        matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        import numpy as np
 
-        # Set up the plot
-        fig, ax = plt.subplots(figsize=self.figure_size, dpi=self.dpi)
+        with plt.rc_context(_RC):
+            fig, ax = plt.subplots(figsize=self.figure_size, dpi=self.dpi)
 
-        # Plot data points
-        x_values = list(range(1, len(data) + 1))
-        ax.plot(x_values, data, 'bo-', markersize=6, linewidth=2, label='Measurements')
+            data_arr = np.array(data, dtype=float)
+            n = len(data_arr)
+            x = np.arange(1, n + 1)
 
-        # Add control limits if provided
-        if limits:
-            center = limits.get('center', np.mean(data))
-            ucl = limits.get('ucl', center + 3 * np.std(data))
-            lcl = limits.get('lcl', center - 3 * np.std(data))
+            # Derive limits
+            center = limits.get('center', np.mean(data_arr)) if limits else np.mean(data_arr)
+            sigma = np.std(data_arr, ddof=1) if n > 1 else np.std(data_arr)
 
-            ax.axhline(y=center, color='g', linestyle='-', linewidth=2, label='Center Line')
-            ax.axhline(y=ucl, color='r', linestyle='--', linewidth=2, label='Upper Control Limit')
-            ax.axhline(y=lcl, color='r', linestyle='--', linewidth=2, label='Lower Control Limit')
+            ucl_2 = center + 2 * sigma
+            lcl_2 = center - 2 * sigma
+            ucl_3 = center + 3 * sigma
+            lcl_3 = center - 3 * sigma
 
-            # Highlight out-of-control points
-            out_of_control = [i for i, val in enumerate(data) if val > ucl or val < lcl]
-            if out_of_control:
-                ax.scatter([i+1 for i in out_of_control], [data[i] for i in out_of_control],
-                          color='red', s=100, zorder=5, label='Out of Control')
+            if limits:
+                ucl_3 = limits.get('ucl', ucl_3)
+                lcl_3 = limits.get('lcl', lcl_3)
 
-        # Formatting
-        ax.set_xlabel('Sample Number')
-        ax.set_ylabel('Value')
-        ax.set_title(title)
-        ax.legend()
-        ax.grid(True, alpha=0.3)
+            # Shaded bands
+            ax.fill_between(x, lcl_3, lcl_2, color=_COLORS['fill_fail'], alpha=0.5, zorder=0)
+            ax.fill_between(x, ucl_2, ucl_3, color=_COLORS['fill_fail'], alpha=0.5, zorder=0)
+            ax.fill_between(x, lcl_2, ucl_2, color=_COLORS['fill_warn'], alpha=0.35, zorder=0)
+            inner_hi = min(ucl_2, center + 1 * sigma)
+            inner_lo = max(lcl_2, center - 1 * sigma)
+            ax.fill_between(x, inner_lo, inner_hi, color=_COLORS['fill_pass'], alpha=0.4, zorder=0)
 
-        return {
-            'figure': fig,
-            'axes': ax,
-            'data': data,
-            'limits': limits
-        }
+            # Limit lines
+            ax.axhline(center, color=_COLORS['success'], ls='-', lw=1.8,
+                       label=f'Certified Value ({center:.3f})', zorder=2)
+            ax.axhline(ucl_2, color=_COLORS['sigma2'], ls='--', lw=1.2,
+                       label=f'+2σ ({ucl_2:.3f})', zorder=2)
+            ax.axhline(lcl_2, color=_COLORS['sigma2'], ls='--', lw=1.2,
+                       label=f'−2σ ({lcl_2:.3f})', zorder=2)
+            ax.axhline(ucl_3, color=_COLORS['sigma3'], ls='-.', lw=1.4,
+                       label=f'+3σ ({ucl_3:.3f})', zorder=2)
+            ax.axhline(lcl_3, color=_COLORS['sigma3'], ls='-.', lw=1.4,
+                       label=f'−3σ ({lcl_3:.3f})', zorder=2)
 
-    def create_scatter_plot(self, x_data: list, y_data: list, title: str = "Scatter Plot") -> dict:
-        """
-        Create a scatter plot for duplicate analysis.
+            # Classify points
+            ok_mask = (data_arr >= lcl_2) & (data_arr <= ucl_2)
+            warn_mask = ((data_arr < lcl_2) | (data_arr > ucl_2)) & \
+                        (data_arr >= lcl_3) & (data_arr <= ucl_3)
+            fail_mask = (data_arr < lcl_3) | (data_arr > ucl_3)
 
-        Args:
-            x_data: X-axis data
-            y_data: Y-axis data
-            title: Chart title
+            # Connecting line
+            ax.plot(x, data_arr, color=_COLORS['muted'], lw=1.0, zorder=3, alpha=0.6)
 
-        Returns:
-            Dictionary with plot data and metadata
-        """
+            # Data points
+            ax.scatter(x[ok_mask], data_arr[ok_mask], s=48, color=_COLORS['success'],
+                       edgecolors='white', linewidths=0.8, zorder=4, label=f'Pass ({ok_mask.sum()})')
+            if warn_mask.any():
+                ax.scatter(x[warn_mask], data_arr[warn_mask], s=64, color=_COLORS['sigma2'],
+                           edgecolors='white', linewidths=0.8, zorder=5, marker='D',
+                           label=f'Warning ({warn_mask.sum()})')
+            if fail_mask.any():
+                ax.scatter(x[fail_mask], data_arr[fail_mask], s=80, color=_COLORS['sigma3'],
+                           edgecolors='white', linewidths=0.8, zorder=5, marker='X',
+                           label=f'Fail ({fail_mask.sum()})')
+
+            ax.set_xlabel('Sample Number')
+            ax.set_ylabel('Measured Value')
+            ax.set_title(title, pad=12)
+            ax.set_xlim(0.5, n + 0.5)
+            ax.legend(loc='upper right', fontsize=8, ncol=2, framealpha=0.9)
+
+            # Stats box
+            rsd = (sigma / center * 100) if center != 0 else 0
+            _stat_box(ax, (f'n = {n}\n'
+                           f'Mean = {np.mean(data_arr):.4f}\n'
+                           f'SD = {sigma:.4f}\n'
+                           f'RSD = {rsd:.1f}%'))
+
+            _apply_style(fig, ax)
+
+        return {'figure': fig, 'axes': ax, 'data': data, 'limits': limits}
+
+    # ── Scatter Plot (Duplicates) ───────────────────────────────────────────
+
+    def create_scatter_plot(self, x_data: list, y_data: list,
+                            title: str = "Scatter Plot") -> dict:
+        """Duplicates scatter plot with 1:1 line and ±10%/±20% tolerance bands."""
+        import matplotlib
+        matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        import numpy as np
 
-        # Set up the plot
-        fig, ax = plt.subplots(figsize=self.figure_size, dpi=self.dpi)
+        with plt.rc_context(_RC):
+            fig, ax = plt.subplots(figsize=self.figure_size, dpi=self.dpi)
 
-        # Create scatter plot
-        ax.scatter(x_data, y_data, alpha=0.7, s=50, color='blue')
+            x_arr = np.array(x_data, dtype=float)
+            y_arr = np.array(y_data, dtype=float)
 
-        # Add 1:1 line
-        min_val = min(min(x_data), min(y_data))
-        max_val = max(max(x_data), max(y_data))
-        ax.plot([min_val, max_val], [min_val, max_val], 'r--', linewidth=2, label='1:1 Line')
+            pad = 0.08
+            lo = min(x_arr.min(), y_arr.min())
+            hi = max(x_arr.max(), y_arr.max())
+            span = hi - lo if hi != lo else 1.0
+            lo -= span * pad
+            hi += span * pad
+            diag = np.array([lo, hi])
 
-        # Calculate and display R²
-        correlation = np.corrcoef(x_data, y_data)[0, 1]
-        r_squared = correlation ** 2
+            # Tolerance bands
+            ax.fill_between(diag, diag * 0.8, diag * 1.2, color=_COLORS['fill_warn'],
+                            alpha=0.35, label='±20% RPD zone', zorder=0)
+            ax.fill_between(diag, diag * 0.9, diag * 1.1, color=_COLORS['fill_pass'],
+                            alpha=0.45, label='±10% RPD zone', zorder=0)
 
-        ax.text(0.05, 0.95, f'R² = {r_squared:.3f}', transform=ax.transAxes,
-                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+            # 1:1 line
+            ax.plot(diag, diag, color=_COLORS['text'], ls='-', lw=1.2,
+                    label='1:1 Line', zorder=2)
 
-        # Formatting
-        ax.set_xlabel('First Measurement')
-        ax.set_ylabel('Second Measurement')
-        ax.set_title(title)
-        ax.legend()
-        ax.grid(True, alpha=0.3)
+            # Data points
+            ax.scatter(x_arr, y_arr, s=52, color=_COLORS['primary'],
+                       edgecolors='white', linewidths=0.8, zorder=4, alpha=0.85)
 
-        return {
-            'figure': fig,
-            'axes': ax,
-            'x_data': x_data,
-            'y_data': y_data,
-            'r_squared': r_squared
-        }
+            # R²
+            corr = np.corrcoef(x_arr, y_arr)[0, 1]
+            r_sq = corr ** 2
 
-    def create_histogram(self, data: list, bins: int = 20, title: str = "Histogram") -> dict:
-        """
-        Create a histogram for distribution analysis.
+            ax.set_xlabel('Original Analysis')
+            ax.set_ylabel('Duplicate Analysis')
+            ax.set_title(title, pad=12)
+            ax.set_xlim(lo, hi)
+            ax.set_ylim(lo, hi)
+            ax.set_aspect('equal', adjustable='box')
+            ax.legend(loc='lower right', fontsize=8, framealpha=0.9)
 
-        Args:
-            data: List of values
-            bins: Number of bins
-            title: Chart title
+            # Calculate mean RPD
+            means = (x_arr + y_arr) / 2.0
+            rpd_vals = np.where(means > 0,
+                                np.abs(x_arr - y_arr) / means * 100, 0)
 
-        Returns:
-            Dictionary with plot data and metadata
-        """
+            _stat_box(ax, (f'n = {len(x_arr)} pairs\n'
+                           f'R² = {r_sq:.4f}\n'
+                           f'Mean RPD = {rpd_vals.mean():.1f}%'))
+
+            _apply_style(fig, ax)
+
+        return {'figure': fig, 'axes': ax, 'x_data': x_data,
+                'y_data': y_data, 'r_squared': r_sq}
+
+    # ── Histogram ───────────────────────────────────────────────────────────
+
+    def create_histogram(self, data: list, bins: int = 25,
+                         title: str = "Histogram") -> dict:
+        """Distribution histogram with mean, median, and ±1σ overlays."""
+        import matplotlib
+        matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        import numpy as np
 
-        # Set up the plot
-        fig, ax = plt.subplots(figsize=self.figure_size, dpi=self.dpi)
+        with plt.rc_context(_RC):
+            fig, ax = plt.subplots(figsize=self.figure_size, dpi=self.dpi)
 
-        # Create histogram
-        n, bins_edges, patches = ax.hist(data, bins=bins, alpha=0.7, color='skyblue', edgecolor='black')
+            data_arr = np.array(data, dtype=float)
+            mean_v = np.mean(data_arr)
+            median_v = np.median(data_arr)
+            std_v = np.std(data_arr, ddof=1)
+            p95 = np.percentile(data_arr, 95)
 
-        # Add statistics
-        mean_val = np.mean(data)
-        std_val = np.std(data)
+            n, edges, patches = ax.hist(
+                data_arr, bins=bins, color=_COLORS['primary'], alpha=0.75,
+                edgecolor='white', linewidth=0.6, zorder=3,
+            )
 
-        ax.axvline(mean_val, color='red', linestyle='-', linewidth=2, label=f'Mean: {mean_val:.2f}')
-        ax.axvline(mean_val + std_val, color='orange', linestyle='--', linewidth=2, label=f'+1σ: {mean_val + std_val:.2f}')
-        ax.axvline(mean_val - std_val, color='orange', linestyle='--', linewidth=2, label=f'-1σ: {mean_val - std_val:.2f}')
+            ax.axvline(mean_v, color=_COLORS['danger'], ls='-', lw=1.6,
+                       label=f'Mean: {mean_v:.3f}', zorder=4)
+            ax.axvline(median_v, color=_COLORS['accent'], ls='--', lw=1.4,
+                       label=f'Median: {median_v:.3f}', zorder=4)
+            ax.axvline(mean_v + std_v, color=_COLORS['muted'], ls=':', lw=1.2,
+                       label=f'+1σ: {mean_v + std_v:.3f}', zorder=4)
+            ax.axvline(mean_v - std_v, color=_COLORS['muted'], ls=':', lw=1.2,
+                       label=f'−1σ: {max(0, mean_v - std_v):.3f}', zorder=4)
+            ax.axvline(p95, color=_COLORS['sigma2'], ls='-.', lw=1.2,
+                       label=f'P95: {p95:.3f}', zorder=4)
 
-        # Formatting
-        ax.set_xlabel('Value')
-        ax.set_ylabel('Frequency')
-        ax.set_title(title)
-        ax.legend()
-        ax.grid(True, alpha=0.3)
+            ax.set_xlabel('Concentration')
+            ax.set_ylabel('Frequency')
+            ax.set_title(title, pad=12)
+            ax.legend(loc='upper right', fontsize=8, framealpha=0.9)
 
-        return {
-            'figure': fig,
-            'axes': ax,
-            'data': data,
-            'mean': mean_val,
-            'std': std_val,
-            'bins': bins_edges
-        }
+            _stat_box(ax, (f'n = {len(data_arr)}\n'
+                           f'Mean = {mean_v:.4f}\n'
+                           f'SD = {std_v:.4f}\n'
+                           f'CV = {std_v / mean_v * 100:.1f}%' if mean_v else ''))
 
-    def create_time_series(self, data: list, timestamps: list = None, title: str = "Time Series") -> dict:
-        """
-        Create a time series plot.
+            _apply_style(fig, ax)
 
-        Args:
-            data: List of values
-            timestamps: List of timestamps (optional)
-            title: Chart title
+        return {'figure': fig, 'axes': ax, 'data': data,
+                'mean': mean_v, 'std': std_v, 'bins': edges}
 
-        Returns:
-            Dictionary with plot data and metadata
-        """
+    # ── Time Series ─────────────────────────────────────────────────────────
+
+    def create_time_series(self, data: list, timestamps: list = None,
+                           title: str = "Time Series") -> dict:
+        """Time-series line plot."""
+        import matplotlib
+        matplotlib.use('Agg')
         import matplotlib.pyplot as plt
         import matplotlib.dates as mdates
         from datetime import datetime, timedelta
 
-        # Set up the plot
-        fig, ax = plt.subplots(figsize=self.figure_size, dpi=self.dpi)
+        with plt.rc_context(_RC):
+            fig, ax = plt.subplots(figsize=self.figure_size, dpi=self.dpi)
 
-        # Generate timestamps if not provided
-        if timestamps is None:
-            timestamps = [datetime.now() + timedelta(hours=i) for i in range(len(data))]
+            if timestamps is None:
+                timestamps = [datetime.now() + timedelta(hours=i)
+                              for i in range(len(data))]
 
-        # Create time series plot
-        ax.plot(timestamps, data, 'bo-', markersize=6, linewidth=2)
+            ax.plot(timestamps, data, color=_COLORS['primary'], lw=1.4,
+                    marker='o', markersize=4, markerfacecolor=_COLORS['primary'],
+                    markeredgecolor='white', markeredgewidth=0.6)
 
-        # Format x-axis for dates
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M'))
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
-        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M'))
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
 
-        # Formatting
-        ax.set_xlabel('Time')
-        ax.set_ylabel('Value')
-        ax.set_title(title)
-        ax.grid(True, alpha=0.3)
+            ax.set_xlabel('Time')
+            ax.set_ylabel('Value')
+            ax.set_title(title, pad=12)
 
-        return {
-            'figure': fig,
-            'axes': ax,
-            'data': data,
-            'timestamps': timestamps
-        }
+            _apply_style(fig, ax)
 
-    def create_rpd_scatter(self, original: list, duplicate: list, 
-                            rpd_limit: float = 20.0, absolute_precision: float = 0.01,
-                            title: str = "RPD vs Grade") -> dict:
-        """
-        Create an RPD scatter plot with hyperbolic precision envelope.
-        
-        Industry-standard plot for duplicate precision assessment. Shows that
-        acceptable RPD varies with grade - lower grades naturally have higher
-        RPD tolerance due to the relationship between absolute and relative error.
-        
-        The hyperbolic envelope is calculated as:
-        RPD_limit = 100 * sqrt(2) * (absolute_precision / grade)
-        
-        Where absolute_precision is the detection limit or analytical precision.
+        return {'figure': fig, 'axes': ax, 'data': data,
+                'timestamps': timestamps}
 
-        Args:
-            original: List of original measurement values
-            duplicate: List of duplicate measurement values
-            rpd_limit: Fixed RPD limit (%) for higher grades (default 20%)
-            absolute_precision: Absolute precision/detection limit (default 0.01)
-            title: Chart title
+    # ── RPD Scatter (Hyperbolic Envelope) ───────────────────────────────────
 
-        Returns:
-            Dictionary with plot data and metadata including pass/fail counts
-        """
+    def create_rpd_scatter(self, original: list, duplicate: list,
+                           rpd_limit: float = 20.0,
+                           absolute_precision: float = 0.01,
+                           title: str = "RPD vs Grade") -> dict:
+        """RPD scatter with hyperbolic precision envelope."""
+        import matplotlib
+        matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        import numpy as np
 
         if len(original) != len(duplicate):
             raise ValueError("Original and duplicate lists must have same length")
 
-        original = np.array(original)
-        duplicate = np.array(duplicate)
+        with plt.rc_context(_RC):
+            fig, ax = plt.subplots(figsize=self.figure_size, dpi=self.dpi)
 
-        # Calculate grade (mean of pair) and RPD
-        grades = (original + duplicate) / 2
-        
-        # Avoid division by zero
-        rpd_values = np.zeros_like(grades)
-        nonzero_mask = grades > 0
-        rpd_values[nonzero_mask] = (
-            np.abs(original[nonzero_mask] - duplicate[nonzero_mask]) / 
-            grades[nonzero_mask] * 100
-        )
+            orig = np.array(original, dtype=float)
+            dupl = np.array(duplicate, dtype=float)
+            grades = (orig + dupl) / 2.0
+            rpd = np.zeros_like(grades)
+            nz = grades > 0
+            rpd[nz] = np.abs(orig[nz] - dupl[nz]) / grades[nz] * 100
 
-        # Calculate hyperbolic envelope
-        # At low grades, RPD tolerance is higher due to detection limit effects
-        grade_range = np.linspace(max(0.001, grades.min() * 0.5), grades.max() * 1.2, 200)
-        
-        # Hyperbolic component: RPD = sqrt(2) * 100 * (precision / grade)
-        hyperbolic_limit = 100 * np.sqrt(2) * (absolute_precision / grade_range)
-        
-        # Combined limit: max of hyperbolic (low grade) and fixed limit (high grade)
-        combined_limit = np.maximum(hyperbolic_limit, rpd_limit)
+            g_range = np.linspace(max(0.001, grades.min() * 0.5),
+                                  grades.max() * 1.2, 300)
+            hyp = 100 * np.sqrt(2) * (absolute_precision / g_range)
+            envelope = np.maximum(hyp, rpd_limit)
 
-        # Determine pass/fail for each point
-        point_limits = np.maximum(
-            100 * np.sqrt(2) * (absolute_precision / np.maximum(grades, 0.001)),
-            rpd_limit
-        )
-        passed = rpd_values <= point_limits
-        failed = ~passed
+            point_lim = np.maximum(
+                100 * np.sqrt(2) * (absolute_precision / np.maximum(grades, 0.001)),
+                rpd_limit)
+            passed = rpd <= point_lim
+            failed = ~passed
+            pass_rate = passed.sum() / len(passed) * 100
 
-        # Set up the plot
-        fig, ax = plt.subplots(figsize=self.figure_size, dpi=self.dpi)
+            ax.fill_between(g_range, 0, envelope, color=_COLORS['fill_pass'],
+                            alpha=0.5, zorder=0)
+            ax.plot(g_range, envelope, color=_COLORS['text'], lw=1.6,
+                    label='Precision Envelope', zorder=2)
+            ax.axhline(rpd_limit, color=_COLORS['muted'], ls=':', lw=1.2,
+                       label=f'Fixed RPD Limit ({rpd_limit}%)', zorder=2)
 
-        # Plot passing points
-        if np.any(passed):
-            ax.scatter(grades[passed], rpd_values[passed], 
-                      alpha=0.7, s=50, color='#27AE60', edgecolors='white', 
-                      linewidth=0.5, label=f'Pass ({np.sum(passed)})')
+            if passed.any():
+                ax.scatter(grades[passed], rpd[passed], s=48,
+                           color=_COLORS['success'], edgecolors='white',
+                           lw=0.6, zorder=4, label=f'Pass ({passed.sum()})')
+            if failed.any():
+                ax.scatter(grades[failed], rpd[failed], s=60,
+                           color=_COLORS['danger'], edgecolors='white',
+                           lw=0.6, zorder=5, marker='X',
+                           label=f'Fail ({failed.sum()})')
 
-        # Plot failing points
-        if np.any(failed):
-            ax.scatter(grades[failed], rpd_values[failed], 
-                      alpha=0.7, s=50, color='#E74C3C', edgecolors='white', 
-                      linewidth=0.5, label=f'Fail ({np.sum(failed)})')
+            ax.set_xlabel('Grade (Mean of Pair)')
+            ax.set_ylabel('Relative Percent Difference (%)')
+            ax.set_title(title, pad=12)
+            ax.set_ylim(bottom=0)
+            ax.legend(loc='upper right', fontsize=8, framealpha=0.9)
 
-        # Plot hyperbolic envelope
-        ax.plot(grade_range, combined_limit, 'k-', linewidth=2, 
-                label=f'Precision Envelope')
-        
-        # Add fixed RPD limit line
-        ax.axhline(y=rpd_limit, color='gray', linestyle=':', linewidth=1.5, 
-                   label=f'Fixed Limit ({rpd_limit}%)')
+            if grades.max() / max(grades.min(), 0.001) > 100:
+                ax.set_xscale('log')
 
-        # Fill under the envelope
-        ax.fill_between(grade_range, 0, combined_limit, alpha=0.1, color='green')
+            _stat_box(ax, (f'n = {len(orig)}\n'
+                           f'Pass Rate = {pass_rate:.1f}%\n'
+                           f'Mean RPD = {rpd.mean():.1f}%'))
 
-        # Formatting
-        ax.set_xlabel('Grade (Mean of Pair)')
-        ax.set_ylabel('Relative Percent Difference (%)')
-        ax.set_title(title)
-        ax.legend(loc='upper right', fontsize=9)
-        ax.grid(True, alpha=0.3)
-        ax.set_ylim(bottom=0)
+            _apply_style(fig, ax)
 
-        # Set x-axis to log scale if range is large
-        if grades.max() / max(grades.min(), 0.001) > 100:
-            ax.set_xscale('log')
+        return {'figure': fig, 'axes': ax,
+                'grades': grades.tolist(), 'rpd_values': rpd.tolist(),
+                'passed': passed.tolist(), 'failed': failed.tolist(),
+                'pass_rate': pass_rate, 'mean_rpd': rpd.mean(),
+                'rpd_limit': rpd_limit,
+                'absolute_precision': absolute_precision,
+                'n': len(orig)}
 
-        # Add statistics text box
-        pass_rate = np.sum(passed) / len(passed) * 100 if len(passed) > 0 else 0
-        mean_rpd = np.mean(rpd_values)
-        stats_text = (f'n = {len(original)}\n'
-                      f'Pass Rate = {pass_rate:.1f}%\n'
-                      f'Mean RPD = {mean_rpd:.1f}%')
-        ax.text(0.02, 0.98, stats_text, transform=ax.transAxes, verticalalignment='top',
-                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8), fontsize=9)
+    # ── CUSUM Chart ─────────────────────────────────────────────────────────
 
-        return {
-            'figure': fig,
-            'axes': ax,
-            'grades': grades.tolist(),
-            'rpd_values': rpd_values.tolist(),
-            'passed': passed.tolist(),
-            'failed': failed.tolist(),
-            'pass_rate': pass_rate,
-            'mean_rpd': mean_rpd,
-            'rpd_limit': rpd_limit,
-            'absolute_precision': absolute_precision,
-            'n': len(original)
-        }
-
-    def create_cusum_chart(self, values: list, target: float, 
-                            title: str = "CUSUM Chart") -> dict:
-        """
-        Create a CUSUM (Cumulative Sum) chart for detecting drift in standards.
-        
-        Plots the cumulative sum of deviations from the target value.
-        - Horizontal trend = process is stable
-        - Upward slope = values consistently above target (positive drift)
-        - Downward slope = values consistently below target (negative drift)
-        - Sudden step change = abrupt shift in process
-
-        Args:
-            values: List of measured values (e.g., CRM results)
-            target: Target/certified value
-            title: Chart title
-
-        Returns:
-            Dictionary with plot data and metadata including drift detection
-        """
+    def create_cusum_chart(self, values: list, target: float,
+                           title: str = "CUSUM Chart") -> dict:
+        """Cumulative Sum chart for drift detection."""
+        import matplotlib
+        matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        import numpy as np
 
-        values = np.array(values)
-        n = len(values)
+        with plt.rc_context(_RC):
+            vals = np.array(values, dtype=float)
+            n = len(vals)
+            devs = vals - target
+            cusum = np.cumsum(devs)
+            sd = np.std(devs, ddof=1) if n > 1 else 0
+            h, k = 4 * sd, 0.5 * sd
 
-        # Calculate deviations and cumulative sum
-        deviations = values - target
-        cusum = np.cumsum(deviations)
+            cu, cl = np.zeros(n), np.zeros(n)
+            for i in range(n):
+                prev_u = cu[i - 1] if i else 0
+                prev_l = cl[i - 1] if i else 0
+                cu[i] = max(0, prev_u + devs[i] - k)
+                cl[i] = max(0, prev_l - devs[i] - k)
 
-        # Calculate control limits (V-mask parameters)
-        std_dev = np.std(deviations, ddof=1) if n > 1 else 0
-        
-        # Decision interval (h) and reference value (k) for V-mask
-        # Using typical values: h = 4*sigma, k = 0.5*sigma
-        h = 4 * std_dev
-        k = 0.5 * std_dev
-        
-        # Upper and lower CUSUM (for two-sided detection)
-        cusum_upper = np.zeros(n)
-        cusum_lower = np.zeros(n)
-        
-        for i in range(n):
-            if i == 0:
-                cusum_upper[i] = max(0, deviations[i] - k)
-                cusum_lower[i] = max(0, -deviations[i] - k)
-            else:
-                cusum_upper[i] = max(0, cusum_upper[i-1] + deviations[i] - k)
-                cusum_lower[i] = max(0, cusum_lower[i-1] - deviations[i] - k)
+            uv = np.where(cu > h)[0]
+            lv = np.where(cl > h)[0]
 
-        # Detect out-of-control points
-        upper_violations = np.where(cusum_upper > h)[0]
-        lower_violations = np.where(cusum_lower > h)[0]
+            fig, (ax1, ax2) = plt.subplots(
+                2, 1, figsize=(self.figure_size[0], self.figure_size[1] * 1.2),
+                dpi=self.dpi, sharex=True)
 
-        # Set up the plot with two subplots
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(self.figure_size[0], self.figure_size[1] * 1.2), 
-                                        dpi=self.dpi, sharex=True)
+            x = np.arange(1, n + 1)
 
-        # Top plot: Raw CUSUM
-        x_values = list(range(1, n + 1))
-        ax1.plot(x_values, cusum, 'b-', linewidth=2, marker='o', markersize=4, label='Cumulative Sum')
-        ax1.axhline(y=0, color='green', linestyle='-', linewidth=2, label='Target (0)')
-        ax1.fill_between(x_values, cusum, 0, alpha=0.2, color='blue')
-        
-        ax1.set_ylabel('Cumulative Sum of Deviations')
-        ax1.set_title(title)
-        ax1.legend(loc='upper left', fontsize=9)
-        ax1.grid(True, alpha=0.3)
+            # Top: raw CUSUM
+            ax1.fill_between(x, cusum, 0, color=_COLORS['primary'], alpha=0.15, zorder=0)
+            ax1.plot(x, cusum, color=_COLORS['primary'], lw=1.6, marker='o',
+                     markersize=4, markerfacecolor=_COLORS['primary'],
+                     markeredgecolor='white', markeredgewidth=0.6, zorder=3,
+                     label='Cumulative Sum')
+            ax1.axhline(0, color=_COLORS['success'], ls='-', lw=1.4,
+                        label='Target (0)', zorder=2)
 
-        # Add trend indicator
-        if n > 1:
-            slope = np.polyfit(range(n), cusum, 1)[0]
-            if abs(slope) < 0.1 * std_dev:
-                trend = "Stable"
-                trend_color = 'green'
-            elif slope > 0:
-                trend = "Positive Drift"
-                trend_color = 'orange'
-            else:
-                trend = "Negative Drift"
-                trend_color = 'orange'
-            ax1.text(0.98, 0.98, f'Trend: {trend}', transform=ax1.transAxes, 
-                     verticalalignment='top', horizontalalignment='right',
-                     bbox=dict(boxstyle='round', facecolor=trend_color, alpha=0.3), fontsize=10)
+            ax1.set_ylabel('Cumulative Sum')
+            ax1.set_title(title, pad=12)
+            ax1.legend(loc='upper left', fontsize=8)
 
-        # Bottom plot: Two-sided CUSUM with decision limits
-        ax2.plot(x_values, cusum_upper, 'r-', linewidth=2, marker='^', markersize=4, label='Upper CUSUM')
-        ax2.plot(x_values, -cusum_lower, 'b-', linewidth=2, marker='v', markersize=4, label='Lower CUSUM')
-        ax2.axhline(y=h, color='red', linestyle='--', linewidth=2, label=f'UCL (+{h:.3f})')
-        ax2.axhline(y=-h, color='blue', linestyle='--', linewidth=2, label=f'LCL (-{h:.3f})')
-        ax2.axhline(y=0, color='gray', linestyle=':', linewidth=1)
+            if n > 1:
+                slope = np.polyfit(range(n), cusum, 1)[0]
+                trend = 'Stable' if abs(slope) < 0.1 * sd else \
+                        ('Positive Drift' if slope > 0 else 'Negative Drift')
+                tc = _COLORS['success'] if trend == 'Stable' else _COLORS['sigma2']
+                _stat_box(ax1, f'Trend: {trend}', loc='upper right')
 
-        # Highlight violations
-        if len(upper_violations) > 0:
-            ax2.scatter([v+1 for v in upper_violations], [cusum_upper[v] for v in upper_violations],
-                       color='red', s=100, zorder=5, marker='X', label='Upper Violation')
-        if len(lower_violations) > 0:
-            ax2.scatter([v+1 for v in lower_violations], [-cusum_lower[v] for v in lower_violations],
-                       color='blue', s=100, zorder=5, marker='X', label='Lower Violation')
+            _apply_style(fig, ax1)
 
-        ax2.set_xlabel('Sample Number')
-        ax2.set_ylabel('Two-Sided CUSUM')
-        ax2.legend(loc='upper left', fontsize=8, ncol=2)
-        ax2.grid(True, alpha=0.3)
+            # Bottom: two-sided CUSUM
+            ax2.plot(x, cu, color=_COLORS['danger'], lw=1.4, marker='^',
+                     markersize=4, label='Upper CUSUM', zorder=3)
+            ax2.plot(x, -cl, color=_COLORS['accent'], lw=1.4, marker='v',
+                     markersize=4, label='Lower CUSUM', zorder=3)
+            ax2.axhline(h, color=_COLORS['danger'], ls='--', lw=1.2,
+                        label=f'UCL (+{h:.3f})', zorder=2)
+            ax2.axhline(-h, color=_COLORS['accent'], ls='--', lw=1.2,
+                        label=f'LCL (−{h:.3f})', zorder=2)
+            ax2.axhline(0, color=_COLORS['muted'], ls=':', lw=0.8, zorder=1)
 
-        plt.tight_layout()
+            if len(uv):
+                ax2.scatter([v + 1 for v in uv], [cu[v] for v in uv],
+                            color=_COLORS['danger'], s=80, marker='X', zorder=5)
+            if len(lv):
+                ax2.scatter([v + 1 for v in lv], [-cl[v] for v in lv],
+                            color=_COLORS['accent'], s=80, marker='X', zorder=5)
 
-        return {
-            'figure': fig,
-            'axes': (ax1, ax2),
-            'values': values.tolist(),
-            'target': target,
-            'cusum': cusum.tolist(),
-            'cusum_upper': cusum_upper.tolist(),
-            'cusum_lower': cusum_lower.tolist(),
-            'decision_interval': h,
-            'upper_violations': upper_violations.tolist(),
-            'lower_violations': lower_violations.tolist(),
-            'n': n
-        }
+            ax2.set_xlabel('Sample Number')
+            ax2.set_ylabel('Two-Sided CUSUM')
+            ax2.legend(loc='upper left', fontsize=7, ncol=2)
 
-    def create_bland_altman(self, original: list, duplicate: list, 
-                             title: str = "Bland-Altman Plot") -> dict:
-        """
-        Create a Bland-Altman plot for duplicate bias analysis.
-        
-        Shows agreement between original and duplicate measurements by plotting
-        the mean of each pair against their difference. Reveals systematic bias
-        that simple scatter plots may miss.
+            _apply_style(fig, ax2)
 
-        Args:
-            original: List of original measurement values
-            duplicate: List of duplicate measurement values
-            title: Chart title
+        return {'figure': fig, 'axes': (ax1, ax2),
+                'values': vals.tolist(), 'target': target,
+                'cusum': cusum.tolist(),
+                'cusum_upper': cu.tolist(), 'cusum_lower': cl.tolist(),
+                'decision_interval': h,
+                'upper_violations': uv.tolist(),
+                'lower_violations': lv.tolist(), 'n': n}
 
-        Returns:
-            Dictionary with plot data and metadata including bias and limits
-        """
+    # ── Bland-Altman ────────────────────────────────────────────────────────
+
+    def create_bland_altman(self, original: list, duplicate: list,
+                            title: str = "Bland-Altman Plot") -> dict:
+        """Bland-Altman bias plot with limits of agreement."""
+        import matplotlib
+        matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        import numpy as np
 
         if len(original) != len(duplicate):
             raise ValueError("Original and duplicate lists must have same length")
 
-        original = np.array(original)
-        duplicate = np.array(duplicate)
+        with plt.rc_context(_RC):
+            fig, ax = plt.subplots(figsize=self.figure_size, dpi=self.dpi)
 
-        # Calculate mean and difference for each pair
-        means = (original + duplicate) / 2
-        differences = original - duplicate
+            orig = np.array(original, dtype=float)
+            dupl = np.array(duplicate, dtype=float)
+            means = (orig + dupl) / 2.0
+            diffs = orig - dupl
+            bias = np.mean(diffs)
+            sd = np.std(diffs, ddof=1)
+            loa_hi = bias + 1.96 * sd
+            loa_lo = bias - 1.96 * sd
 
-        # Calculate statistics
-        mean_diff = np.mean(differences)  # Bias
-        std_diff = np.std(differences, ddof=1)
-        
-        # Limits of agreement (95% confidence)
-        loa_upper = mean_diff + 1.96 * std_diff
-        loa_lower = mean_diff - 1.96 * std_diff
+            ax.fill_between([means.min() * 0.95, means.max() * 1.05],
+                            loa_lo, loa_hi,
+                            color=_COLORS['fill_warn'], alpha=0.4, zorder=0)
+            ax.axhline(bias, color=_COLORS['danger'], ls='-', lw=1.6,
+                       label=f'Mean Diff (Bias): {bias:.4f}', zorder=2)
+            ax.axhline(loa_hi, color=_COLORS['sigma2'], ls='--', lw=1.2,
+                       label=f'+1.96 SD: {loa_hi:.4f}', zorder=2)
+            ax.axhline(loa_lo, color=_COLORS['sigma2'], ls='--', lw=1.2,
+                       label=f'−1.96 SD: {loa_lo:.4f}', zorder=2)
+            ax.axhline(0, color=_COLORS['muted'], ls=':', lw=0.8, zorder=1)
 
-        # Set up the plot
-        fig, ax = plt.subplots(figsize=self.figure_size, dpi=self.dpi)
+            ax.scatter(means, diffs, s=48, color=_COLORS['accent'],
+                       edgecolors='white', lw=0.6, alpha=0.85, zorder=4)
 
-        # Scatter plot of means vs differences
-        ax.scatter(means, differences, alpha=0.7, s=50, color='#2E86AB', edgecolors='white', linewidth=0.5)
+            ax.set_xlabel('Mean of Original and Duplicate')
+            ax.set_ylabel('Difference (Original − Duplicate)')
+            ax.set_title(title, pad=12)
+            ax.legend(loc='upper right', fontsize=8, framealpha=0.9)
 
-        # Mean difference line (bias)
-        ax.axhline(y=mean_diff, color='#E94F37', linestyle='-', linewidth=2, 
-                   label=f'Mean Difference (Bias): {mean_diff:.4f}')
+            _stat_box(ax, (f'n = {len(orig)}\n'
+                           f'Bias = {bias:.4f}\n'
+                           f'SD = {sd:.4f}'))
 
-        # Limits of agreement
-        ax.axhline(y=loa_upper, color='#F39C12', linestyle='--', linewidth=2,
-                   label=f'+1.96 SD: {loa_upper:.4f}')
-        ax.axhline(y=loa_lower, color='#F39C12', linestyle='--', linewidth=2,
-                   label=f'-1.96 SD: {loa_lower:.4f}')
+            _apply_style(fig, ax)
 
-        # Zero line for reference
-        ax.axhline(y=0, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+        return {'figure': fig, 'axes': ax,
+                'means': means.tolist(), 'differences': diffs.tolist(),
+                'bias': bias, 'std': sd,
+                'loa_upper': loa_hi, 'loa_lower': loa_lo,
+                'n': len(orig)}
 
-        # Fill between limits of agreement
-        ax.fill_between(ax.get_xlim(), loa_lower, loa_upper, alpha=0.1, color='#F39C12')
+    # ── Save ────────────────────────────────────────────────────────────────
 
-        # Formatting
-        ax.set_xlabel('Mean of Original and Duplicate')
-        ax.set_ylabel('Difference (Original - Duplicate)')
-        ax.set_title(title)
-        ax.legend(loc='upper right', fontsize=9)
-        ax.grid(True, alpha=0.3)
-
-        # Add statistics text box
-        stats_text = (f'n = {len(original)}\n'
-                      f'Bias = {mean_diff:.4f}\n'
-                      f'SD = {std_diff:.4f}')
-        ax.text(0.02, 0.98, stats_text, transform=ax.transAxes, verticalalignment='top',
-                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8), fontsize=9)
-
-        return {
-            'figure': fig,
-            'axes': ax,
-            'means': means.tolist(),
-            'differences': differences.tolist(),
-            'bias': mean_diff,
-            'std': std_diff,
-            'loa_upper': loa_upper,
-            'loa_lower': loa_lower,
-            'n': len(original)
-        }
-
-    def save_plot(self, plot_data: dict, filename: str, format: str = 'png') -> str:
-        """
-        Save a plot to file.
-
-        Args:
-            plot_data: Dictionary from plot creation methods
-            filename: Output filename
-            format: File format ('png', 'pdf', 'svg')
-
-        Returns:
-            Full path to saved file
-        """
+    def save_plot(self, plot_data: dict, filename: str,
+                  format: str = 'png') -> str:
+        """Save a plot to file at 300 DPI."""
         import os
-
-        # Ensure output directory exists
         os.makedirs(os.path.dirname(filename), exist_ok=True)
-
-        # Save the plot
-        plot_data['figure'].savefig(filename, format=format, dpi=self.dpi, bbox_inches='tight')
-
+        plot_data['figure'].savefig(filename, format=format, dpi=self.dpi,
+                                    bbox_inches='tight', facecolor='white',
+                                    pad_inches=0.15)
         return filename
+
 
 class ReportVisualizer:
     """Stub report visualizer class."""

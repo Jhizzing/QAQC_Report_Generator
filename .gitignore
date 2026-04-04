@@ -19,6 +19,9 @@ coverage.xml
 htmlcov/
 release_assets/
 
+# Electron build output
+react_ui/release/
+
 # Runtime data
 pids
 *.pid

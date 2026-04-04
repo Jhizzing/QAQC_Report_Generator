@@ -12,10 +12,10 @@ import pandas as pd
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTableWidget, QTableWidgetItem, QComboBox, QGroupBox,
-    QFileDialog, QMessageBox, QProgressBar, QTextEdit
+    QFileDialog, QMessageBox, QProgressBar, QTextEdit, QFrame
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QThread
-from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt, pyqtSignal, QThread, QMimeData
+from PyQt6.QtGui import QFont, QDragEnterEvent, QDropEvent
 
 from ..styles.geological_theme import GeologicalTheme
 from ...data.importer import DataImporter
@@ -128,6 +128,9 @@ class DataPanel(QWidget):
         self.current_data: Optional[Dict[str, Any]] = None
         self.column_mapping: Dict[str, str] = {}
 
+        # Enable drag-and-drop
+        self.setAcceptDrops(True)
+
         # Initialize UI
         self.setup_ui()
         self.setup_connections()
@@ -139,6 +142,81 @@ class DataPanel(QWidget):
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(10)
 
+        # Drag-and-drop zone
+        self.drop_zone = QFrame()
+        self.drop_zone.setFrameShape(QFrame.Shape.StyledPanel)
+        self.drop_zone.setAcceptDrops(True)
+        self.drop_zone.setMinimumHeight(80)
+        self.drop_zone.setStyleSheet("""
+            QFrame {
+                background-color: #1E293B;
+                border: 2px dashed #334155;
+                border-radius: 8px;
+            }
+            QFrame:hover {
+                border-color: #F59E0B;
+                background-color: #1a2438;
+            }
+        """)
+        drop_layout = QVBoxLayout(self.drop_zone)
+        drop_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        drop_icon = QLabel("📂")
+        drop_icon.setStyleSheet("font-size: 24px; border: none;")
+        drop_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        drop_layout.addWidget(drop_icon)
+        drop_label = QLabel("Drag & drop CSV or Excel files here")
+        drop_label.setStyleSheet("color: #94A3B8; font-size: 12px; border: none;")
+        drop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        drop_layout.addWidget(drop_label)
+        drop_sublabel = QLabel("or click Import below")
+        drop_sublabel.setStyleSheet("color: #64748B; font-size: 10px; border: none;")
+        drop_sublabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        drop_layout.addWidget(drop_sublabel)
+        layout.addWidget(self.drop_zone)
+
+        # Demo data buttons
+        demo_group = QGroupBox("Quick Start — Demo Data")
+        demo_group.setStyleSheet("""
+            QGroupBox {
+                color: #CBD5E1; font-weight: bold;
+                border: 1px solid #334155; border-radius: 6px;
+                margin-top: 6px; padding-top: 18px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin; left: 12px; padding: 0 6px;
+            }
+        """)
+        demo_layout = QHBoxLayout(demo_group)
+        demo_layout.setSpacing(6)
+
+        self.demo_buttons = []
+        demo_datasets = [
+            ("Gold Fire Assay", "gold_fire_assay"),
+            ("pXRF Base Metals", "pxrf_base_metals"),
+        ]
+        for label, demo_id in demo_datasets:
+            btn = QPushButton(label)
+            btn.setMinimumHeight(30)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #334155;
+                    color: #F1F5F9;
+                    border: 1px solid #475569;
+                    border-radius: 6px;
+                    padding: 6px 12px;
+                    font-size: 11px;
+                }
+                QPushButton:hover {
+                    background-color: #475569;
+                    border-color: #F59E0B;
+                }
+            """)
+            btn.clicked.connect(lambda checked, d=demo_id: self.load_demo_data(d))
+            demo_layout.addWidget(btn)
+            self.demo_buttons.append(btn)
+
+        layout.addWidget(demo_group)
+
         # File information group
         self.file_group = QGroupBox("File Information")
         file_layout = QVBoxLayout(self.file_group)
@@ -146,12 +224,12 @@ class DataPanel(QWidget):
         # File path display
         self.file_path_label = QLabel("No file selected")
         self.file_path_label.setWordWrap(True)
-        self.file_path_label.setStyleSheet("color: #6C757D; font-style: italic;")
+        self.file_path_label.setStyleSheet("color: #94A3B8; font-style: italic;")
         file_layout.addWidget(self.file_path_label)
 
         # File statistics
         self.file_stats_label = QLabel("")
-        self.file_stats_label.setStyleSheet("color: #2C3E50; font-weight: bold;")
+        self.file_stats_label.setStyleSheet("color: #CBD5E1; font-weight: bold;")
         file_layout.addWidget(self.file_stats_label)
 
         # Import button
@@ -182,9 +260,9 @@ class DataPanel(QWidget):
         # Style empty cells to be invisible and clean appearance with subtle selection
         self.data_table.setStyleSheet("""
             QTableWidget {
-                background-color: #FFFFFF;
-                gridline-color: #E9ECEF;
-                border: 1px solid #DEE2E6;
+                background-color: #1E293B;
+                gridline-color: #334155;
+                border: 1px solid #334155;
             }
             QTableWidget::item:empty {
                 background-color: transparent;
@@ -192,21 +270,21 @@ class DataPanel(QWidget):
             }
             QTableWidget::item {
                 padding: 6px 8px;
-                background-color: #FFFFFF;
+                background-color: #1E293B;
             }
             QTableWidget::item:alternate {
-                background-color: #F8F9FA;
+                background-color: #334155;
             }
             QTableWidget::item:selected {
-                background-color: #E3F2FD;
-                color: #1A1A1A;
+                background-color: #422006;
+                color: #F1F5F9;
             }
             QTableWidget::item:hover {
-                background-color: #E9ECEF;
+                background-color: #334155;
             }
             QTableWidget::item:selected:hover {
-                background-color: #D1E7F0;
-                color: #1A1A1A;
+                background-color: #3D2A08;
+                color: #F1F5F9;
             }
         """)
         preview_layout.addWidget(self.data_table)
@@ -234,9 +312,9 @@ class DataPanel(QWidget):
         # Style empty cells to be invisible and clean appearance with subtle selection
         self.mapping_table.setStyleSheet("""
             QTableWidget {
-                background-color: #FFFFFF;
-                gridline-color: #E9ECEF;
-                border: 1px solid #DEE2E6;
+                background-color: #1E293B;
+                gridline-color: #334155;
+                border: 1px solid #334155;
             }
             QTableWidget::item:empty {
                 background-color: transparent;
@@ -244,21 +322,21 @@ class DataPanel(QWidget):
             }
             QTableWidget::item {
                 padding: 6px 8px;
-                background-color: #FFFFFF;
+                background-color: #1E293B;
             }
             QTableWidget::item:alternate {
-                background-color: #F8F9FA;
+                background-color: #334155;
             }
             QTableWidget::item:selected {
-                background-color: #E3F2FD;
-                color: #1A1A1A;
+                background-color: #422006;
+                color: #F1F5F9;
             }
             QTableWidget::item:hover {
-                background-color: #E9ECEF;
+                background-color: #334155;
             }
             QTableWidget::item:selected:hover {
-                background-color: #D1E7F0;
-                color: #1A1A1A;
+                background-color: #3D2A08;
+                color: #F1F5F9;
             }
         """)
         mapping_layout.addWidget(self.mapping_table)
@@ -287,7 +365,7 @@ class DataPanel(QWidget):
         # CRM info display
         self.crm_info_label = QLabel("")
         self.crm_info_label.setWordWrap(True)
-        self.crm_info_label.setStyleSheet("color: #6C757D; font-size: 10px;")
+        self.crm_info_label.setStyleSheet("color: #94A3B8; font-size: 10px;")
         crm_layout.addWidget(self.crm_info_label)
 
         layout.addWidget(self.crm_group)
@@ -299,7 +377,7 @@ class DataPanel(QWidget):
 
         # Status label
         self.status_label = QLabel("Ready to import data")
-        self.status_label.setStyleSheet("color: #27AE60; font-weight: bold;")
+        self.status_label.setStyleSheet("color: #10B981; font-weight: bold;")
         layout.addWidget(self.status_label)
 
     def setup_connections(self):
@@ -438,7 +516,7 @@ class DataPanel(QWidget):
         self.import_button.setEnabled(True)
         self.progress_bar.setVisible(False)
         self.status_label.setText("Data loaded successfully")
-        self.status_label.setStyleSheet("color: #27AE60; font-weight: bold;")
+        self.status_label.setStyleSheet("color: #10B981; font-weight: bold;")
 
         # Emit signal to main window
         self.data_loaded.emit(data_info)
@@ -446,7 +524,7 @@ class DataPanel(QWidget):
     def on_import_error(self, error_message: str):
         """Handle import error."""
         self.status_label.setText(f"Error: {error_message}")
-        self.status_label.setStyleSheet("color: #E74C3C; font-weight: bold;")
+        self.status_label.setStyleSheet("color: #EF4444; font-weight: bold;")
         self.progress_bar.setVisible(False)
         self.import_button.setEnabled(True)
 
@@ -615,7 +693,206 @@ class DataPanel(QWidget):
         self.crm_info_label.setText("")
 
         self.status_label.setText("Ready to import data")
-        self.status_label.setStyleSheet("color: #27AE60; font-weight: bold;")
+        self.status_label.setStyleSheet("color: #10B981; font-weight: bold;")
         self.progress_bar.setVisible(False)
         self.import_button.setEnabled(True)
         self.auto_map_button.setEnabled(False)
+
+    # ----- Drag-and-drop support -----
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        """Accept drag events for supported file types."""
+        if event.mimeData().hasUrls():
+            for url in event.mimeData().urls():
+                file_path = url.toLocalFile()
+                if file_path.lower().endswith(('.csv', '.xlsx', '.xls')):
+                    event.acceptProposedAction()
+                    # Visual feedback
+                    self.drop_zone.setStyleSheet("""
+                        QFrame {
+                            background-color: #422006;
+                            border: 2px solid #F59E0B;
+                            border-radius: 8px;
+                        }
+                    """)
+                    return
+        event.ignore()
+
+    def dragLeaveEvent(self, event):
+        """Reset drop zone appearance."""
+        self.drop_zone.setStyleSheet("""
+            QFrame {
+                background-color: #1E293B;
+                border: 2px dashed #334155;
+                border-radius: 8px;
+            }
+            QFrame:hover {
+                border-color: #F59E0B;
+                background-color: #1a2438;
+            }
+        """)
+
+    def dropEvent(self, event: QDropEvent):
+        """Handle dropped files."""
+        # Reset drop zone appearance
+        self.drop_zone.setStyleSheet("""
+            QFrame {
+                background-color: #1E293B;
+                border: 2px dashed #334155;
+                border-radius: 8px;
+            }
+            QFrame:hover {
+                border-color: #F59E0B;
+                background-color: #1a2438;
+            }
+        """)
+
+        if event.mimeData().hasUrls():
+            for url in event.mimeData().urls():
+                file_path = url.toLocalFile()
+                if file_path.lower().endswith(('.csv', '.xlsx', '.xls')):
+                    self.load_data_file(file_path)
+                    event.acceptProposedAction()
+                    return
+        event.ignore()
+
+    # ----- Demo data loading -----
+
+    def load_demo_data(self, demo_id: str):
+        """Generate and load synthetic demo data for quick testing."""
+        import numpy as np
+
+        self.status_label.setText(f"Generating {demo_id} demo data...")
+        self.status_label.setStyleSheet("color: #F59E0B; font-weight: bold;")
+
+        try:
+            from PyQt6.QtWidgets import QApplication
+            app = QApplication.instance()
+            app.processEvents()
+
+            np.random.seed(42)
+
+            if demo_id == "gold_fire_assay":
+                df = self._generate_gold_demo()
+            elif demo_id == "pxrf_base_metals":
+                df = self._generate_pxrf_demo()
+            else:
+                QMessageBox.warning(self, "Unknown Demo", f"Unknown demo dataset: {demo_id}")
+                return
+
+            # Save to a temp file so the import pipeline works normally
+            import tempfile
+            tmp = tempfile.NamedTemporaryFile(
+                suffix='.csv', prefix=f'logiqore_demo_{demo_id}_',
+                delete=False, mode='w'
+            )
+            df.to_csv(tmp.name, index=False)
+            tmp.close()
+
+            self.load_data_file(tmp.name)
+            self.status_label.setText(f"Demo data loaded: {demo_id.replace('_', ' ').title()}")
+            self.status_label.setStyleSheet("color: #10B981; font-weight: bold;")
+
+        except Exception as e:
+            self.status_label.setText(f"Error generating demo data: {str(e)}")
+            self.status_label.setStyleSheet("color: #EF4444; font-weight: bold;")
+
+    def _generate_gold_demo(self) -> pd.DataFrame:
+        """Generate a realistic gold fire assay demo dataset."""
+        import numpy as np
+
+        n_samples = 120
+        rows = []
+
+        crm_value = 0.85
+        crm_uncertainty = 0.05
+
+        for i in range(n_samples):
+            sample_num = i + 1
+
+            # Assign sample types: ~70% regular, ~10% standards, ~10% blanks, ~10% duplicates
+            r = np.random.random()
+            if r < 0.10:
+                sample_type = "STANDARD"
+                sample_id = f"CRM-{sample_num:04d}"
+                # Standards cluster around certified value
+                result = round(np.random.normal(crm_value, crm_uncertainty * 0.8), 3)
+            elif r < 0.20:
+                sample_type = "BLANK"
+                sample_id = f"BLK-{sample_num:04d}"
+                # Blanks near zero with occasional contamination
+                if np.random.random() < 0.15:
+                    result = round(np.random.uniform(0.02, 0.08), 4)
+                else:
+                    result = round(np.random.exponential(0.003), 4)
+            elif r < 0.30:
+                sample_type = "DUPLICATE"
+                sample_id = f"DUP-{sample_num:04d}"
+                # Duplicates near the original value
+                base_val = round(np.random.lognormal(mean=-1, sigma=1.5), 3)
+                result = round(base_val * np.random.normal(1.0, 0.05), 3)
+            else:
+                sample_type = "SAMPLE"
+                sample_id = f"SAM-{sample_num:04d}"
+                result = round(np.random.lognormal(mean=-1, sigma=1.5), 3)
+
+            result = max(0, result)  # No negatives
+            rows.append({
+                'sample_id': sample_id,
+                'sample_type': sample_type,
+                'Au_ppm': result,
+                'batch': f"B{(i // 20) + 1:02d}",
+                'method': 'FA-AAS',
+                'detection_limit': 0.01,
+            })
+
+        return pd.DataFrame(rows)
+
+    def _generate_pxrf_demo(self) -> pd.DataFrame:
+        """Generate a realistic pXRF base metals demo dataset."""
+        import numpy as np
+
+        n_samples = 100
+        rows = []
+
+        for i in range(n_samples):
+            sample_num = i + 1
+
+            r = np.random.random()
+            if r < 0.10:
+                sample_type = "STANDARD"
+                sample_id = f"STD-{sample_num:04d}"
+            elif r < 0.20:
+                sample_type = "BLANK"
+                sample_id = f"BLK-{sample_num:04d}"
+            elif r < 0.30:
+                sample_type = "DUPLICATE"
+                sample_id = f"DUP-{sample_num:04d}"
+            else:
+                sample_type = "SAMPLE"
+                sample_id = f"SAM-{sample_num:04d}"
+
+            if sample_type == "BLANK":
+                cu = round(np.random.exponential(2), 1)
+                pb = round(np.random.exponential(3), 1)
+                zn = round(np.random.exponential(5), 1)
+            elif sample_type == "STANDARD":
+                cu = round(np.random.normal(1250, 40), 1)
+                pb = round(np.random.normal(850, 30), 1)
+                zn = round(np.random.normal(2100, 60), 1)
+            else:
+                cu = round(max(0, np.random.lognormal(5.5, 1.2)), 1)
+                pb = round(max(0, np.random.lognormal(5.0, 1.0)), 1)
+                zn = round(max(0, np.random.lognormal(6.0, 1.1)), 1)
+
+            rows.append({
+                'sample_id': sample_id,
+                'sample_type': sample_type,
+                'Cu_ppm': cu,
+                'Pb_ppm': pb,
+                'Zn_ppm': zn,
+                'method': 'pXRF',
+                'detection_limit': 5,
+            })
+
+        return pd.DataFrame(rows)
